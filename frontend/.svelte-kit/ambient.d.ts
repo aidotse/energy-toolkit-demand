@@ -34,7 +34,6 @@ declare module '$env/static/private' {
 	export const npm_node_execpath: string;
 	export const SHLVL: string;
 	export const npm_config_noproxy: string;
-	export const MOTD_SHOWN: string;
 	export const HOME: string;
 	export const CONDA_SHLVL: string;
 	export const OLDPWD: string;
@@ -45,7 +44,6 @@ declare module '$env/static/private' {
 	export const NVM_INC: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
 	export const VSCODE_GIT_ASKPASS_NODE: string;
-	export const CPL_ZIP_ENCODING: string;
 	export const npm_config_userconfig: string;
 	export const npm_config_local_prefix: string;
 	export const DBUS_SESSION_BUS_ADDRESS: string;
@@ -68,13 +66,12 @@ declare module '$env/static/private' {
 	export const _CE_CONDA: string;
 	export const npm_config_node_gyp: string;
 	export const PATH: string;
-	export const PROJ_NETWORK: string;
 	export const NODE: string;
 	export const npm_package_name: string;
-	export const PROJ_DATA: string;
 	export const XDG_RUNTIME_DIR: string;
 	export const DISPLAY: string;
 	export const LANG: string;
+	export const CONDA_PREFIX_1: string;
 	export const LS_COLORS: string;
 	export const VSCODE_GIT_IPC_HANDLE: string;
 	export const TERM_PROGRAM: string;
@@ -83,7 +80,6 @@ declare module '$env/static/private' {
 	export const GSETTINGS_SCHEMA_DIR: string;
 	export const CONDA_PYTHON_EXE: string;
 	export const SHELL: string;
-	export const GDAL_DRIVER_PATH: string;
 	export const npm_package_version: string;
 	export const npm_lifecycle_event: string;
 	export const LESSCLOSE: string;
@@ -102,9 +98,7 @@ declare module '$env/static/private' {
 	export const GSETTINGS_SCHEMA_DIR_CONDA_BACKUP: string;
 	export const WSL2_GUI_APPS_ENABLED: string;
 	export const HOSTTYPE: string;
-	export const NVM_RC_VERSION: string;
 	export const WSLENV: string;
-	export const GDAL_DATA: string;
 	export const INIT_CWD: string;
 	export const EDITOR: string;
 	export const NODE_ENV: string;
@@ -147,7 +141,6 @@ declare module '$env/dynamic/private' {
 		npm_node_execpath: string;
 		SHLVL: string;
 		npm_config_noproxy: string;
-		MOTD_SHOWN: string;
 		HOME: string;
 		CONDA_SHLVL: string;
 		OLDPWD: string;
@@ -158,7 +151,6 @@ declare module '$env/dynamic/private' {
 		NVM_INC: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
 		VSCODE_GIT_ASKPASS_NODE: string;
-		CPL_ZIP_ENCODING: string;
 		npm_config_userconfig: string;
 		npm_config_local_prefix: string;
 		DBUS_SESSION_BUS_ADDRESS: string;
@@ -181,13 +173,12 @@ declare module '$env/dynamic/private' {
 		_CE_CONDA: string;
 		npm_config_node_gyp: string;
 		PATH: string;
-		PROJ_NETWORK: string;
 		NODE: string;
 		npm_package_name: string;
-		PROJ_DATA: string;
 		XDG_RUNTIME_DIR: string;
 		DISPLAY: string;
 		LANG: string;
+		CONDA_PREFIX_1: string;
 		LS_COLORS: string;
 		VSCODE_GIT_IPC_HANDLE: string;
 		TERM_PROGRAM: string;
@@ -196,7 +187,6 @@ declare module '$env/dynamic/private' {
 		GSETTINGS_SCHEMA_DIR: string;
 		CONDA_PYTHON_EXE: string;
 		SHELL: string;
-		GDAL_DRIVER_PATH: string;
 		npm_package_version: string;
 		npm_lifecycle_event: string;
 		LESSCLOSE: string;
@@ -215,9 +205,7 @@ declare module '$env/dynamic/private' {
 		GSETTINGS_SCHEMA_DIR_CONDA_BACKUP: string;
 		WSL2_GUI_APPS_ENABLED: string;
 		HOSTTYPE: string;
-		NVM_RC_VERSION: string;
 		WSLENV: string;
-		GDAL_DATA: string;
 		INIT_CWD: string;
 		EDITOR: string;
 		NODE_ENV: string;
