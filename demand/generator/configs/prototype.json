@@ -1,0 +1,46 @@
+{
+    "config-name": "prototype",
+    "access": "public",
+    "start-year": 2025,
+    "end-year": 2045,
+    "resolution": "1h",
+    "geographies": "geographies/georef-sweden-kommun@public.geojson",
+    "loader": {
+        "name": "base_load_curve",
+        "properties": {
+            "access": "public",
+            "base-year": 2025,
+            "geo-type": "national",
+            "normalized": false
+        }
+    },
+    "transformers": [
+        {
+            "name": "municipality_energy_split",
+            "order": 1,
+            "access": "public",
+            "inputs": [
+                {
+                    "name": "municipality_energy_split",
+                    "path": "municipality_energy_split/municipality_energy_split.csv",
+                    "index": "Kommun",
+                    "columns": ["Kommun", "ratio"]
+                }
+            ]
+        },
+        {
+            "name": "growth_over_time",
+            "order": 2,
+            "access": "public",
+            "inputs": []
+        }
+    ],
+    "output": {
+        "properties": {
+            "resolutions": ["1h", "3h", "1d", "1W", "1ME"],
+            "geography": ""
+
+        }
+    }
+
+}
