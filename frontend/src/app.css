@@ -1,3 +1,13 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
-@import 'tailwindcss/utilities'
+@import 'tailwindcss/utilities';
+
+/* This is a fix to the ThemeSwitch component*/
+input[type="checkbox"].peer {
+    appearance: none; /* Ensure appearance is reset */
+    height: 0; /* Ensure height doesn't contribute to layout */
+    margin: 0; /* Prevent margin artifacts */
+    padding: 0; /* Prevent padding artifacts */
+    border: none; /* Remove any default border */
+    box-shadow: none; /* Remove shadow that might cause a line */
+}
