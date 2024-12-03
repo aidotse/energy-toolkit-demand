@@ -43,6 +43,14 @@
 	},
 	"dependencies": {
 		"@inlang/paraglide-sveltekit": "^0.11.1",
-		"mapbox-gl": "^3.7.0"
+		"cors": "^2.8.5",
+		"d3-array": "^3.2.4",
+		"d3-scale": "^4.0.2",
+		"express": "^4.21.1",
+		"layerchart": "^0.59.5",
+		"mapbox-gl": "^3.7.0",
+		"pako": "^2.1.0",
+		"papaparse": "^5.4.1",
+		"svelte-ux": "^0.75.5"
 	}
 }

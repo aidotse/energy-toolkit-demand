@@ -1,69 +1,76 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
-    import mapboxgl from 'mapbox-gl'; // Import types for Mapbox
-	import 'mapbox-gl/dist/mapbox-gl.css';
+    import Mapbox from '$lib/components/MapBox.svelte';
+    import TimeLine from '$lib/components/TimeLine.svelte';
+    import { fetchGeoJSON, fetchCSV } from '$lib/dataService';
+    import { Card, RangeField, SelectField, ButtonGroup, Button } from 'svelte-ux';
+    import Legend from '$lib/components/Legend.svelte'; // Import Legend component
 
-    let map: mapboxgl.Map;
-    let mapContainer: HTMLDivElement | undefined;
-    let lng: number, lat: number, zoom: number;
+    export let data;
 
-    lat = 62.9775;
-    lng = 3.85556;
-    zoom = 4.88;
+    // Initialize variables with preloaded data
+    let { parameterData, selectedYear, geography, resolution, geojsonData, chartData, minDemandValue, maxDemandValue } = data;
 
-    onMount(() => {
-        const initialState = { lng: lng, lat: lat, zoom: zoom };
+    const options = parameterData.geographies.map((geo) => ({
+        label: geo.name, // The text displayed in the dropdown
+        value: geo.id,   // The value associated with the option
+    })).sort((a, b) => a.label.localeCompare(b.label, 'sv')); // Sort alphabetically by label
 
-        map = new mapboxgl.Map({
-            container: mapContainer as HTMLDivElement,
-            accessToken:'pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA',
-            style: `mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq`,
-            center: [initialState.lng, initialState.lat],
-            zoom: initialState.zoom
-        }); 
-    });
+    // Set first and last year in range
+    const minYear:number = Math.min(...parameterData.years);
+    const maxYear:number = Math.max(...parameterData.years);
 
-    onDestroy(() => {
-        map?.remove();
-    });
+    // Set available resolutions
+    const resolutions = parameterData.resolutions;
 
+    // Fetch updated data locally when inputs change
+    async function updateData() {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+        const geojsonPath = `${API_BASE_URL}/api/geojson?year=${selectedYear}`;
+        const csvPath = `${API_BASE_URL}/api/demand_t?geography=${geography}&resolution=${resolution}&year=${selectedYear}`;
+
+        try {
+            geojsonData = await fetchGeoJSON(geojsonPath);
+            chartData = await fetchCSV(csvPath);
+        } catch (error) {
+            console.error('Error updating data:', error.message);
+        }
+    }
+
+    // Watch for changes in `selectedYear` and trigger data updates
+    $: if (selectedYear && geography && resolution) {
+        updateData();
+    }
 </script>
 
-<div class="layout">
-    <div class="leftside">
-        <h1 class="text-4xl">Behovskartan 2.0</h1>
-        <p>Left-hand container content goes here.</p>
+<div class="flex h-full">
+    <!-- Left Column -->
+    <div class="flex flex-col w-1/2 space-y-4 pl-8 p-4 bg-surface-100 text-surface-content drop-shadow-lg shadow-black">
+        <Card class="p-4">
+            <TimeLine {chartData} />
+        </Card>
     </div>
-    <div class="map-wrap">
-        <div class="map" bind:this={mapContainer} />
+
+    <!-- Right Column -->
+    <div class="flex-grow relative">
+        <div class="absolute z-10 top-4 left-4">
+            <Card class="p-4">
+                <RangeField class="my-1" value={selectedYear} on:change={(e) => selectedYear = e.detail.value} min={minYear} max={maxYear} step={1} />
+                <SelectField class="my-1" {options} bind:value={geography} clearable={false} />
+                <ButtonGroup class="my-1">
+                    {#each resolutions as res}
+                        <Button class="mx-px" variant="fill-light" color="primary" on:click={() => resolution = res} active={resolution === res}>{res}</Button>
+                    {/each}
+                </ButtonGroup>        
+            </Card>
+        </div>
+        <div class="absolute z-10 bottom-8 right-4 legend-overlay">
+            <Legend {minDemandValue} {maxDemandValue} />
+        </div> 
+        <Mapbox 
+            geojsonData={geojsonData} 
+            minDemandValue={minDemandValue} 
+            maxDemandValue={maxDemandValue} 
+        />
     </div>
 </div>
-
-<style>
-    /* Full screen map container */
-    .map-wrap {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-    }
-    
-    /* Full screen map */
-    .map {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* Sidebar overlay */
-    .leftside {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-      width: 50%; /* Takes up half the width */
-      height: 100%; /* Full height */
-      background-color: rgba(240, 240, 240, 1); 
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-</style>
