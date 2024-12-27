@@ -4,6 +4,10 @@ export async function load() {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const geography = '00';
     const resolution = '1d';
+    const geo_resolution = '1YE';
+    const sector = 'all';
+    const aggregation = 'sum';
+    const geo_aggregation = 'all';
 
     try {
         // Fetch parameter data and determine the initial year
@@ -15,8 +19,8 @@ export async function load() {
         const selectedYear = Math.min(...parameterData.years);
 
         // Construct API paths
-        const geojsonPath = `${API_BASE_URL}/api/geojson?year=${selectedYear}`;
-        const csvPath = `${API_BASE_URL}/api/demand_t?geography=${geography}&resolution=${resolution}&year=${selectedYear}`;
+        const geojsonPath = `${API_BASE_URL}/api/geojson?resolution=${geo_resolution}&sector=${sector}&aggregation=${geo_aggregation}&year=${selectedYear}`;
+        const csvPath = `${API_BASE_URL}/api/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${selectedYear}`;
 
         // Fetch GeoJSON and CSV data
         const geojsonData = await fetchGeoJSON(geojsonPath);
@@ -28,6 +32,8 @@ export async function load() {
             selectedYear,
             geography,
             resolution,
+            sector,
+            aggregation,
             geojsonData,
             chartData,
             minDemandValue: 35555.02,
@@ -41,6 +47,8 @@ export async function load() {
             selectedYear: 0,
             geography: null,
             resolution: null,
+            sector: null,
+            aggregation: null,
             geojsonData: null,
             chartData: null,
             minDemandValue: 0,

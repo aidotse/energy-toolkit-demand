@@ -48,6 +48,7 @@
 		"d3-scale": "^4.0.2",
 		"express": "^4.21.1",
 		"layerchart": "^0.59.5",
+		"lucide-svelte": "^0.468.0",
 		"mapbox-gl": "^3.7.0",
 		"pako": "^2.1.0",
 		"papaparse": "^5.4.1",

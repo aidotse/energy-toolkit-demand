@@ -23,8 +23,8 @@
                 {
                     "name": "municipality_energy_split",
                     "path": "municipality_energy_split/municipality_energy_split.csv",
-                    "index": "Kommun",
-                    "columns": ["Kommun", "ratio"]
+                    "index": "municipality",
+                    "columns": ["municipality", "ratio"]
                 }
             ]
         },
@@ -37,7 +37,21 @@
     ],
     "output": {
         "properties": {
-            "resolutions": ["1h", "3h", "1d", "1W", "1ME"],
+            "aggregation": [
+                {"resolution": "1h", "statistics": ["none"]},
+                {"resolution": "3h", "statistics": ["mean", "sum", "min", "max"]},
+                {"resolution": "1d", "statistics": ["mean", "sum", "min", "max"]},
+                {"resolution": "1W", "statistics": ["mean", "sum", "min", "max"]},
+                {"resolution": "1ME", "statistics": ["mean", "sum", "min", "max"]},
+                {"resolution": "1YE", "statistics": ["sum"]}
+
+            ],
+            "sectors": [
+                "total",
+                "buildings",
+                "industry",
+                "transport"
+            ],
             "geography": ""
 
         }
