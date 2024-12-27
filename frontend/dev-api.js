@@ -19,25 +19,22 @@ app.use(cors());
 
 // API route to serve files dynamically
 app.get('/api/geojson', async (req, res) => {
-    const { year } = req.query;
+    const { resolution, sector, aggregation, year } = req.query;
 
     if (!year) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const filePath = path.join(
-        apiDirectory,
-        `demand_geo,year=${year}.geojson`
-    );
+    const fileName = `demand_geo,resolution=${resolution},sector=${sector},statistics=${aggregation},year=${year}.geojson`
+    const filePath = path.join(apiDirectory, fileName);
 
     try {
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'File not found' });
+            return res.status(404).json({ error: `File not found: ${filePath}` });
         }
 
         // Stream the GeoJSON file
-        const fileName = `demand_geo,year=${year}.geojson`;
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.setHeader('Content-Type', 'application/json');
         const fileStream = fs.createReadStream(filePath);
@@ -50,16 +47,14 @@ app.get('/api/geojson', async (req, res) => {
 
 // API route to serve files dynamically
 app.get('/api/demand_t', async (req, res) => {
-    const { geography, resolution, year } = req.query;
+    const { geography, resolution, sector, aggregation, year } = req.query;
 
     if (!geography || !resolution || !year) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const filePath = path.join(
-        apiDirectory,
-        `demand_t,geography=${geography},resolution=${resolution},year=${year}.csv.gz`
-    );
+    const fileName = `demand_t,geography=${geography},resolution=${resolution},sector=${sector},statistics=${aggregation},year=${year}.csv.gz`
+    const filePath = path.join(apiDirectory, fileName);
 
     try {
         // Check if file exists
@@ -68,7 +63,6 @@ app.get('/api/demand_t', async (req, res) => {
         }
 
         // Stream the file as a Gzipped CSV
-        const fileName = `demand_t,geography=${geography},resolution=${resolution},year=${year}.csv.gz`;
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.setHeader('Content-Encoding', 'gzip');
         res.setHeader('Content-Type', 'text/csv');
@@ -86,19 +80,16 @@ app.get('/api/demand_t', async (req, res) => {
 app.get('/api/parameters', async (req, res) => {
     const { year } = req.query;
 
-    const filePath = path.join(
-        apiDirectory,
-        `parameters.json`
-    );
+    const fileName = 'parameters.json'
+    const filePath = path.join(apiDirectory,fileName);
 
     try {
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: 'File not found' });
+            return res.status(404).json({ error: `File not found: ${filePath}` });
         }
 
         // Stream the GeoJSON file
-        const fileName = `demand_geo,year=${year}.geojson`;
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.setHeader('Content-Type', 'application/json');
         const fileStream = fs.createReadStream(filePath);

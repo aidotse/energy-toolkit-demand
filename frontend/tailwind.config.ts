@@ -39,7 +39,14 @@ export default {
         "secondary": "hsl(214.9091 26.3158% 59.0196%)",
         "accent": "hsl(154.2 49.0196% 60%)",
         "neutral": "hsl(233.3333 27.2727% 12.9412%)",
-        "surface-100": "hsl(180 100% 100%)"
+        "surface-100": "hsl(180 100% 100%)",
+        "chart-transport": "#47B3FF",
+        "chart": {
+          "total": "#47B3FF",
+          "buildings": "#EEB902",
+          "industry": "#07ED7A",
+          "transport": "#47B3FF"
+        }
       },
       "dark": {
         "color-scheme": "dark",
@@ -51,7 +58,14 @@ export default {
         "success": "hsl(144 30.9735% 55.6863%)",
         "warning": "hsl(39.2308 64.3564% 60.3922%)",
         "danger": "hsl(6.3415 55.6561% 43.3333%)",
-        "surface-100": "hsl(0 0% 12.549%)"
+        "surface-100": "hsl(0 0% 12.549%)",
+        "chart-transport": "#47B3FF",
+        "chart": {
+          "total": "#47B3FF",
+          "buildings": "#EEB902",
+          "industry": "#07ED7A",
+          "transport": "#47B3FF"
+        }
       }
     },
   },
