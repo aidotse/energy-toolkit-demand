@@ -18,13 +18,9 @@ export async function load() {
 
         const selectedYear = Math.min(...parameterData.years);
 
-        // Construct API paths
-        const geojsonPath = `${API_BASE_URL}/api/geojson?resolution=${geo_resolution}&sector=${sector}&aggregation=${geo_aggregation}&year=${selectedYear}`;
-        const csvPath = `${API_BASE_URL}/api/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${selectedYear}`;
-
         // Fetch GeoJSON and CSV data
-        const geojsonData = await fetchGeoJSON(geojsonPath);
-        const chartData = await fetchCSV(csvPath);
+        const geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geojson?resolution=${geo_resolution}&sector=${sector}&aggregation=${geo_aggregation}&year=${selectedYear}`);
+        const chartData = await fetchCSV(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${selectedYear}`);
 
         // Return all data
         return {
