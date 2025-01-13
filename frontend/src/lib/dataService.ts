@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const fetchParameters = async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/parameters`);
+    const response = await fetch(`${API_BASE_URL}/parameters`);
     if (!response.ok) {
         throw new Error(`Failed to fetch parameters: ${response.statusText}`);
     }

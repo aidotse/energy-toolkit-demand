@@ -12,25 +12,34 @@
     let { parameterData, selectedYear, geography, resolution, sector, aggregation, geojsonData, chartData, minDemandValue, maxDemandValue } = data;
     let chartType: 'line' | 'area' | 'bar' = 'area'; // Initialize chartType with a default value
 
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
     // Fetch updated data locally when inputs change
-    async function updateData() {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-        const geojsonPath = `${API_BASE_URL}/api/geojson?resolution=1YE&sector=${sector}&aggregation=all&year=${selectedYear}`;
-        const csvPath = `${API_BASE_URL}/api/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${selectedYear}`;
-
+    async function updateChartdata() {
         try {
-            geojsonData = await fetchGeoJSON(geojsonPath);
-            chartData = await fetchCSV(csvPath);
+            chartData = await fetchCSV(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${selectedYear}`);
         } catch (error) {
             console.error('Error updating data:', error.message);
         }
     }
 
-    // Watch for changes in `selectedYear` and trigger data updates
-    $: if (selectedYear && geography && resolution && aggregation) {
-        updateData();
+    async function updateMapdata() {
+        try {
+            geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geojson?resolution=1YE&sector=${sector}&aggregation=all&year=${selectedYear}`);
+        } catch (error) {
+            console.error('Error updating data:', error.message);
+        }
+
     }
+
+    // Watch for changes and trigger data updates
+    $: if (selectedYear) {
+        updateMapdata();
+    }
+    $: if (selectedYear && geography && resolution && aggregation) {
+        updateChartdata();
+    }
+
 </script>
 
 <div class="flex h-full">
