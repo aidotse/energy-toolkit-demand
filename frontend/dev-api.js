@@ -25,7 +25,7 @@ app.get('/api/geojson', async (req, res) => {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const fileName = `demand_geo,resolution=${resolution},sector=${sector},statistics=${aggregation},year=${year}.geojson`
+    const fileName = `demand_geo,resolution=${resolution},sector=${sector},aggregation=${aggregation},year=${year}.geojson`
     const filePath = path.join(apiDirectory, fileName);
 
     try {
@@ -53,7 +53,7 @@ app.get('/api/demand_t', async (req, res) => {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const fileName = `demand_t,geography=${geography},resolution=${resolution},sector=${sector},statistics=${aggregation},year=${year}.csv.gz`
+    const fileName = `demand_t,geography=${geography},resolution=${resolution},sector=${sector},aggregation=${aggregation},year=${year}.csv.gz`
     const filePath = path.join(apiDirectory, fileName);
 
     try {
