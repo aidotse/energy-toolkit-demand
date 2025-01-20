@@ -9,10 +9,8 @@
     export let data;
 
     // Initialize variables with preloaded data
-    let { parameterData, selectedYear, geography, resolution, sector, aggregation, geojsonData, chartData, minDemandValue, maxDemandValue } = data;
+    let { API_BASE_URL, parameterData, selectedYear, geography, resolution, sector, aggregation, geojsonData, chartData, minDemandValue, maxDemandValue } = data;
     let chartType: 'line' | 'area' | 'bar' = 'area'; // Initialize chartType with a default value
-
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     // Fetch updated data locally when inputs change
     async function updateChartdata() {
