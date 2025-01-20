@@ -24,6 +24,7 @@ export async function load() {
 
         // Return all data
         return {
+            API_BASE_URL,
             parameterData, // Include the parameters for potential future use
             selectedYear,
             geography,
@@ -39,6 +40,7 @@ export async function load() {
         console.error('Error loading data:', error.message);
         // Return default fallback values in case of error
         return {
+            API_BASE_URL,
             parameterData: null,
             selectedYear: 0,
             geography: null,
