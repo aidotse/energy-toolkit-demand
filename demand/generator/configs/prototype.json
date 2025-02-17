@@ -39,11 +39,9 @@
         "properties": {
             "aggregations": [
                 {"resolution": "1h", "aggregation": ["none"]},
-                {"resolution": "3h", "aggregation": ["mean", "sum", "min", "max"]},
-                {"resolution": "1d", "aggregation": ["mean", "sum", "min", "max"]},
-                {"resolution": "1W", "aggregation": ["mean", "sum", "min", "max"]},
-                {"resolution": "1ME", "aggregation": ["mean", "sum", "min", "max"]},
-                {"resolution": "1YE", "aggregation": ["sum"]}
+                {"resolution": "1d", "aggregation": ["mean", "sum", "max"]},
+                {"resolution": "1ME", "aggregation": ["mean", "sum", "max"]},
+                {"resolution": "1YE", "aggregation": ["mean", "sum", "max"]}
 
             ],
             "sectors": [

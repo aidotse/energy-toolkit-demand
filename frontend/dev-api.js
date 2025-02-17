@@ -18,14 +18,14 @@ const apiDirectory = path.join(__dirname, '../api');
 app.use(cors());
 
 // API route to serve files dynamically
-app.get('/api/geojson', async (req, res) => {
-    const { resolution, sector, aggregation, year } = req.query;
+app.get('/api/geo', async (req, res) => {
+    const { division } = req.query;
 
-    if (!year) {
+    if (!division) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const fileName = `demand_geo,resolution=${resolution},sector=${sector},aggregation=${aggregation},year=${year}.geojson`
+    const fileName = `geo,division=${division}.geojson`
     const filePath = path.join(apiDirectory, fileName);
 
     try {
@@ -75,6 +75,35 @@ app.get('/api/demand_t', async (req, res) => {
     }
 });
 
+// API route to serve files dynamically
+app.get('/api/demand', async (req, res) => {
+    const { geography, sector, aggregation, year } = req.query;
+
+    if (!geography || !year) {
+        return res.status(400).json({ error: 'Missing required query parameters' });
+    }
+
+    const fileName = `demand,geography=${geography},resolution=1YE,sector=${sector},aggregation=${aggregation},year=${year}.csv.gz`
+    const filePath = path.join(apiDirectory, fileName);
+
+    try {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+
+        // Stream the file as a Gzipped CSV
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Content-Type', 'text/csv');
+
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (err) {
+        console.error('Error in /api/demand_t route:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 // API route to serve files dynamically
 app.get('/api/parameters', async (req, res) => {
