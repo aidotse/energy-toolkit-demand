@@ -1,17 +1,20 @@
 {
-    "config-name": "prototype",
+    "config-name": "municipality-prototype",
     "access": "public",
     "start-year": 2025,
     "end-year": 2045,
     "resolution": "1h",
-    "geographies": "geographies/georef-sweden-kommun@public.geojson",
+    "geographies": "geographies/sweden-municipalities.geojson",
+    "geography-type": "municipality",
     "loader": {
         "name": "base_load_curve",
         "properties": {
             "access": "public",
             "base-year": 2025,
             "geo-type": "national",
-            "normalized": false
+            "normalized": false,
+            "resolution": "1h",
+            "aggregation": "mean"
         }
     },
     "transformers": [
@@ -19,6 +22,8 @@
             "name": "municipality_energy_split",
             "order": 1,
             "access": "public",
+            "type": "factor-split",
+            "randomness": true,
             "inputs": [
                 {
                     "name": "municipality_energy_split",

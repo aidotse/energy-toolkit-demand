@@ -63,7 +63,7 @@
 			top: anchor.offsetTop - 35,
 			behavior: 'smooth'
 		})
-	}
+	}    
 
 </script>
 
@@ -186,10 +186,12 @@
             <Legend {minDemandValue} {maxDemandValue} />
         </div>
         <Mapbox 
-            geojsonData={geojsonData}
-            yearlyData={yearlyData}
-            minDemandValue={minDemandValue} 
-            maxDemandValue={maxDemandValue}
+            {geojsonData}
+            {year}
+            bind:geography
+            {yearlyData}
+            {minDemandValue} 
+            {maxDemandValue}
         />
     </div>
 </div>
