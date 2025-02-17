@@ -8,8 +8,8 @@
     const maxYear:number = Math.max(...parameterData.years);
 
     const options = parameterData.geographies.map((geo) => ({
-        label: geo.name, // The text displayed in the dropdown
-        value: geo.id,   // The value associated with the option
+        label: geo.geo_name, // The text displayed in the dropdown
+        value: geo.geo_id,   // The value associated with the option
     })).sort((a, b) => { // Sort alphabetically by label but put 'Sverige' first
     return a.label === "Sverige" ? -1 
          : b.label === "Sverige" ? 1 

@@ -101,9 +101,9 @@ export const fetchAllYears = async (url: string): Promise<any> => {
     const parsedData = Papa.parse(decompressedText, { header: true }).data;
 
     return parsedData
-        .filter((row: Record<string, string>) => row['year'] && row['total'] && row['buildings'] && row['industry'] && row['transport'])
+        .filter((row: Record<string, string>) => row['timestamp'] && row['total'] && row['buildings'] && row['industry'] && row['transport'])
         .map((row: Record<string, string>) => ({
-            year: parseInt(row['year']),
+            timestamp: parseInt(row['timestamp']),
             total: parseFloat(row['total']),
             buildings: parseFloat(row['buildings']),
             industry: parseFloat(row['industry']),

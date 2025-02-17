@@ -1,0 +1,64 @@
+{
+    "config-name": "county-prototype",
+    "access": "public",
+    "start-year": 2025,
+    "end-year": 2045,
+    "resolution": "1h",
+    "geographies": "geographies/sweden-counties.geojson",
+    "geography-type": "county",
+    "loader": {
+        "name": "base_load_curve",
+        "properties": {
+            "access": "public",
+            "base-year": 2025,
+            "geo-type": "national",
+            "normalized": false,
+            "resolution": "1h",
+            "aggregation": "mean"
+        }
+    },
+    "transformers": [
+        {
+            "name": "county_energy_split",
+            "order": 1,
+            "access": "public",
+            "type": "factor-split",
+            "randomness": true,
+            "inputs": [
+                {
+                    "name": "county_energy_split",
+                    "path": "county_energy_split/county_energy_split.csv",
+                    "columns": ["geography", "factor"],
+                    "index": "geography",
+                    "new-column": "factor"
+                }
+            ]
+        },
+        {
+            "name": "growth_over_time",
+            "order": 2,
+            "access": "public",
+            "inputs": []
+        }
+    ],
+    "output": {
+        "properties": {
+            "aggregations": [
+                {"resolution": "1h", "aggregation": ["none"]},
+                {"resolution": "1d", "aggregation": ["mean", "sum", "max"]},
+                {"resolution": "1ME", "aggregation": ["mean", "sum", "max"]},
+                {"resolution": "1YE", "aggregation": ["mean", "sum", "max"]}
+
+            ],
+            "sectors": [
+                "total",
+                "buildings",
+                "industry",
+                "transport"
+            ],
+            "geography": ""
+
+        }
+    }
+
+}

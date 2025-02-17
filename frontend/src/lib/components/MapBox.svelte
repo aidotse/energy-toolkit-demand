@@ -6,11 +6,7 @@
     import Popup from '$lib/components/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
 
-    export let geojsonData: any;
-    export let yearlyData: any;
-    export let minDemandValue: number;
-    export let maxDemandValue: number;
-    export let selectedGeography: string | null;
+    let { geojsonData, yearlyData, minDemandValue, maxDemandValue, year, geography = $bindable() } = $props();
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -21,27 +17,29 @@
             if (stickyPopup) {
                 // Check if click was outside the popup
                 const features = map.queryRenderedFeatures(e.point, {
-                    layers: ['municipality-fill'],
+                    layers: ['county-fill'],
                 });
 
                 if (!features.length) {
                     closePopup(); // Close the popup if no features were clicked
+                    geography = '00';
                 }
             }
         };
 
-    // Merge yearlyData into geojsonData by matching kom_code
-    const mergeData = (geojson, data) => {
-        const dataMap = new Map(data.map(row => [row.geography, row]));
-        
+    // Merge yearlyData into geojsonData by matching geo_id
+    const mergeData = (geojson, data, yr) => {
+        const dataMap = new Map(data.map(row => [row.geography, row]));        
         const updatedFeatures = geojson.features.map(feature => {
-            const komCode = feature.properties.kom_code;
-            if (dataMap.has(komCode)) {
+            const geoID = feature.properties.geo_id;
+            if (dataMap.has(geoID)) {
                 feature.properties = {
                     ...feature.properties,
-                    ...dataMap.get(komCode),
+                    ...dataMap.get(geoID),
+                    year: yr,
                 };
             }
+
             return feature;
         });
 
@@ -51,8 +49,8 @@
 
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
-        const komName = properties.kom_name;
-        const komCode = properties.kom_code;
+        const geoName = properties.geo_name;
+        const geoID = properties.geo_id;
         const year = properties.year;
         const demand = formatNumber(properties.total, 'M', 'Wh');
 
@@ -60,8 +58,8 @@
         mount(Popup, {
             target: popupDiv,
             props: {
-                komName,
-                komCode,
+                geoName,
+                geoID,
                 year,
                 demand,
                 sticky,
@@ -105,18 +103,18 @@
         });
 
         map.on('load', () => {
-            if (geojsonData && yearlyData) {
-                const mergedData = mergeData(geojsonData, yearlyData);
+            if (geojsonData && yearlyData && year) {
+                const mergedData = mergeData(geojsonData, yearlyData, year);
 
-                map.addSource('municipalities', {
+                map.addSource('counties', {
                     type: 'geojson',
                     data: mergedData,
                 });
 
                 map.addLayer({
-                    id: 'municipality-fill',
+                    id: 'county-fill',
                     type: 'fill',
-                    source: 'municipalities',
+                    source: 'counties',
                     paint: {
                         'fill-color': [
                             'interpolate',
@@ -133,14 +131,14 @@
                 });
 
                 map.addLayer({
-                    id: 'municipality-border',
+                    id: 'county-border',
                     type: 'line',
-                    source: 'municipalities',
+                    source: 'counties',
                     paint: { 'line-color': '#ffffff', 'line-width': 0.5, 'line-opacity': 1 },
                 });
 
                 // Hover behavior
-                map.on('mouseenter', 'municipality-fill', (e) => {
+                map.on('mouseenter', 'county-fill', (e) => {
                     if (!stickyPopup) {
                         const properties = e.features[0].properties;
                         openPopup(e.lngLat, properties);
@@ -148,14 +146,14 @@
                     map.getCanvas().style.cursor = 'pointer';
                 });
 
-                map.on('mousemove', 'municipality-fill', (e) => {
+                map.on('mousemove', 'county-fill', (e) => {
                     if (!stickyPopup) {
                         const properties = e.features[0].properties;
                         openPopup(e.lngLat, properties);
                     }
                 });
 
-                map.on('mouseleave', 'municipality-fill', () => {
+                map.on('mouseleave', 'county-fill', () => {
                     if (!stickyPopup) {
                         closePopup();
                     }
@@ -163,8 +161,10 @@
                 });
 
                 // Sticky popup on click
-                map.on('click', 'municipality-fill', (e) => {
+                map.on('click', 'county-fill', (e) => {
                     const properties = e.features[0].properties;
+                    // Update geography to properties.geo_id unless properties.geo_id is null in which case it should be '00'
+                    geography = properties.geo_id;
                     openPopup(e.lngLat, properties, true);
                 });
 

@@ -6,7 +6,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const geography = '00';
     const resolution = '1d';
-    const division = 'municipality';
+    const division = 'county';
     const sector = 'all';
     const aggregation = 'sum';
     const numBins = 50;

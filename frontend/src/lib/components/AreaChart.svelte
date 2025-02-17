@@ -24,9 +24,7 @@
         .then(data => { allYearsData = data; })
         .catch(error => console.error('Error fetching all years data:', error.message));
     });
-
-
-
+    
 </script>
 
 <div class="h-full">
@@ -65,7 +63,7 @@
     </div>
     <AreaChart
         data={allYearsData}
-        x="year"
+        x="timestamp"
         y="total"
         yDomain={[Math.min(...allYearsData.map(d => d.total)), Math.max(...allYearsData.map(d => d.total))]}
         props={{
