@@ -7,6 +7,7 @@
     import { formatNumber } from '$lib/utilities';
 
     export let geojsonData: any;
+    export let yearlyData: any;
     export let minDemandValue: number;
     export let maxDemandValue: number;
     export let selectedGeography: string | null;
@@ -29,12 +30,31 @@
             }
         };
 
+    // Merge yearlyData into geojsonData by matching kom_code
+    const mergeData = (geojson, data) => {
+        const dataMap = new Map(data.map(row => [row.geography, row]));
+        
+        const updatedFeatures = geojson.features.map(feature => {
+            const komCode = feature.properties.kom_code;
+            if (dataMap.has(komCode)) {
+                feature.properties = {
+                    ...feature.properties,
+                    ...dataMap.get(komCode),
+                };
+            }
+            return feature;
+        });
+
+        return { ...geojson, features: updatedFeatures };
+
+    }
+
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
         const komName = properties.kom_name;
         const komCode = properties.kom_code;
         const year = properties.year;
-        const demand = formatNumber(properties.sum_total, 'M', 'Wh');
+        const demand = formatNumber(properties.total, 'M', 'Wh');
 
         const popupDiv = document.createElement('div');
         mount(Popup, {
@@ -85,10 +105,12 @@
         });
 
         map.on('load', () => {
-            if (geojsonData) {
+            if (geojsonData && yearlyData) {
+                const mergedData = mergeData(geojsonData, yearlyData);
+
                 map.addSource('municipalities', {
                     type: 'geojson',
-                    data: geojsonData,
+                    data: mergedData,
                 });
 
                 map.addLayer({
@@ -99,7 +121,7 @@
                         'fill-color': [
                             'interpolate',
                             ['linear'],
-                            ['get', 'sum_total'],
+                            ['get', 'total'],
                             minDemandValue, '#0000FF',
                             minDemandValue + (maxDemandValue - minDemandValue) * 0.025, '#00FF7F',
                             minDemandValue + (maxDemandValue - minDemandValue) * 0.25, '#FFFF00',
@@ -152,33 +174,11 @@
         });
     });
 
-    $: if (selectedGeography && map && geojsonData) {
-        const feature = geojsonData.features.find(f => f.properties.kom_code === selectedGeography);
-        if (feature) {
-            const coordinates = feature.geometry.type === 'Point' 
-                ? feature.geometry.coordinates 
-                : feature.geometry.type === 'Polygon'
-                ? feature.geometry.coordinates[0][0] // Use the first vertex of the polygon
-                : null;
-
-            if (coordinates) {
-                const popupContent = createPopupContent(feature.properties);
-                popup.setLngLat(coordinates).setDOMContent(popupContent).addTo(map);
-            }
-        }
-    }
-
-    // Update data dynamically
-    $: if (geojsonData && map) {
-        if (map.getSource('municipalities')) {
-            (map.getSource('municipalities') as mapboxgl.GeoJSONSource).setData(geojsonData);
-        }
-    }
-
     onDestroy(() => {
         map?.off('click', handleMapClick); // Detach the event
         map?.remove();
     });
+    
 </script>
 
 <div bind:this={mapContainer} class="size-full"></div>

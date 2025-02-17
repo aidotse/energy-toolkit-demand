@@ -3,11 +3,8 @@
     import { ButtonGroup, Button } from 'svelte-ux';
     import { ChartLine, ChartArea, ChartColumn } from 'lucide-svelte';
 
+    let { resolution, aggregation, timeseriesData, chartType = $bindable()} = $props();
 
-    export let resolution: string;
-    export let aggregation: string;
-    export let chartData: { name: string; data: { x: string; y: number }[] }[];
-    export let chartType: 'line' | 'area' | 'bar' = 'area'; // Default chart type
 </script>
 
 <div class="h-[300px] ml-8 mb-14 mr-2 mt-1">
@@ -44,46 +41,44 @@
             </Button>
         </ButtonGroup>
     </div>
-
-    {#if chartData.length > 0}
-        {#if chartType === 'line'}
-            <LineChart
-                data={chartData}
-                series={[
-                    { name: "Total", key: "total", color: "#47B3FF" },
-                    { name: "Buildings", key: "buildings", color: "#EEB902" },
-                    { name: "Industry", key: "industry", color: "#07ED7A"},
-                    { name: "Transport", key: "transport", color: "#47B3FF"}
-                ]}
-                x="timestamp"
-                y={["total", "buildings", "industry", "transport"]}
-            />
-        {:else if chartType === 'area'}
-            <AreaChart
-                data={chartData}
-                series={[
-                    { name: "Buildings", key: "buildings", color: "#EEB902" },
-                    { name: "Industry", key: "industry", color: "#07ED7A" },
-                    { name: "Transport", key: "transport", color: "#47B3FF" }
-                ]}
-                x="timestamp"
-                seriesLayout="stack"
-            />
-        {:else if chartType === 'bar'}
-            <BarChart
-                data={chartData}
-                series={[
-                    { name: "Buildings", key: "buildings", color: "#EEB902" },
-                    { name: "Industry", key: "industry", color: "#07ED7A" },
-                    { name: "Transport", key: "transport", color: "#47B3FF" }
-                ]}
-                x="timestamp"
-                seriesLayout="stack"
-                radius={0}
-            />
-        {/if}
+    {#if chartType === 'line'}
+        <LineChart
+            data={timeseriesData}
+            series={[
+                { name: "Total", key: "total", color: "#47B3FF" },
+                { name: "Buildings", key: "buildings", color: "#EEB902" },
+                { name: "Industry", key: "industry", color: "#07ED7A"},
+                { name: "Transport", key: "transport", color: "#47B3FF"}
+            ]}
+            x="timestamp"
+            y={["total", "buildings", "industry", "transport"]}
+        />
+    {:else if chartType === 'area'}
+        <AreaChart
+            data={timeseriesData}
+            series={[
+                { name: "Buildings", key: "buildings", color: "#EEB902" },
+                { name: "Industry", key: "industry", color: "#07ED7A" },
+                { name: "Transport", key: "transport", color: "#47B3FF" }
+            ]}
+            x="timestamp"
+            seriesLayout="stack"
+        />
+    {:else if chartType === 'bar'}
+        <BarChart
+            data={timeseriesData}
+            series={[
+                { name: "Buildings", key: "buildings", color: "#EEB902" },
+                { name: "Industry", key: "industry", color: "#07ED7A" },
+                { name: "Transport", key: "transport", color: "#47B3FF" }
+            ]}
+            x="timestamp"
+            seriesLayout="stack"
+            props={{
+                xAxis: { tweened: true },
+                yAxis: { format: "metric", tweened: true },
+                bars: {tweened: true, radius: 2, stroke: 'none' },
+                }}    
+        />
     {/if}
 </div>
-
-<style>
-</style>
