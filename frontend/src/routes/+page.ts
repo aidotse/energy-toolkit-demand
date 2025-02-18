@@ -1,4 +1,4 @@
-import { fetchParameters, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateSectorData, calculateHistogram } from '$lib/dataService';
+import { fetchParameters, fetchGlobals, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateSectorData, calculateHistogram } from '$lib/dataService';
 import type { PageLoad } from './$types';
 
 // Function to create histogram bins
@@ -12,9 +12,14 @@ export const load: PageLoad = async ({ fetch, params }) => {
     const numBins = 50;
 
     try {
-        // Fetch parameter data and determine the initial year
+        // Fetch parameter data, globals, and determine the initial year
         const parameterData = await fetchParameters();
         if (!parameterData || !parameterData.years || parameterData.years.length === 0) {
+            throw new Error('Invalid parameter data or years array is empty');
+        }
+
+        const globalsData = await fetchGlobals();
+        if (!globalsData) {
             throw new Error('Invalid parameter data or years array is empty');
         }
 
@@ -30,7 +35,8 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
         // Return all data
         return {
-            parameterData, // Include the parameters for potential future use
+            parameterData,
+            globalsData,
             year,
             geography,
             resolution,
@@ -41,15 +47,14 @@ export const load: PageLoad = async ({ fetch, params }) => {
             sectorData,
             timeseriesData,
             histogramData,
-            allYearsData,
-            minDemandValue: 35555.02,
-            maxDemandValue: 15942725.69,
+            allYearsData
         };
     } catch (error) {
         console.error('Error loading data:', error.message);
         // Return default fallback values in case of error
         return {
             parameterData: null,
+            globalsData: null,
             year: 0,
             geography: null,
             resolution: null,
@@ -60,9 +65,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             sectorData: null,
             timeseriesData: null,
             histogramData: null,
-            allYearsData: null,
-            minDemandValue: 0,
-            maxDemandValue: 0,
+            allYearsData: null
         };
     }
 }
