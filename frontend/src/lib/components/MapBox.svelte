@@ -6,7 +6,7 @@
     import Popup from '$lib/components/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
 
-    let { geojsonData, yearlyData, minDemandValue, maxDemandValue, year, geography = $bindable() } = $props();
+    let { geojsonData, yearlyData, year, geography = $bindable(), lower_bound, upper_bound } = $props();
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -120,11 +120,11 @@
                             'interpolate',
                             ['linear'],
                             ['get', 'total'],
-                            minDemandValue, '#0000FF',
-                            minDemandValue + (maxDemandValue - minDemandValue) * 0.025, '#00FF7F',
-                            minDemandValue + (maxDemandValue - minDemandValue) * 0.25, '#FFFF00',
-                            minDemandValue + (maxDemandValue - minDemandValue) * 0.75, '#FFA500',
-                            maxDemandValue, '#df4217',
+                            lower_bound, '#0000FF',
+                            lower_bound + (upper_bound - lower_bound) * 0.025, '#00FF7F',
+                            lower_bound + (upper_bound - lower_bound) * 0.25, '#FFFF00',
+                            lower_bound + (upper_bound - lower_bound) * 0.75, '#FFA500',
+                            upper_bound, '#df4217',
                         ],
                         'fill-opacity': 0.7,
                     },

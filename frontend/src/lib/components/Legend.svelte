@@ -1,22 +1,21 @@
 <script lang="ts">
     import { formatNumber } from '$lib/utilities';
 
-    export let minDemandValue: number;
-    export let maxDemandValue: number;
+    let { lower_bound, upper_bound } = $props();
 
     // Specify demand levels and corresponding colors
     let demandLevels = [
-        { value: minDemandValue, color: '#0000FF' }, // Blue
-        { value: minDemandValue + (maxDemandValue - minDemandValue) * 0.025, color: '#00FF7F' }, // Green
-        { value: minDemandValue + (maxDemandValue - minDemandValue) * 0.25, color: '#FFFF00' }, // Yellow
-        { value: minDemandValue + (maxDemandValue - minDemandValue) * 0.75, color: '#FFA500' }, // Orange
-        { value: maxDemandValue, color: '#df4217' }, // Red
+        { value: lower_bound, color: '#0000FF' }, // Blue
+        { value: lower_bound + (upper_bound - lower_bound) * 0.025, color: '#00FF7F' }, // Green
+        { value: lower_bound + (upper_bound - lower_bound) * 0.25, color: '#FFFF00' }, // Yellow
+        { value: lower_bound + (upper_bound - lower_bound) * 0.75, color: '#FFA500' }, // Orange
+        { value: upper_bound, color: '#df4217' }, // Red
     ];
 </script>
 
-<div class="flex flex-col rounded shadow p-4 bg-surface-100 text-surface-content">
+<div class="flex flex-col rounded shadow px-3 pt-3 pb-2 bg-surface-100 text-surface-content">
     <!-- Gradient Bar -->
-    <div class="w-full h-5 rounded mb-4 legend-gradient"></div>
+    <div class="w-full h-5 rounded mb-2 legend-gradient"></div>
 
     <!-- Labels -->
     <div class="flex flex-row justify-between w-100">

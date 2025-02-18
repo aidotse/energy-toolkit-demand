@@ -14,7 +14,7 @@
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     let { data }: PageProps = $props();
-    const { parameterData, geojsonData, minDemandValue, maxDemandValue }  = data;
+    const { parameterData, globalsData, geojsonData }  = data;
 	let { year, geography, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
     let chartType: 'line' | 'area' | 'bar' = $state('area');
     let toggleControls = $state(true);
@@ -183,15 +183,15 @@
     <!-- Right Column -->
     <div class="absolute top-16 left-[60%] 2xl:left-[60%] w-[40%] 2xl:w-[40%] h-[calc(100vh-4rem)] overflow-y-hidden">
         <div class="absolute z-10 bottom-10 right-4 legend-overlay">
-            <Legend {minDemandValue} {maxDemandValue} />
+            <Legend lower_bound={globalsData['lower_bound']} upper_bound={globalsData['upper_bound']} />
         </div>
         <Mapbox 
             {geojsonData}
             {year}
             bind:geography
             {yearlyData}
-            {minDemandValue} 
-            {maxDemandValue}
+            lower_bound={globalsData['lower_bound']}
+            upper_bound={globalsData['upper_bound']} 
         />
     </div>
 </div>

@@ -10,6 +10,14 @@ export const fetchParameters = async (): Promise<any> => {
     return response.json();
 };
 
+export const fetchGlobals = async (): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/globals`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch globals: ${response.statusText}`);
+    }
+    return response.json();
+};
+
 export const fetchGeoJSON = async (url: string): Promise<any> => {
     const response = await fetch(url);
     if (!response.ok) {

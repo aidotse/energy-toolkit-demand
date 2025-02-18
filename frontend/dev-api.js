@@ -128,6 +128,29 @@ app.get('/api/parameters', async (req, res) => {
     }
 });
 
+// API route to serve files dynamically
+app.get('/api/globals', async (req, res) => {
+    const { year } = req.query;
+
+    const fileName = 'globals.json'
+    const filePath = path.join(apiDirectory,fileName);
+
+    try {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: `File not found: ${filePath}` });
+        }
+
+        // Stream the GeoJSON file
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Root route to list files in /api for testing purposes (optional)
 app.get('/api', async (req, res) => {
     try {
