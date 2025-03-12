@@ -3,7 +3,7 @@
     import { AreaChart } from 'layerchart';
 
     export let geoName: string;
-    export let geoID: string;
+    // export let geoID: string;
     export let year: number;
     export let demand: string;
     export let sticky: boolean = false;

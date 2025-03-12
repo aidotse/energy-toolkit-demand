@@ -47,13 +47,13 @@ app.get('/api/geo', async (req, res) => {
 
 // API route to serve files dynamically
 app.get('/api/demand_t', async (req, res) => {
-    const { geography, resolution, sector, aggregation, year } = req.query;
+    const { geography, resolution, sector, aggregation, year, growth } = req.query;
 
-    if (!geography || !resolution || !year) {
+    if (!geography || !resolution || !year || !growth) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const fileName = `demand_t,geography=${geography},resolution=${resolution},sector=${sector},aggregation=${aggregation},year=${year}.csv.gz`
+    const fileName = `demand_t,geography=${geography},resolution=${resolution},sector=${sector},aggregation=${aggregation},year=${year},growth=${growth}.csv.gz`
     const filePath = path.join(apiDirectory, fileName);
 
     try {
@@ -77,13 +77,13 @@ app.get('/api/demand_t', async (req, res) => {
 
 // API route to serve files dynamically
 app.get('/api/demand', async (req, res) => {
-    const { geography, sector, aggregation, year } = req.query;
+    const { geography, sector, aggregation, year, growth } = req.query;
 
-    if (!geography || !year) {
+    if (!geography || !year || !growth) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
-    const fileName = `demand,geography=${geography},resolution=1YE,sector=${sector},aggregation=${aggregation},year=${year}.csv.gz`
+    const fileName = `demand,geography=${geography},resolution=1YE,sector=${sector},aggregation=${aggregation},year=${year},growth=${growth}.csv.gz`
     const filePath = path.join(apiDirectory, fileName);
 
     try {
@@ -107,8 +107,6 @@ app.get('/api/demand', async (req, res) => {
 
 // API route to serve files dynamically
 app.get('/api/parameters', async (req, res) => {
-    const { year } = req.query;
-
     const fileName = 'parameters.json'
     const filePath = path.join(apiDirectory,fileName);
 
@@ -130,8 +128,6 @@ app.get('/api/parameters', async (req, res) => {
 
 // API route to serve files dynamically
 app.get('/api/globals', async (req, res) => {
-    const { year } = req.query;
-
     const fileName = 'globals.json'
     const filePath = path.join(apiDirectory,fileName);
 

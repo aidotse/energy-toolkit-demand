@@ -7,7 +7,7 @@
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-    let { geography, aggregationInit, allYearsData } = $props();
+    let { geography, aggregationInit, allYearsData, growth } = $props();
 
     let aggregation = $state(aggregationInit);
 
@@ -20,7 +20,7 @@
     );
 
     $effect(async () => {
-        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all`)
+        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all&growth=${growth}`)
         .then(data => { allYearsData = data; })
         .catch(error => console.error('Error fetching all years data:', error.message));
     });

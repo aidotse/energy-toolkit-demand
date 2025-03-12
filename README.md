@@ -9,7 +9,7 @@ The framework should be:
 + Portable: it should be easy to set up, modify, and deploy in various environments
 + Secure: we assure security through simplicity, with file-based data and models
 
-# Uses cases
+## Uses cases
 
 _This is an initial desciption that will be refined._
 
@@ -19,11 +19,16 @@ _This is an initial desciption that will be refined._
 
 The frontend is furthermore built with future development in mind. It is relatively simple to adapt the frontend for additional analytics or different data.
 
-# Modelling philosophy
+## Modelling philosophy
 
 This project takes the view that the best foundation for modelling future demand is the current demand. The (future) demand projections in this project are therefore transformations of historical (actual) electricity demand. The transformations are modular and can be freely combined to produce scenarios.
 
-# Structure of the repo
+
+### Work left to do
+
+The intent has been to create a framework that will allow for any method of modelling future demand. **This goal has not been fully realized.** More work is needed to generalize the framework in future versions.
+
+## Structure of the repo
 
 This repo is divided into three parts.
 ├── api
