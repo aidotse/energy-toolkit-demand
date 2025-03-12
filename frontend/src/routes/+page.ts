@@ -5,6 +5,7 @@ import type { PageLoad } from './$types';
 export const load: PageLoad = async ({ fetch, params }) => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const geography = '00';
+    const growth = 2;
     const resolution = '1d';
     const division = 'county';
     const sector = 'all';
@@ -27,11 +28,11 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
         // Fetch GeoJSON and CSV data
         const geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geo?division=${division}`);
-        const yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}`);
-        const timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}`);
+        const yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${growth}`);
+        const timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${growth}`);
         const sectorData = calculateSectorData(yearlyData, geography);
         const histogramData = calculateHistogram(timeseriesData, 'total', numBins)
-        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all`);
+        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all&growth=${growth}`);
 
         // Return all data
         return {
@@ -39,6 +40,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             globalsData,
             year,
             geography,
+            growth,
             resolution,
             sector,
             aggregation,
@@ -57,6 +59,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             globalsData: null,
             year: 0,
             geography: null,
+            growth: null,
             resolution: null,
             sector: null,
             aggregation: null,

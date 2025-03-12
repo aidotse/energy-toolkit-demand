@@ -15,13 +15,13 @@
 
     let { data }: PageProps = $props();
     const { parameterData, globalsData, geojsonData }  = data;
-	let { year, geography, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
+	let { year, geography, growth, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
     let chartType: 'line' | 'area' | 'bar' = $state('area');
     let toggleControls = $state(true);
 
     $effect(async () => {
         try {
-            timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}`);
+            timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${growth}`);
         } catch (error) {
             console.error('Error updating data:', error.message);
         }
@@ -29,14 +29,14 @@
 
     $effect(async () => {
         try {
-            yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}`);
+            yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${growth}`);
         } catch (error) {
             console.error('Error updating data:', error.message);
         }
     });
 
     $effect(async () => {
-        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all`)
+        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all&growth=${growth}`)
         .then(data => { allYearsData = data; })
         .catch(error => console.error('Error fetching all years data:', error.message));
     });
@@ -72,6 +72,7 @@
         {parameterData}
         bind:toggleControls
         bind:year
+        bind:growth
         bind:chartType
         bind:geography
         bind:resolution
@@ -95,7 +96,7 @@
                         </p>
                     </div>
                     <div class="w-full pl-16 aspect-square">
-                        <AreaChart {geography} aggregationInit={aggregation} {allYearsData} />
+                        <AreaChart {geography} {growth} aggregationInit={aggregation} {allYearsData} />
                     </div>
                 </div>    
             </div>
@@ -121,6 +122,19 @@
                         <SectorArc {sectorData} />
                     </div>
                 </div>
+                <h3 class="text-2xl font-bold pt-20 pb-4">Hushållen och övrig bebyggelse</h3>
+                <p>
+                    Hushållen kommer sannolikt att se en måttlig ökning av elanvändningen på grund av elektrifiering av uppvärmning, fler eldrivna apparater och en ökad efterfrågan på bekvämlighetstjänster. 
+                </p>
+                <h3 class="text-2xl font-bold pt-20 pb-4">Industribehovet</h3>
+                <p>
+                    Industrin förväntas stå för en av de största ökningarna i elbehov, drivet av elektrifiering av processer som idag använder fossila bränslen, exempelvis inom stål- och kemikalieproduktion. 
+                </p>
+                <h3 class="text-2xl font-bold pt-20 pb-4">Den elektrifierade transporten</h3>
+                <p>
+                    Transportsektorn kommer att förändras mest dramatiskt, då elektrifieringen av fordon och lastbilar snabbt ökar och ersätter fossila bränslen. 
+                    Utbyggnaden av laddinfrastruktur och vätgasproduktion för tunga transporter kommer att bidra till ett betydligt högre elbehov, särskilt i takt med att fler länder fasar ut bensin- och dieseldrivna fordon.
+                </p>
             </div>
             <div class="flex mb-8 justify-center">
                 <GoTo anchor="#section3" {handleAnchorClick} />

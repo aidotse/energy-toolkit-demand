@@ -11,13 +11,13 @@
 
     let { data }: PageProps = $props();
     const { API_BASE_URL, parameterData, geojsonData, minDemandValue, maxDemandValue }  = data;
-	let { year, geography, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
+	let { year, geography, growth, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
     let chartType: 'line' | 'area' | 'bar' = $state('area');
     let toggleControls = $state(true);
 
     $effect(async () => {
         try {
-            timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}`);
+            timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${growth}`);
         } catch (error) {
             console.error('Error updating data:', error.message);
         }
@@ -25,14 +25,14 @@
 
     $effect(async () => {
         try {
-            yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}`);
+            yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${growth}`);
         } catch (error) {
             console.error('Error updating data:', error.message);
         }
     });
 
     $effect(async () => {
-        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=all`)
+        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=all&growth=${growth}`)
         .then(data => { allYearsData = data; })
         .catch(error => console.error('Error fetching all years data:', error.message));
     });
@@ -63,12 +63,10 @@
     </div>
     <div class="grid grid-cols-2 gap-16 my-8">
         <div class="min-w-[300px] aspect-square">
-            <AreaChart {allYearsData} />
+            <AreaChart {geography} {growth} aggregationInit={aggregation} {allYearsData} />
         </div>
         <SectorArc {sectorData} />
         <TimeLine {resolution} {aggregation} {timeseriesData} bind:chartType />
         <Histogram {histogramData} />
-
-
     </div>
 </div>

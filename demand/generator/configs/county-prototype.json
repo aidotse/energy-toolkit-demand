@@ -1,8 +1,8 @@
 {
     "config-name": "county-prototype",
     "access": "public",
-    "start-year": 2025,
-    "end-year": 2045,
+    "start-time": "2025-01-01 00:00:00",
+    "end-time": "2045-12-31 23:00:00",
     "resolution": "1h",
     "geographies": "geographies/sweden-counties.geojson",
     "geography-type": "county",
@@ -29,8 +29,7 @@
                     "name": "county_energy_split",
                     "path": "county_energy_split/county_energy_split.csv",
                     "columns": ["geography", "factor"],
-                    "index": "geography",
-                    "new-column": "factor"
+                    "index": "geography"
                 }
             ]
         },
@@ -38,8 +37,19 @@
             "name": "growth_over_time",
             "order": 2,
             "access": "public",
+            "type": "dynamic",
+            "scenarios": [
+                {"index": 1, "label": "low", "name": "growth", "type": "exp-growth-to-target", "target": 2, "random": true, "randomness": 0.1},
+                {"index": 2, "label": "mid", "name": "growth", "type": "exp-growth-to-target", "target": 2.33, "random": true, "randomness": 0.1},
+                {"index": 3, "label": "high", "name": "growth", "type": "exp-growth-to-target", "target": 2.4, "random": true, "randomness": 0.1}
+            ]
+        },
+        {
+            "name": "sector_split",
+            "order": 3,
+            "access": "public",
             "inputs": []
-        }
+        }        
     ],
     "output": {
         "properties": {
