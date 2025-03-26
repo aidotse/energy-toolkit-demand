@@ -158,6 +158,8 @@ export const calculateHistogram = (data, field, numBins) => {
         const dataMap = new Map(data.map(row => [row.geography, row]));        
         const updatedFeatures = geojson.features.map(feature => {
             const geoID = feature.properties.geo_id;
+            feature.id = geoID;
+            
             if (dataMap.has(geoID)) {
                 feature.properties = {
                     ...feature.properties,
