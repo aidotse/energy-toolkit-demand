@@ -1,51 +1,13 @@
 <script lang="ts">
-    import Mapbox from '$lib/components/MapBox.svelte';
-    import Controls from '$lib/components/Controls.svelte';
-    import Legend from '$lib/components/Legend.svelte';
     import AreaChart from '$lib/components/AreaChart.svelte';
     import TimeLine from '$lib/components/TimeLine.svelte';
     import SectorArc from '$lib/components/SectorArc.svelte';
     import Histogram from '$lib/components/Histogram.svelte';
-    import { fetchTimeseries, fetchYearly, fetchAllYears, calculateSectorData, calculateHistogram } from '$lib/dataService';
 	import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
-    const { API_BASE_URL, parameterData, geojsonData, minDemandValue, maxDemandValue }  = data;
-	let { year, geography, growth, resolution, sector, aggregation, timeseriesData, yearlyData, allYearsData, sectorData, histogramData } = $state(data);
-    let chartType: 'line' | 'area' | 'bar' = $state('area');
-    let toggleControls = $state(true);
-
-    $effect(async () => {
-        try {
-            timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${growth}`);
-        } catch (error) {
-            console.error('Error updating data:', error.message);
-        }
-    });
-
-    $effect(async () => {
-        try {
-            yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${growth}`);
-        } catch (error) {
-            console.error('Error updating data:', error.message);
-        }
-    });
-
-    $effect(async () => {
-        fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=all&growth=${growth}`)
-        .then(data => { allYearsData = data; })
-        .catch(error => console.error('Error fetching all years data:', error.message));
-    });
-
-    $effect(async () => {
-        const yrlData = await yearlyData;
-        sectorData = calculateSectorData(yrlData, geography)
-    });
-    
-    $effect(async () => {
-        const tsData = await timeseriesData;
-        histogramData = calculateHistogram(tsData, 'total', 50)
-    })
+    const { parameterData, globalsData, geojsonData }  = data;
+	let { year, geography, scenario, sector, hourData, dayData, yearData, allYearsData } = $state(data);
 
 </script>
 
@@ -63,10 +25,10 @@
     </div>
     <div class="grid grid-cols-2 gap-16 my-8">
         <div class="min-w-[300px] aspect-square">
-            <AreaChart {geography} {growth} aggregationInit={aggregation} {allYearsData} />
+            <AreaChart {geography} {year} {scenario} aggregationInit='sum' {allYearsData} />
         </div>
-        <SectorArc {sectorData} />
-        <TimeLine {resolution} {aggregation} {timeseriesData} bind:chartType />
-        <Histogram {histogramData} />
+        <SectorArc {yearData} {geography} {year} {scenario} />
+        <TimeLine {dayData} {geography} resolution='1d' {sector} aggregation='sum' {year} {scenario} />
+        <Histogram {hourData} {geography} resolution='1h' {sector} aggregation='mean' {year} {scenario} />
     </div>
 </div>

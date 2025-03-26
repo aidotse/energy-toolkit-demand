@@ -15,8 +15,6 @@
 	import type { PageProps } from './$types';
     import { handleAnchorClick } from '$lib/utilities';
 
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
     let { data }: PageProps = $props();
     const { parameterData, globalsData, geojsonData }  = data;
 	let { year, geography, scenario, sector, hourData, dayData, yearData, allYearsData } = $state(data);

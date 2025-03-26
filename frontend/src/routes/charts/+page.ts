@@ -1,16 +1,21 @@
-import { fetchParameters, fetchGlobals, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateSectorData, calculateHistogram } from '$lib/dataService';
+import { fetchParameters, fetchGlobals, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateHistogram } from '$lib/dataService';
 import type { PageLoad } from './$types';
 
 // Function to create histogram bins
 export const load: PageLoad = async ({ fetch, params }) => {
+
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    // Initial state
     const geography = '00';
-    const growth = 2;
-    const resolution = '1d';
+    const scenario = {
+        growth: 2,
+        flex: 1,
+        transport: 1,
+        population: 1
+    }
     const division = 'county';
     const sector = 'all';
-    const aggregation = 'sum';
-    const numBins = 50;
 
     try {
         // Fetch parameter data, globals, and determine the initial year
@@ -24,15 +29,14 @@ export const load: PageLoad = async ({ fetch, params }) => {
             throw new Error('Invalid parameter data or years array is empty');
         }
 
-        const year = Math.min(...parameterData.years);
+        const year = Math.max(...parameterData.years);
 
         // Fetch GeoJSON and CSV data
         const geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geo?division=${division}`);
-        const yearlyData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${growth}`);
-        const timeseriesData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${growth}`);
-        const sectorData = calculateSectorData(yearlyData, geography);
-        const histogramData = calculateHistogram(timeseriesData, 'total', numBins)
-        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=${aggregation}&year=all&growth=${growth}`);
+        const hourData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1h&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        const yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=sum&year=${year}&growth=${scenario.growth}`);
+        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=sum&year=all&growth=${scenario.growth}`);
 
         // Return all data
         return {
@@ -40,15 +44,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
             globalsData,
             year,
             geography,
-            growth,
-            resolution,
+            scenario,
             sector,
-            aggregation,
             geojsonData,
-            yearlyData,
-            sectorData,
-            timeseriesData,
-            histogramData,
+            hourData,
+            dayData,
+            yearData,
             allYearsData
         };
     } catch (error) {
@@ -59,15 +60,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
             globalsData: null,
             year: 0,
             geography: null,
-            growth: null,
-            resolution: null,
+            scenario: null,
             sector: null,
-            aggregation: null,
             geojsonData: null,
-            yearlyData: null,
-            sectorData: null,
-            timeseriesData: null,
-            histogramData: null,
+            hourData: null,
+            dayData: null,
+            yearData: null,
             allYearsData: null
         };
     }
