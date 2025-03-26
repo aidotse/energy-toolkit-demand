@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import mapboxgl from 'mapbox-gl';
     import 'mapbox-gl/dist/mapbox-gl.css';
+    import * as turf from '@turf/turf';
     import { mount } from 'svelte';
     import Popup from '$lib/components/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
@@ -11,6 +12,7 @@
 
     let { geojsonData, yearData, year, geography = $bindable(), scenario, lower_bound, upper_bound } = $props();
     let mapLoaded = $state(false);
+    let hoveredFeatureId = $state(null);
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -41,7 +43,6 @@
 
     let mergedData = $derived(mergeGeoData(geojsonData, yearData, year));
 
-
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
         const geoName = properties.geo_name;
@@ -57,7 +58,7 @@
                 geoID,
                 year,
                 demand,
-                sticky,
+                sticky, 
                 onClose: () => {
                     popup.remove();
                     geography = '00';
@@ -126,25 +127,50 @@
                 });
 
                 map.addLayer({
+                    id: 'county-hover',
+                    type: 'fill',
+                    source: 'counties',
+                    layout: {},
+                    paint: {
+                        'fill-color': '#ffffff',
+                        'fill-opacity': [
+                            'case',
+                            ['boolean', ['feature-state', 'hover'], false],
+                            0.4,
+                            0
+                        ]
+                    }
+                });
+
+                map.addLayer({
                     id: 'county-border',
                     type: 'line',
                     source: 'counties',
-                    paint: { 'line-color': '#ffffff', 'line-width': 0.5, 'line-opacity': 1 },
+                    paint: { 'line-color': '#000000', 'line-width': 1, 'line-opacity': 0.33 },
                 });
 
                 // Hover behavior
                 map.on('mouseenter', 'county-fill', (e) => {
-                    if (!stickyPopup) {
-                        const properties = e.features[0].properties;
-                        openPopup(e.lngLat, properties);
+                    if (!stickyPopup && e.features.length > 0) {
+                        const feature = e.features[0];
+                        openPopup(e.lngLat, feature.properties);
                     }
                     map.getCanvas().style.cursor = 'pointer';
                 });
 
                 map.on('mousemove', 'county-fill', (e) => {
+                    const id = e.features[0].id;
+
+                    if (hoveredFeatureId !== null && hoveredFeatureId !== id) {
+                        map.setFeatureState({ source: 'counties', id: hoveredFeatureId }, { hover: false });
+                    }
+
+                    hoveredFeatureId = id;
+                    map.setFeatureState({ source: 'counties', id }, { hover: true });
+
+
                     if (!stickyPopup) {
-                        const properties = e.features[0].properties;
-                        openPopup(e.lngLat, properties);
+                        openPopup(e.lngLat, e.features[0].properties);
                     }
                 });
 
@@ -152,6 +178,11 @@
                     if (!stickyPopup) {
                         closePopup();
                     }
+                    if (hoveredFeatureId !== null) {
+                        map.setFeatureState({ source: 'counties', id: hoveredFeatureId }, { hover: false });
+                    }
+                    hoveredFeatureId = null;
+
                     map.getCanvas().style.cursor = '';
                 });
 
@@ -174,6 +205,40 @@
     $effect(() => {
         if (mapLoaded && mergedData) {
             map?.getSource('counties').setData(mergedData);
+
+            if (stickyPopup) {
+                const feature = mergedData.features.find(f => f.properties.geo_id === geography);
+                if (feature) {
+                    const coords = popup.getLngLat();
+                    popup.setDOMContent(createPopupContent(feature.properties, true));
+                }
+            }
+        }
+    });
+
+    $effect(() => {
+        if (!mapLoaded || !map || !mergedData) return;
+
+        if (geography === '00') {
+            // Reset to initial view
+            map.flyTo({
+                center: [17, 62.92], // your default center
+                zoom: 4.8,
+                duration: 1000
+            });
+            return;
+        }
+
+        const feature = mergedData.features.find(
+            (f) => f.properties?.geo_id === geography
+        );
+
+        if (feature) {
+            const bbox = turf.bbox(feature);
+            map.fitBounds(bbox, {
+                padding: 40,
+                duration: 1000
+            });
         }
     });
 
