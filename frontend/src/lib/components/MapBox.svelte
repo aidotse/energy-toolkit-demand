@@ -5,8 +5,12 @@
     import { mount } from 'svelte';
     import Popup from '$lib/components/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
+    import { fetchYearly, mergeGeoData } from '$lib/dataService';
 
-    let { geojsonData, yearlyData, year, geography = $bindable(), lower_bound, upper_bound } = $props();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    let { geojsonData, yearData, year, geography = $bindable(), scenario, lower_bound, upper_bound } = $props();
+    let mapLoaded = $state(false);
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -27,25 +31,16 @@
             }
         };
 
-    // Merge yearlyData into geojsonData by matching geo_id
-    const mergeData = (geojson, data, yr) => {
-        const dataMap = new Map(data.map(row => [row.geography, row]));        
-        const updatedFeatures = geojson.features.map(feature => {
-            const geoID = feature.properties.geo_id;
-            if (dataMap.has(geoID)) {
-                feature.properties = {
-                    ...feature.properties,
-                    ...dataMap.get(geoID),
-                    year: yr,
-                };
-            }
+    $effect(async () => {
+        try {
+            yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${scenario.growth}`);
+        } catch (error) {
+            console.error('Error updating data:', error.message);
+        }
+    });
 
-            return feature;
-        });
+    let mergedData = $derived(mergeGeoData(geojsonData, yearData, year));
 
-        return { ...geojson, features: updatedFeatures };
-
-    }
 
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
@@ -65,6 +60,7 @@
                 sticky,
                 onClose: () => {
                     popup.remove();
+                    geography = '00';
                     stickyPopup = false;
                 },
             },
@@ -103,8 +99,7 @@
         });
 
         map.on('load', () => {
-            if (geojsonData && yearlyData && year) {
-                const mergedData = mergeData(geojsonData, yearlyData, year);
+            if (geojsonData && yearData && year) {
 
                 map.addSource('counties', {
                     type: 'geojson',
@@ -170,14 +165,23 @@
 
                 map.on('click', handleMapClick);
 
+                mapLoaded = true;
+
             }
         });
+    });
+    
+    $effect(() => {
+        if (mapLoaded && mergedData) {
+            map?.getSource('counties').setData(mergedData);
+        }
     });
 
     onDestroy(() => {
         map?.off('click', handleMapClick); // Detach the event
         map?.remove();
     });
+
     
 </script>
 

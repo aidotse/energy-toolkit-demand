@@ -3,8 +3,8 @@ import containerQueries from '@tailwindcss/container-queries';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
 import type { Config } from 'tailwindcss';
-import colors from 'tailwindcss/colors';
-import svelteUx from 'svelte-ux/plugins/tailwind.cjs'
+import layerstack from '@layerstack/tailwind/plugin';
+//import colors from 'tailwindcss/colors';
 
 export default {
   content: [
@@ -75,6 +75,6 @@ export default {
     forms,
     containerQueries,
     aspectRatio,
-    svelteUx  // uses hsl() color space by default. To use oklch(), use: svelteUx({ colorSpace: 'oklch' }),
+    layerstack({ colorSpace: 'hsl' })
   ]
 } satisfies Config;

@@ -152,3 +152,23 @@ export const calculateHistogram = (data, field, numBins) => {
     
     return bins;
 }
+
+    // Merge yearData into geojsonData by matching geo_id
+    export const mergeGeoData = (geojson, data, yr) => {
+        const dataMap = new Map(data.map(row => [row.geography, row]));        
+        const updatedFeatures = geojson.features.map(feature => {
+            const geoID = feature.properties.geo_id;
+            if (dataMap.has(geoID)) {
+                feature.properties = {
+                    ...feature.properties,
+                    ...dataMap.get(geoID),
+                    year: yr,
+                };
+            }
+
+            return feature;
+        });
+
+        return { ...geojson, features: updatedFeatures };
+
+    }

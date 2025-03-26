@@ -6,7 +6,8 @@ import adapter from '@sveltejs/adapter-static';
 const config = {
     // Consult https://svelte.dev/docs/kit/integrations
     // for more information about preprocessors
-    preprocess: [vitePreprocess(), mdsvex()],
+    extensions: [".svelte", ".svx", ".md"],
+    preprocess: [vitePreprocess(), mdsvex({extensions: [".svx", ".md"]})],
 
     kit: {
 		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
@@ -15,7 +16,6 @@ const config = {
 		adapter: adapter()
 	},
 
-    extensions: [".svelte", ".svx"]
 };
 
 export default config;

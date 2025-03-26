@@ -2,8 +2,21 @@
     import { AreaChart, LineChart, BarChart } from 'layerchart';
     import { ButtonGroup, Button } from 'svelte-ux';
     import { ChartLine, ChartArea, ChartColumn } from 'lucide-svelte';
+    import { fetchTimeseries } from '$lib/dataService';
 
-    let { resolution, aggregation, timeseriesData, chartType = $bindable()} = $props();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    let { dayData, geography, resolution, sector, aggregation, year, scenario} = $props();
+    let chartType: 'line' | 'area' | 'bar' = $state('area');
+
+
+    $effect(async () => {
+        try {
+            dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=${resolution}&sector=${sector}&aggregation=${aggregation}&year=${year}&growth=${scenario.growth}`);
+        } catch (error) {
+            console.error('Error updating data:', error.message);
+        }
+    });
 
 </script>
 
@@ -43,7 +56,7 @@
     </div>
     {#if chartType === 'line'}
         <LineChart
-            data={timeseriesData}
+            data={dayData}
             series={[
                 { name: "Total", key: "total", color: "#47B3FF" },
                 { name: "Buildings", key: "buildings", color: "#EEB902" },
@@ -55,7 +68,7 @@
         />
     {:else if chartType === 'area'}
         <AreaChart
-            data={timeseriesData}
+            data={dayData}
             series={[
                 { name: "Buildings", key: "buildings", color: "#EEB902" },
                 { name: "Industry", key: "industry", color: "#07ED7A" },
@@ -66,7 +79,7 @@
         />
     {:else if chartType === 'bar'}
         <BarChart
-            data={timeseriesData}
+            data={dayData}
             series={[
                 { name: "Buildings", key: "buildings", color: "#EEB902" },
                 { name: "Industry", key: "industry", color: "#07ED7A" },
