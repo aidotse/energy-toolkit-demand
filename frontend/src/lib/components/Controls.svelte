@@ -1,34 +1,7 @@
 <script lang="ts">
     import { RangeField, SelectField, ButtonGroup, Button } from 'svelte-ux';
 
-    let {parameterData, year = $bindable(), growth = $bindable(), chartType = $bindable(), geography = $bindable(), resolution = $bindable(), aggregation = $bindable(), toggleControls = $bindable(), handleAnchorClick} = $props();
-
-    // Set first and last year in range
-    const minYear:number = Math.min(...parameterData.years);
-    const maxYear:number = Math.max(...parameterData.years);
-
-    const options = parameterData.geographies.map((geo) => ({
-        label: geo.geo_name, // The text displayed in the dropdown
-        value: geo.geo_id,   // The value associated with the option
-    })).sort((a, b) => { // Sort alphabetically by label but put 'Sverige' first
-    return a.label === "Sverige" ? -1 
-         : b.label === "Sverige" ? 1 
-         : a.label.localeCompare(b.label, 'sv'); // Sort alphabetically for others
-
-    }); 
-
-    // Set available resolutions
-    const resolutions = parameterData.aggregations
-        .filter(entry => entry.resolution !== "1YE")
-        .map(entry => entry.resolution);
-
-    // Set variables related to aggregations
-    const aggregations = parameterData.aggregations
-        .filter(entry => entry.resolution !== "1YE")
-
-    const allAggregations = [...new Set(aggregations.flatMap(agg => agg.aggregation))];
-
-    let availableAggregations = $derived(aggregations.find(agg => agg.resolution === resolution)?.aggregation || []);
+    let {parameterData, scenario = $bindable(), toggleControls = $bindable(), handleAnchorClick} = $props();
 
     const growthScenarios = parameterData.scenarios['growth'].map(scenario => ({
         label: scenario.label,
@@ -69,46 +42,9 @@
             <h3 class="pb-2 font-bold">Scenario</h3>
             <div class="flex flex-col mr-4 mb-6">
                 <label for="growth-select" class="text-xs opacity-100">Tillväxtscenario</label>
-                <SelectField id="growth-select" class="my-1 opacity-100" options={growthScenarios} bind:value={growth} clearable={false} />
+                <SelectField id="growth-select" class="my-1 opacity-100" options={growthScenarios} bind:value={scenario.growth} clearable={false} />
             </div>
             <div class="flex h-40 mr-4 mb-6 bg-slate-200 border justify-center"><p class="my-auto italic">Insert controls: teknik</p></div>
             <div class="flex h-40 mr-4 bg-slate-200 border justify-center"><p class="my-auto italic">Insert controls: flex</p></div>
-        </section>
-        <section class="flex flex-col mb-6">
-            <h3 class="pb-2 font-bold">Fokus</h3>
-            <label for="year-range" class="text-xs opacity-100">År</label>
-            <RangeField id="year-range" class="my-1 opacity-100" value={year} on:change={(e) => year = e.detail.value} min={minYear} max={maxYear} step={1} />
-            <label for="geography-select" class="text-xs opacity-100">Geografi</label>
-            <SelectField id="geography-select" class="my-1 opacity-100" options={options} bind:value={geography} clearable={false} />
-            <label for="resolution-button-group" class="text-xs opacity-100">Upplösning</label>
-            <ButtonGroup id="resolution-button-group" class="my-1 opacity-100">
-                {#each resolutions as res}
-                    <Button
-                        class="mx-px text-xs opacity-100"
-                        variant="fill-light"
-                        color="primary"
-                        onClick={() => resolution = res}
-                        active={resolution === res}
-                        disabled={chartType === 'bar' && (res === '1h' || res === '3h' || res === '1d')}
-                    >
-                    {res}
-                    </Button>
-                {/each}
-            </ButtonGroup>
-            <label for="aggregation-button-group" class="text-xs opacity-100">Statistik</label>
-            <ButtonGroup id="aggregation-button-group" class="my-1 opacity-100">
-                {#each allAggregations as agg}
-                    <Button
-                        class="mx-px text-xs opacity-100"
-                        variant="fill-light"
-                        color="primary"
-                        onClick={() => aggregation = agg}
-                        active={aggregation === agg}
-                        disabled={!availableAggregations.includes(agg)}
-                        >
-                    {agg}
-                    </Button>
-                {/each}
-            </ButtonGroup>
         </section>
     </div>

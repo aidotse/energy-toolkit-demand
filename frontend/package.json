@@ -54,6 +54,6 @@
 		"mapbox-gl": "^3.7.0",
 		"pako": "^2.1.0",
 		"papaparse": "^5.4.1",
-		"svelte-ux": "^0.75.5"
+		"svelte-ux": "^1.0.4"
 	}
 }

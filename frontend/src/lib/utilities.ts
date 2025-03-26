@@ -25,3 +25,17 @@ export const formatNumber = (
     // Return the formatted number with the correct output prefix and unit
     return `${formattedNum} ${prefixes[outputIndex]}${unit}`;
 };
+
+export function handleAnchorClick(event: Event) {
+    event.preventDefault()
+    const link = event.currentTarget as HTMLAnchorElement
+    const anchorId = new URL(link.href).hash.replace('#', '')
+    const anchor = document.getElementById(anchorId)
+    const mainElement = document.querySelector("main");
+    if (anchor && mainElement) {
+        mainElement.scrollTo({
+            top: anchor.offsetTop - 35,
+            behavior: 'smooth'
+        })
+    }
+}

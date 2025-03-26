@@ -1,8 +1,21 @@
 <script lang="ts">
     import { PieChart, Text } from 'layerchart';
     import { formatNumber } from '$lib/utilities';
+    import { fetchYearly, calculateSectorData } from '$lib/dataService';
+    
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-    let { sectorData } = $props();
+    let { yearData, geography, year, scenario } = $props();
+
+    $effect(async () => {
+        try {
+            yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=${'all'}&resolution=1YE&sector=all&aggregation=${'sum'}&year=${year}&growth=${scenario.growth}`);
+        } catch (error) {
+            console.error('Error updating data:', error.message);
+        }
+    });
+
+    let sectorData = $derived(calculateSectorData(yearData, geography));
 
 </script>
 
