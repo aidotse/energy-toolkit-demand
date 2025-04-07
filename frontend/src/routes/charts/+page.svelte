@@ -6,8 +6,8 @@
 	import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
-    const { parameterData, globalsData, geojsonData }  = data;
-	let { year, geography, scenario, sector, hourData, dayData, yearData, allYearsData } = $state(data);
+    const { config, scenarios, parameterData, globalsData, geojsonData }  = data;
+	let { year, geography, sector, hourData, dayData, yearData, allYearsData } = $state(data);
 
 </script>
 

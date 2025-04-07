@@ -4,8 +4,73 @@
     "start-time": "2025-01-01 00:00:00",
     "end-time": "2045-12-31 23:00:00",
     "resolution": "1h",
-    "geographies": "geographies/sweden-counties.geojson",
-    "geography-type": "county",
+    "geography": {
+        "type": "county",
+        "source": "sweden-counties.geojson"
+    },
+    "scenarios": [
+        {
+            "name": "growth",
+            "type": "scalar",
+            "values": [1, 2, 3],
+            "default": 2,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "housing_flex",
+            "type": "scalar",
+            "values": [0, 0.5, 1],
+            "default": 0.5,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "industry_flex",
+            "type": "scalar",
+            "values": [0, 0.5, 1],
+            "default": 0.5,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "transport_flex",
+            "type": "scalar",
+            "values": [0, 0.5, 1],
+            "default": 0.5,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "transport_electrification",
+            "type": "scalar",
+            "values": [0, 0.5, 1],
+            "default": 0.5,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "industry_transition",
+            "type": "scalar",
+            "values": [0, 0.5, 1],
+            "default": 0.5,
+            "labels": ["low", "mid", "high"],
+            "description": ""
+        },
+        {
+            "name": "low_transport_electrification_low_housing_flex",
+            "type": "constraint",
+            "components": ["housing_flex", "transport_electrification"],
+            "description": ""
+        },
+        {
+            "name": "low_growth_low_industry_transition",
+            "type": "constraint",
+            "components": ["growth", "industry_transition"],
+            "description": ""
+        }
+
+    ],
     "loader": {
         "name": "base_load_curve",
         "properties": {
@@ -49,7 +114,7 @@
             "order": 3,
             "access": "public",
             "inputs": []
-        }        
+}        
     ],
     "output": {
         "properties": {

@@ -5,7 +5,7 @@
     import Change from '$lib/components/inline/Change.svelte';
     import GoTo from '$lib/components/GoTo.svelte';
     import Map from '$lib/components/Map.svelte';
-    import Controls from '$lib/components/Controls.svelte';
+    import Sidebar from '$lib/components/Sidebar.svelte';
     import AreaChart from '$lib/components/AreaChart.svelte';
     import GeoBarChart from '$lib/components/GeoBarChart.svelte';
     import TimeLine from '$lib/components/TimeLine.svelte';
@@ -16,15 +16,26 @@
     import { handleAnchorClick } from '$lib/utilities';
 
     let { data }: PageProps = $props();
-    const { parameterData, globalsData, geojsonData }  = data;
-	let { year, geography, scenario, sector, hourData, dayData, yearData, allYearsData } = $state(data);
+    const { config, scenarios, parameterData, globalsData, geojsonData }  = data;
+	let { year, geography, sector, hourData, dayData, yearData, allYearsData } = $state(data);
     let toggleControls = $state(true);
+    let scenario = $state(scenarios.find((s: any) => s.default));
+
+    const index = [
+        { id: "section1", text: "Framtidens elbehov" },
+        { id: "section2", text: "Vem behöver elen?" },
+        { id: "section3", text: "Hur snabbt kan det gå?" },
+        { id: "section4", text: "Vilken roll kommer flex spela?" },
+        { id: "section5", text: "Utforska djupare" }
+    ]
 
 </script>
 
 <div class="flex w-full h-[calc(100vh-4rem)] overflow-hidden">
-    <Controls
-        {parameterData}
+    <Sidebar
+        {index}
+        {config}
+        {scenarios}
         bind:toggleControls
         bind:scenario
         {handleAnchorClick}
@@ -42,7 +53,7 @@
                             fram det här verktyget för att visualisera och förklara. Analysen som presenteras här är framtagen av AI Sweden som ett exempel.
                         </p>
                         <p class="mb-4">
-                            Elenergibehovet i <GeoSelect {parameterData} bind:geography /> väntas i scenario <GrowthSelect {parameterData} bind:scenario /> öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
+                            Elenergibehovet i <GeoSelect {parameterData} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
                         </p>
                     </div>
                     <div class="w-1/2 flex items-center justify-center">

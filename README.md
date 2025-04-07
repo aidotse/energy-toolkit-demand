@@ -50,6 +50,23 @@ This folder contains the demand-modelling application. A generator takes configs
 
 Input data is stored in the folders input/private and input/public. Notebooks and other code specific to a type of data is stored alongside the data files, while code that runs in each scenario should be placed in /transformers.
 
+#### The config file
+
+1. Config globals
+
+- config-name: 
+- access: 
+- start-time: 
+- end-time: 
+- resolution: 1h, 3h, 1d, 1ME, 1YE
+- geography: type (e.g. county, municipality etc.) and source (GeoJSON)
+
+2. The scenario object
+
+
+3. The transformers
+4.  The output object
+
 #### Transformer types
 
 - over time

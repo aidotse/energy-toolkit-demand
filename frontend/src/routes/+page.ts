@@ -1,4 +1,4 @@
-import { fetchParameters, fetchGlobals, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateHistogram } from '$lib/dataService';
+import { fetchJSON, fetchGeoJSON, fetchYearly, fetchAllYears, fetchTimeseries, calculateHistogram } from '$lib/dataService';
 import type { PageLoad } from './$types';
 
 // Function to create histogram bins
@@ -8,23 +8,29 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
     // Initial state
     const geography = '00';
-    const scenario = {
-        growth: 2,
-        flex: 1,
-        transport: 1,
-        population: 1
-    }
     const division = 'county';
     const sector = 'all';
 
     try {
-        // Fetch parameter data, globals, and determine the initial year
-        const parameterData = await fetchParameters();
+        // Fetch config, scenarios, parameter data, globals, and determine the initial year
+        const config = await fetchJSON(`${API_BASE_URL}/config`);
+        if (!config) {
+            throw new Error('Invalid config');
+        }
+
+        const scenarios = await fetchJSON(`${API_BASE_URL}/scenarios`);
+        if (!scenarios || scenarios.length === 0) {
+            throw new Error('Invalid scenarios data');
+        }
+
+        const scenario = scenarios.find((s: any) => s.default);
+
+        const parameterData = await fetchJSON(`${API_BASE_URL}/parameters`);
         if (!parameterData || !parameterData.years || parameterData.years.length === 0) {
             throw new Error('Invalid parameter data or years array is empty');
         }
 
-        const globalsData = await fetchGlobals();
+        const globalsData = await fetchJSON(`${API_BASE_URL}/globals`);
         if (!globalsData) {
             throw new Error('Invalid parameter data or years array is empty');
         }
@@ -40,11 +46,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
         // Return all data
         return {
+            config,
+            scenarios,
             parameterData,
             globalsData,
             year,
             geography,
-            scenario,
             sector,
             geojsonData,
             hourData,
@@ -56,11 +63,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
         console.error('Error loading data:', error.message);
         // Return default fallback values in case of error
         return {
+            config: null,
+            scenarios: null,
             parameterData: null,
             globalsData: null,
             year: 0,
             geography: null,
-            scenario: null,
             sector: null,
             geojsonData: null,
             hourData: null,

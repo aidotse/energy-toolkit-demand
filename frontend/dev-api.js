@@ -17,7 +17,6 @@ const apiDirectory = path.join(__dirname, '../api');
 // Enable CORS for all routes
 app.use(cors());
 
-// API route to serve files dynamically
 app.get('/api/geo', async (req, res) => {
     const { division } = req.query;
 
@@ -45,7 +44,6 @@ app.get('/api/geo', async (req, res) => {
 });
 
 
-// API route to serve files dynamically
 app.get('/api/demand_t', async (req, res) => {
     const { geography, resolution, sector, aggregation, year, growth } = req.query;
 
@@ -75,7 +73,6 @@ app.get('/api/demand_t', async (req, res) => {
     }
 });
 
-// API route to serve files dynamically
 app.get('/api/demand', async (req, res) => {
     const { geography, sector, aggregation, year, growth } = req.query;
 
@@ -105,7 +102,47 @@ app.get('/api/demand', async (req, res) => {
     }
 });
 
-// API route to serve files dynamically
+app.get('/api/config', async (req, res) => {
+    const fileName = 'config.json'
+    const filePath = path.join(apiDirectory,fileName);
+
+    try {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: `File not found: ${filePath}` });
+        }
+
+        // Stream the GeoJSON file
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/scenarios', async (req, res) => {
+    const fileName = 'scenarios.json'
+    const filePath = path.join(apiDirectory,fileName);
+
+    try {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: `File not found: ${filePath}` });
+        }
+
+        // Stream the GeoJSON file
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 app.get('/api/parameters', async (req, res) => {
     const fileName = 'parameters.json'
     const filePath = path.join(apiDirectory,fileName);
@@ -126,7 +163,6 @@ app.get('/api/parameters', async (req, res) => {
     }
 });
 
-// API route to serve files dynamically
 app.get('/api/globals', async (req, res) => {
     const fileName = 'globals.json'
     const filePath = path.join(apiDirectory,fileName);

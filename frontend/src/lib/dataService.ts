@@ -2,18 +2,10 @@ import Papa from 'papaparse';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export const fetchParameters = async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/parameters`);
+export const fetchJSON = async (url: string): Promise<any> => {
+    const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`Failed to fetch parameters: ${response.statusText}`);
-    }
-    return response.json();
-};
-
-export const fetchGlobals = async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/globals`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch globals: ${response.statusText}`);
+        throw new Error(`Failed to fetch JSON: ${response.statusText}`);
     }
     return response.json();
 };
