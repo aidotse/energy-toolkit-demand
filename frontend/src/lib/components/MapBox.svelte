@@ -226,6 +226,7 @@
                 zoom: 4.8,
                 duration: 1000
             });
+            closePopup(); // Close popup when '00' is selected
             return;
         }
 
@@ -239,6 +240,10 @@
                 padding: 40,
                 duration: 1000
             });
+
+            // Open popup for the selected geography
+            const center = turf.center(feature);
+            openPopup([center.geometry.coordinates[0], center.geometry.coordinates[1]], feature.properties, true);
         }
     });
 

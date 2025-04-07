@@ -53,7 +53,7 @@
                             fram det här verktyget för att visualisera och förklara. Analysen som presenteras här är framtagen av AI Sweden som ett exempel.
                         </p>
                         <p class="mb-4">
-                            Elenergibehovet i <GeoSelect {parameterData} bind:geography /> väntas i scenario <GrowthSelect {parameterData} bind:scenario /> öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
+                            Elenergibehovet i <GeoSelect {parameterData} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
                         </p>
                     </div>
                     <div class="w-1/2 flex items-center justify-center">

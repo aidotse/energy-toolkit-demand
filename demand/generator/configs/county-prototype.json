@@ -18,7 +18,7 @@
             "description": ""
         },
         {
-            "name": "housing-flex",
+            "name": "housing_flex",
             "type": "scalar",
             "values": [0, 0.5, 1],
             "default": 0.5,
@@ -26,7 +26,7 @@
             "description": ""
         },
         {
-            "name": "industry-flex",
+            "name": "industry_flex",
             "type": "scalar",
             "values": [0, 0.5, 1],
             "default": 0.5,
@@ -34,7 +34,7 @@
             "description": ""
         },
         {
-            "name": "transport-flex",
+            "name": "transport_flex",
             "type": "scalar",
             "values": [0, 0.5, 1],
             "default": 0.5,
@@ -42,7 +42,7 @@
             "description": ""
         },
         {
-            "name": "transport-electrification",
+            "name": "transport_electrification",
             "type": "scalar",
             "values": [0, 0.5, 1],
             "default": 0.5,
@@ -50,7 +50,7 @@
             "description": ""
         },
         {
-            "name": "industry-transition",
+            "name": "industry_transition",
             "type": "scalar",
             "values": [0, 0.5, 1],
             "default": 0.5,
@@ -60,13 +60,13 @@
         {
             "name": "low_transport_electrification_low_housing_flex",
             "type": "constraint",
-            "components": ["housing-flex", "transport-electrification"],
+            "components": ["housing_flex", "transport_electrification"],
             "description": ""
         },
         {
             "name": "low_growth_low_industry_transition",
             "type": "constraint",
-            "components": ["growth", "industry-transition"],
+            "components": ["growth", "industry_transition"],
             "description": ""
         }
 
