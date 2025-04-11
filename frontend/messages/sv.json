@@ -8,5 +8,10 @@
   "industry_flex": "Flex industri",
   "transport_flex": "Flex transport",
   "transport_electrification": "Transportelektrifiering",
-  "industry_transition": "Industriomställning"
+  "industry_transition": "Industriomställning",
+  "explore_page": "Utforska",
+  "graphs_page": "Grafer",
+  "about_page": "Om projektet",
+  "toolkit_page": "Demand Toolkit",
+  "contact_page": "Kontakt"
 }

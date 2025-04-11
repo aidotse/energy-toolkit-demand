@@ -8,5 +8,10 @@
   "industry_flex": "Industry flex",
   "transport_flex": "Transport flex",
   "transport_electrification": "Transport electrification",
-  "industry_transition": "Industry transition"
+  "industry_transition": "Industry transition",
+  "explore_page": "Explore",
+  "graphs_page": "Graphs",
+  "about_page": "About",
+  "toolkit_page": "Toolkit",
+  "contact_page": "Contact"
 }

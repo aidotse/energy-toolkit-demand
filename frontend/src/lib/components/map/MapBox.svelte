@@ -4,7 +4,7 @@
     import 'mapbox-gl/dist/mapbox-gl.css';
     import * as turf from '@turf/turf';
     import { mount } from 'svelte';
-    import Popup from '$lib/components/Popup.svelte';
+    import Popup from '$lib/components/map/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
     import { fetchYearly, mergeGeoData } from '$lib/dataService';
 
@@ -86,12 +86,21 @@
     };
 
     onMount(() => {
+        // Define Sweden's bounding box coordinates
+        const swedenBounds = [
+            [10.5, 55.2], // Southwest coordinates [lng, lat]
+            [24.2, 69.1]  // Northeast coordinates [lng, lat]
+        ];
+
         map = new mapboxgl.Map({
             container: mapContainer,
             accessToken: 'pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA',
             style: 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq',
-            center: [17, 62.92],
-            zoom: 4.8,
+            bounds: swedenBounds,
+            fitBoundsOptions: {
+                padding: { top: 20, bottom: 20, left: 20, right: 20 },
+                maxZoom: 7 // Prevent zooming in too far when fitting bounds
+            }
         });
 
         popup = new mapboxgl.Popup({
@@ -219,14 +228,19 @@
     $effect(() => {
         if (!mapLoaded || !map || !mergedData) return;
 
+        const swedenBounds = [
+            [10.5, 55.2], // Southwest coordinates [lng, lat]
+            [24.2, 69.1]  // Northeast coordinates [lng, lat]
+        ];
+
         if (geography === '00') {
-            // Reset to initial view
-            map.flyTo({
-                center: [17, 62.92], // your default center
-                zoom: 4.8,
-                duration: 1000
+            // Reset to Sweden view instead of fixed center/zoom
+            map.fitBounds(swedenBounds, {
+                padding: { top: 20, bottom: 20, left: 20, right: 20 },
+                duration: 1000,
+                maxZoom: 7
             });
-            closePopup(); // Close popup when '00' is selected
+            closePopup();
             return;
         }
 

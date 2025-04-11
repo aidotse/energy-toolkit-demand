@@ -4,15 +4,25 @@
     import SectorArc from '$lib/components/SectorArc.svelte';
     import Histogram from '$lib/components/Histogram.svelte';
 	import type { PageProps } from './$types';
+    import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
+    import Scenario from '$lib/components/sidebar/Scenario.svelte';
+    import * as m from '$paraglide/messages';
 
     let { data }: PageProps = $props();
     const { config, scenarios, parameterData, globalsData, geojsonData }  = data;
 	let { year, geography, sector, hourData, dayData, yearData, allYearsData } = $state(data);
 
+    let toggleControls = $state(true);
+    let scenario = $state(scenarios.find((s: any) => s.default));
 </script>
 
 <div class="max-w-7xl mx-auto pt-16">
-    <h1 class="text-3xl font-bold pt-8 pb-4">Data & visualiseringar</h1>
+    <Sidebar {toggleControls}>
+        <svelte:fragment slot="scenario">
+            <Scenario {config} bind:scenario {scenarios} />
+        </svelte:fragment>
+    </Sidebar>
+    <h1 class="text-3xl font-bold pt-8 pb-4">{m['graphs_page']()}</h1>
     <div class="flex flex-row gap-16">
         <p class="w-[60%]">
             Här har vi samlat alla visualiseringar i en dashboard för att göra det enkelt att kopiera grafer och förklaringar till presentationer andra sammanhang

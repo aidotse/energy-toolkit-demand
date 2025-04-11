@@ -4,10 +4,11 @@
 	import YearSelect from './YearSelect.svelte';
 
 	let { geojsonData, yearData, year, geography = $bindable(), scenario, lower_bound, upper_bound, parameterData } = $props();
+	
 </script>
 
 <div class="relative w-full h-full">
-	<div class="absolute z-10 top-10 left-4">
+	<div class="absolute z-10 top-20 lg:top-10 left-6">
 		<YearSelect {parameterData} bind:year />
 	</div>
 

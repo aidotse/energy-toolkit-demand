@@ -20,7 +20,7 @@
 
 </script>
 
-<div class="h-[300px] ml-8 mb-14 mr-2 mt-1">
+<div class="h-[300px] w-full ml-8 mb-14 mr-2 mt-1">
     <div class="flex justify-end mb-4">
         <!-- Chart Type Selector -->
         <ButtonGroup>

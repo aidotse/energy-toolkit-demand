@@ -61,12 +61,12 @@
 
 </script>
 
-<section class="mb-6">
-    <h3 class="pb-4 font-bold">Scenario</h3>
+<div class="w-full mx-auto mt-6 relative border rounded-tr-md rounded-br-md rounded-bl-md bg-white px-4 py-3">
+    <span class="absolute top-0 left-0 -translate-y-full -translate-x-px border rounded-t-md border-b-0 bg-white px-3 text-sm">Scenario</span>
     {#each scenarioConfig as component}
-        <div class="flex flex-col ml-2 mr-6 mb-2">
-            <label for={component.name} class="mb-0 text-xs font-bold opacity-100">{m[component.name]()}</label>
-            <div class="relative h-8">
+        <div class="flex flex-col pt-1">
+            <label for={component.name} class="text-xs font-bold opacity-100">{m[component.name]()}</label>
+            <div class="relative h-7">
                 <input
                     bind:this={sliderRefs[component.name]}
                     type="range"
@@ -89,7 +89,7 @@
             </div>
         </div>
     {/each}
-</section>
+</div>
 
 <style>
 	.bubble-label {
