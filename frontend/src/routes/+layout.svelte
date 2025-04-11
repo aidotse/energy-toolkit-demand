@@ -9,7 +9,6 @@
 
 <ParaglideJS {i18n}>
 	<div class="flex-1 h-full overflow-hidden">
-		<Header />
 		<!-- Main Content -->
 		<div class="flex-grow">
 			{@render children()}

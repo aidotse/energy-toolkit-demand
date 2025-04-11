@@ -1,25 +1,31 @@
 <script lang="ts">
+    import { Map as MapIcon, Notebook as NotebookIcon } from 'lucide-svelte';
     import GeoSelect from '$lib/components/inline/GeoSelect.svelte';
     import GrowthSelect from '$lib/components/inline/GrowthSelect.svelte';
     import Snippet from '$lib/components/inline/Snippet.svelte';
     import Change from '$lib/components/inline/Change.svelte';
     import GoTo from '$lib/components/GoTo.svelte';
-    import Map from '$lib/components/Map.svelte';
-    import Sidebar from '$lib/components/Sidebar.svelte';
+    import Map from '$lib/components/map/Map.svelte';
+    import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
+    import IndexNavigation from '$lib/components/sidebar/IndexNavigation.svelte';
+    import Scenario from '$lib/components/sidebar/Scenario.svelte';   
     import AreaChart from '$lib/components/AreaChart.svelte';
     import GeoBarChart from '$lib/components/GeoBarChart.svelte';
     import TimeLine from '$lib/components/TimeLine.svelte';
     import SectorArc from '$lib/components/SectorArc.svelte';
     import Histogram from '$lib/components/Histogram.svelte';
     import Explainer from '$lib/components/Explainer.svelte';
+    import Section from '$lib/components/Section.svelte';
 	import type { PageProps } from './$types';
     import { handleAnchorClick } from '$lib/utilities';
+    import { fade, slide } from 'svelte/transition';
 
     let { data }: PageProps = $props();
     const { config, scenarios, parameterData, globalsData, geojsonData }  = data;
 	let { year, geography, sector, hourData, dayData, yearData, allYearsData } = $state(data);
-    let toggleControls = $state(true);
+    let toggleControls = $state(false);
     let scenario = $state(scenarios.find((s: any) => s.default));
+    let toggleMap = $state(false);
 
     const index = [
         { id: "section1", text: "Framtidens elbehov" },
@@ -31,22 +37,37 @@
 
 </script>
 
-<div class="flex w-full h-[calc(100vh-4rem)] overflow-hidden">
-    <Sidebar
-        {index}
-        {config}
-        {scenarios}
-        bind:toggleControls
-        bind:scenario
-        {handleAnchorClick}
-    />
-    <!-- Left Column -->
-    <main class="flex flex-col w-[60%] 2xl:w-[60%] bg-surface-100 text-surface-content max-h-screen overflow-y-scroll scrollbar-none pl-64 pr-16">
-        <section id="section1" class="min-h-full flex flex-col pl-24">
+<div class="flex w-full h-[calc(100vh)] overflow-hidden">
+    <Sidebar bind:toggleControls>
+        <svelte:fragment slot="index">
+            <IndexNavigation {index} {handleAnchorClick} />
+        </svelte:fragment>
+        <svelte:fragment slot="scenario">
+            <Scenario {config} bind:scenario {scenarios} />
+        </svelte:fragment>
+    </Sidebar>
+
+    <!-- Toggle button for small screens -->
+    <div class="absolute top-6 right-8 z-50 md:hidden overflow-hidden w-8">
+        <div class="flex transition-transform duration-300 ease-in-out"
+            style="transform: translateX({toggleMap ? '-100%' : '0'})"
+        >
+            <div class="flex-shrink-0">
+                <MapIcon class="h-8 w-8" onclick={() => toggleMap = true}/>
+            </div>
+            <div class="flex-shrink-0">
+                <NotebookIcon class="h-8 w-8" onclick={() => toggleMap = false} />
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <main class="flex flex-col w-full lg:w-[67%] 2xl:w-[60%] bg-surface-100 text-surface-content max-h-screen overflow-y-scroll scrollbar-none transition-transform lg:transform-none duration-300 ease-in-out {toggleMap ? '-translate-x-full' : 'translate-x-0'} mb-12">
+        <Section id="section1">
             <div class="flex flex-col grow">
                 <h1 class="text-3xl font-bold pt-24 pb-4">Framtidens elbehov</h1>
-                <div class="flex flex-row w-full gap-4 mt-6">
-                    <div class="w-1/2 max-w-prose">
+                <div class="flex flex-col lg:flex-row w-full gap-4 mt-6">
+                    <div class="w-full lg:w-1/2 max-w-prose">
                         <p class="mb-4">
                             Det råder idag en bred konsensus om att vårt elbehov (både effekt och energi) kommer öka markant i framtiden.
                             Det finns dock många sätt att modellera det ökade elbehovet och därför har AI Sweden och Energimyndigheten tillsammans tagit 
@@ -56,13 +77,13 @@
                             Elenergibehovet i <GeoSelect {parameterData} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
                         </p>
                     </div>
-                    <div class="w-1/2 flex items-center justify-center">
+                    <div class="w-full lg:w-1/2 flex items-center justify-center">
                         <div class="w-full h-[300px]">
                             <AreaChart {geography} {year} {scenario} aggregationInit='sum' {allYearsData} />
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-4 w-full">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
                     <Explainer content="timeframe" />
                     <Explainer content="geography" />
                     <Explainer content="flex" />
@@ -73,11 +94,8 @@
 
                 </div>            
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section2" {handleAnchorClick}/>
-            </div>
-        </section>
-        <section id="section2" class="min-h-full flex flex-col pl-24">
+        </Section>
+        <Section id="section2">
             <div class="grow flex flex-col">
                 <h2 class="text-3xl font-bold pt-24 pb-4">Var behövs elen?</h2>
                 <p>
@@ -88,15 +106,12 @@
                     <GeoBarChart {yearData} {parameterData} {year} {geography} {scenario} />
                 </div>
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section3" {handleAnchorClick} />
-            </div>
-        </section>
-        <section id="section3" class="min-h-full flex flex-col pl-24">
+        </Section>
+        <Section id="section3">
             <div class="grow">
                 <h2 class="text-3xl font-bold pt-24 pb-4">Vem behöver elen?</h2>
-                <div class="flex flex-row w-full">
-                    <div class="flex flex-col w-1/2">
+                <div class="flex flex-col lg:flex-row w-full">
+                    <div class="flex flex-col w-full lg:w-1/2">
                         <p>
                             I framtiden förväntas elbehovet förändras markant inom de tre sektorerna hushåll, industri och transport. 
                             Hushållen kommer sannolikt att se en måttlig ökning av elanvändningen på grund av elektrifiering av uppvärmning, fler eldrivna apparater och en ökad efterfrågan på bekvämlighetstjänster. 
@@ -106,7 +121,7 @@
                             Utbyggnaden av laddinfrastruktur och vätgasproduktion för tunga transporter kommer att bidra till ett betydligt högre elbehov, särskilt i takt med att fler länder fasar ut bensin- och dieseldrivna fordon.
                         </p>
                     </div>
-                    <div class="flex flex-col w-1/2">
+                    <div class="flex flex-col w-full lg:w-1/2">
                         <SectorArc {yearData} {geography} {year} {scenario} />
                     </div>
                 </div>
@@ -124,37 +139,34 @@
                     Utbyggnaden av laddinfrastruktur och vätgasproduktion för tunga transporter kommer att bidra till ett betydligt högre elbehov, särskilt i takt med att fler länder fasar ut bensin- och dieseldrivna fordon.
                 </p>
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section4" {handleAnchorClick} />
-            </div>
-        </section>
-        <section id="section4" class="min-h-full flex flex-col pl-24">
+        </Section>
+        <Section id="section4">
             <div class="grow">
                 <h2 class="text-3xl font-bold pt-24 pb-4">Hur snabbt kan det gå?</h2>
                 <div class="flex flex-row w-full">
-                    <div class="flex flex-col w-1/2">
+                    <div class="flex flex-col lg:flex-row w-full">
+                        <div class="w-full lg:w-1/2">
                         <p>
-
+                            Elektrifieringstakten kan påverkas av en rad faktorer: pris, ekonomisk utveckling (både i och utanför Sverige), politiska beslut, teknisk utveckling med mera. I den här modellen
+                            har vi valt att...
                         </p>
+                        </div>
+                        <div class="w-full lg:w-1/2 h-[300px]">
+                            <AreaChart {geography} {year} {scenario} aggregationInit='sum' {allYearsData} />
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section5" {handleAnchorClick} />
-            </div>
-        </section>
-        <section id="section5" class="min-h-full flex flex-col pl-24">
+        </Section>
+        <Section id="section5">
             <div class="flex flex-col grow">
                 <h2 class="text-3xl font-bold pt-24 pb-4">Vilken roll kommer flex att spela?</h2>
-                <div class="flex flex-row w-full">
-                    <div class="w-1/2">
+                <div class="flex flex-col lg:flex-row w-full">
+                    <div class="w-full lg:w-1/2">
                         <p>
                             Flexibilitet i efterfrågan av både energi och effekt kommer spela en allt viktigare roll när andelen av variabel elproduktion från
                             sol- och vindkraft ökar.
                         </p>
-                    </div>
-                    <div class="w-1/2 border-1 rounded-lg">
-                        <h2>Hur har vi modellerat flexibilitet?</h2>
                         <p>
                             Flex i efterfrågan är komplext och vi vet egentligen ganska lite vilka lösningar som kommer dominera om 10, 20 eller 30 år.
                             Smarta elnät, ökad lagring, flexmarknader och digitala lösningar kommer alla spela en roll. På lokal nivå kan energigemenskaper komma
@@ -164,28 +176,38 @@
                             Vi behandlar därför flex som en övergripande påverkan på...
                         </p>
                     </div>
-                    <div class="w-full">
+                    <div class="w-full lg:w-1/2">
                         <Histogram {hourData} {geography} resolution='1h' {sector} aggregation='mean' {year} {scenario} />
                     </div>
                 </div>
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section6" {handleAnchorClick} />
-            </div>
-        </section>
-        <section id="section6" class="min-h-full flex flex-col pl-24">
-            <div class="grow">
+        </Section>
+        <Section id="section6">
+            <div class="flex flex-col grow w-full">
                 <h2 class="text-3xl font-bold pt-24 pb-4">Utforska djupare</h2>
+                <div class="flex flex-col lg:flex-row w-full">
+                    <div class="w-full lg:w-1/2">
+                        <p>
+                            Det finns många sätt att dyka djupare i modellen. Bakom varje graf och diagram finns tidsserier uppdelade på scenario och sektor, med en upplösning på {config['resolution']}. 
+                            På sidan <a href="/graphs" target="_blank">Grafer</a> kan du se fler grafer, sätta parametrar och ladda ner visualiseringar för presentationer. Du kan också ladda ner data
+                            från vår API.
+                        </p>
+                    </div>
+                    <div class="w-full lg:w-1/2">
+                        <h3 class="font-bold">Ladda data från API</h3>
+                        <p>
+                            Ladda data från API
+                        </p>
+                    </div>
+                </div>
                 <TimeLine {dayData} {geography} resolution='1d' {sector} aggregation='sum' {year} {scenario} />
             </div>
-            <div class="flex mb-8 justify-center">
-                <GoTo anchor="#section1" {handleAnchorClick} />
-            </div>
-        </section>
+        </Section>
     </main>
 
-    <!-- Right Column -->
-    <div class="absolute top-16 left-[60%] 2xl:left-[60%] w-[40%] 2xl:w-[40%] h-[calc(100vh-4rem)] overflow-y-hidden">
+    <!-- Map -->
+    <div class="fixed top-0 right-0 w-full lg:absolute lg:top-0 lg:left-[67%] lg:w-[33%] 2xl:left-[60%] 2xl:w-[40%] h-[calc(100vh)] overflow-y-hidden transition-transform lg:transform-none duration-300 ease-in-out {toggleMap ? 'translate-x-0' : 'translate-x-full'}"
+    >
         <Map 
             {geojsonData}
             {year}
