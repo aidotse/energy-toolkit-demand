@@ -4,6 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:api": "vite dev --mode production",
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -12,7 +13,9 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"deploy:data:dev": "bash ../scripts/deploy-data-dev.sh",
+		"deploy:frontend:dev": "bash ../scripts/deploy-frontend-dev.sh"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.45.3",
@@ -45,10 +48,10 @@
 	},
 	"dependencies": {
 		"@inlang/paraglide-sveltekit": "^0.11.1",
+		"@turf/turf": "^7.2.0",
 		"cors": "^2.8.5",
 		"d3-array": "^3.2.4",
 		"d3-scale": "^4.0.2",
-		"express": "^4.21.1",
 		"layerchart": "^0.59.5",
 		"lucide-svelte": "^0.468.0",
 		"mapbox-gl": "^3.7.0",

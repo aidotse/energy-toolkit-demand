@@ -39,11 +39,30 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
         // Fetch GeoJSON and CSV data
         const geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geo?division=${division}`);
-        const hourData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1h&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
-        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
-        const yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=sum&year=${year}&growth=${scenario.growth}`);
-        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=sum&year=all&growth=${scenario.growth}`);
+        if (!geojsonData || geojsonData.length === 0) {
+            throw new Error('Failed to fetch geojsonData or data is empty');
+        }
 
+        const hourData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1h&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        if (!hourData || hourData.length === 0) {
+            throw new Error('Failed to fetch hourData or data is empty');
+        }
+
+        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        if (!dayData || dayData.length === 0) {
+            throw new Error('Failed to fetch dayData or data is empty');
+        }
+
+        const yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=sum&year=${year}&growth=${scenario.growth}`);
+        if (!yearData || yearData.length === 0) {
+            throw new Error('Failed to fetch yearData or data is empty');
+        }
+
+        const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=sum&year=all&growth=${scenario.growth}`);
+        if (!allYearsData || allYearsData.length === 0) {
+            throw new Error('Failed to fetch allYearsData or data is empty');
+        }
+        
         // Return all data
         return {
             config,
