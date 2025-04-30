@@ -162,5 +162,8 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Terraform
+terraform/
+
 # Other
 UPDATE.md

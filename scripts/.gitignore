@@ -1,0 +1,5 @@
+# This folder contains the terraform config for deployment to AWS
+# Therefore we ignore everything in this directory
+*
+# Except this file
+!.gitignore

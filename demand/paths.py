@@ -4,7 +4,7 @@ from pathlib import Path
 root_path = Path(__file__).resolve().parent
 
 # API path
-api_path = root_path / '..' / 'api'
+api_path = root_path / '..' / 'api' / 'data'
 
 # Generator paths
 

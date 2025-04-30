@@ -189,7 +189,7 @@
                     <div class="w-full lg:w-1/2">
                         <p>
                             Det finns många sätt att dyka djupare i modellen. Bakom varje graf och diagram finns tidsserier uppdelade på scenario och sektor, med en upplösning på {config['resolution']}. 
-                            På sidan <a href="/graphs" target="_blank">Grafer</a> kan du se fler grafer, sätta parametrar och ladda ner visualiseringar för presentationer. Du kan också ladda ner data
+                            På sidan <a href="/charts" target="_blank">Grafer</a> kan du se fler grafer, sätta parametrar och ladda ner visualiseringar för presentationer. Du kan också ladda ner data
                             från vår API.
                         </p>
                     </div>
