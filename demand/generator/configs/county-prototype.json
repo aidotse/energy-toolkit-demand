@@ -6,7 +6,7 @@
     "resolution": "1h",
     "geography": {
         "type": "county",
-        "source": "sweden-counties.geojson"
+        "source": "geographies/sweden-counties.geojson"
     },
     "scenarios": [
         {
@@ -120,9 +120,9 @@
         "properties": {
             "aggregations": [
                 {"resolution": "1h", "aggregation": ["none"]},
-                {"resolution": "1d", "aggregation": ["mean", "sum", "max"]},
-                {"resolution": "1ME", "aggregation": ["mean", "sum", "max"]},
-                {"resolution": "1YE", "aggregation": ["mean", "sum", "max"]}
+                {"resolution": "1d", "aggregation": ["sum", "max"]},
+                {"resolution": "1ME", "aggregation": ["sum", "max"]},
+                {"resolution": "1YE", "aggregation": ["sum", "max"]}
 
             ],
             "sectors": [

@@ -91,15 +91,6 @@
                     class="mx-px"
                     variant="fill-light"
                     color="primary"
-                    on:click={() => (aggregation = 'mean')} 
-                    active={aggregation === 'mean'}
-                >
-                    <UnfoldVertical size={20} />
-                </Button>
-                <Button 
-                    class="mx-px"
-                    variant="fill-light"
-                    color="primary"
                     on:click={() => (aggregation = 'max')} 
                     active={aggregation === 'max'}
                 >

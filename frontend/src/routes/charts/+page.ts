@@ -40,7 +40,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
         // Fetch GeoJSON and CSV data
         const geojsonData = await fetchGeoJSON(`${API_BASE_URL}/geo?division=${division}`);
         const hourData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1h&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
-        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=sum&year=${year}&growth=${scenario.growth}`);
         const yearData = await fetchYearly(`${API_BASE_URL}/demand?geography=all&resolution=1YE&sector=all&aggregation=sum&year=${year}&growth=${scenario.growth}`);
         const allYearsData = await fetchAllYears(`${API_BASE_URL}/demand?geography=${geography}&resolution=1YE&sector=all&aggregation=sum&year=all&growth=${scenario.growth}`);
 
