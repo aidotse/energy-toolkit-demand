@@ -48,7 +48,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             throw new Error('Failed to fetch hourData or data is empty');
         }
 
-        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=mean&year=${year}&growth=${scenario.growth}`);
+        const dayData = await fetchTimeseries(`${API_BASE_URL}/demand_t?geography=${geography}&resolution=1d&sector=${sector}&aggregation=sum&year=${year}&growth=${scenario.growth}`);
         if (!dayData || dayData.length === 0) {
             throw new Error('Failed to fetch dayData or data is empty');
         }
