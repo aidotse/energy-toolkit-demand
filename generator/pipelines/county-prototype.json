@@ -1,0 +1,243 @@
+{
+    "config-name": "county-prototype",
+    "access": "public",
+    "start-time": "2025-01-01 00:00:00",
+    "end-time": "2044-12-31 23:00:00",
+    "base": {
+        "name": "base-demand/base-load-curve",
+        "access": "public",
+        "admin-level": "country",
+        "properties": {
+            "base-year": 2025,
+            "geography": "SE",
+            "normalized": false,
+            "resolution": "1h",
+            "aggregation": "mean"
+        }
+    },
+    "geography": {
+        "division": "county",
+        "source": "geographies/sweden-counties.geojson"
+    },
+    "scenarios": [
+        {
+            "name": "growth",
+            "type": "scalar",
+            "items": [
+                {"value": 1, "label": "low"},
+                {"value": 2, "label": "mid"},
+                {"value": 3, "label": "high"}
+            ],
+            "default": 2,
+            "description": "A generic parameter for growth in the model.",
+            "disable": false
+        },
+        {
+            "name": "housing_flex",
+            "type": "scalar",
+            "items": [
+                {"value": 0, "label": "low"},
+                {"value": 0.5, "label": "mid"},
+                {"value": 1, "label": "high"}
+            ],
+            "default": 0.5,
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "industry_flex",
+            "type": "scalar",
+            "items": [
+                {"value": 0, "label": "low"},
+                {"value": 0.5, "label": "mid"},
+                {"value": 1, "label": "high"}
+            ],
+            "default": 0.5,
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "transport_flex",
+            "type": "scalar",
+            "items": [
+                {"value": 0, "label": "low"},
+                {"value": 0.5, "label": "mid"},
+                {"value": 1, "label": "high"}
+            ],
+            "default": 0.5,
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "transport_electrification",
+            "type": "scalar",
+            "items": [
+                {"value": 0, "label": "low"},
+                {"value": 0.5, "label": "mid"},
+                {"value": 1, "label": "high"}
+            ],
+            "default": 0.5,
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "industry_transition",
+            "type": "scalar",
+            "items": [
+                {"value": 0, "label": "low"},
+                {"value": 0.5, "label": "mid"},
+                {"value": 1, "label": "high"}
+            ],
+            "default": 0.5,
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "low_transport_electrification_low_housing_flex",
+            "type": "constraint",
+            "components": ["housing_flex", "transport_electrification"],
+            "description": "",
+            "disable": true
+        },
+        {
+            "name": "low_growth_low_industry_transition",
+            "type": "constraint",
+            "components": ["growth", "industry_transition"],
+            "description": "",
+            "disable": true
+        }
+    ],
+    "transformers": [
+        {
+            "name": "county_energy_split",
+            "order": 1,
+            "access": "public",
+            "type": "factor-split",
+            "randomness": true,
+            "inputs": [
+                {
+                    "name": "county_energy_split",
+                    "path": "county_energy_split/county_energy_split.csv",
+                    "columns": ["geography", "factor"],
+                    "index": "geography"
+                }
+            ]
+        },
+        {
+            "name": "growth_over_time",
+            "order": 2,
+            "access": "public",
+            "type": "dynamic",
+            "scenarios": [
+                {"index": 1, "label": "low", "name": "growth", "type": "exp-growth-to-target", "target": 2, "random": true, "randomness": 0.1},
+                {"index": 2, "label": "mid", "name": "growth", "type": "exp-growth-to-target", "target": 2.33, "random": true, "randomness": 0.1},
+                {"index": 3, "label": "high", "name": "growth", "type": "exp-growth-to-target", "target": 2.4, "random": true, "randomness": 0.1}
+            ]
+        },
+        {
+            "name": "sector_split",
+            "order": 3,
+            "access": "public",
+            "inputs": []
+}        
+    ],
+    "outputs": [
+        {
+            "name": "geojson",
+            "parameters": ["division"],
+            "scenarios": false
+        },
+        {
+            "name": "geographies",
+            "parameters": ["division"],
+            "scenarios": false
+        },
+        {
+            "name": "config",
+            "parameters": [],
+            "scenarios": false
+        },
+        {
+            "name": "parameters",
+            "parameters": [],
+            "scenarios": false
+        },
+        {
+            "name": "globals",
+            "parameters": [],
+            "scenarios": false
+        },
+        {
+            "name": "scenarios",
+            "parameters": [],
+            "scenarios": false
+        },
+        {
+            "name": "aggregations",
+            "parameters": [],
+            "scenarios": false
+        },
+        {
+            "name": "demand-t",
+            "parameters": ["geography", "resolution", "aggregation", "sector", "year"],
+            "scenarios": true
+        },
+        {
+            "name": "demand",
+            "parameters": ["geography", "resolution", "aggregation", "sector", "year"],
+            "scenarios": true
+        }
+
+    ],
+    "filters": {
+        "geography": {
+            "name": "geography",
+            "type": "string",
+            "description": "The geography identified by code.",
+            "default": "",
+            "options": []	
+        },
+        "sector": {
+            "name": "sector",
+            "type": "string",
+            "description": "The sector to filter on.",
+            "default": "all",
+            "options": [
+                {"value": "all", "label": "All"},
+                {"value": "buildings", "label": "Buildings/other"},
+                {"value": "industry", "label": "Industry"},
+                {"value": "transport", "label": "Transport"}
+            ]
+        },
+        "resolution":{
+            "name": "resolution",
+            "type": "string",
+            "description": "The resolution to filter on.",
+            "default": "1h",
+            "options": [
+                {"value": "1h", "label": "1h"},
+                {"value": "1d", "label": "1d"},
+                {"value": "1ME", "label": "1M"},
+                {"value": "1YE", "label": "1Y"}
+            ]
+        },
+        "aggregation": {
+            "name": "aggregation",
+            "type": ["string"],
+            "description": "The aggregations applied to each resolution",
+            "default": "sum",
+            "options": [
+                {"value": "sum", "label": "Sum"},
+                {"value": "mean", "label": "Mean"}
+            ]
+        },
+        "division": {
+            "name": "division",
+            "type": "string",
+            "description": "The division to filter on.",
+            "default": "",
+            "options": []
+        }
+
+    }
+}

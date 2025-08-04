@@ -1,16 +1,29 @@
 {
   "name": "api",
   "version": "0.0.1",
-	"type": "module",
+  "type": "module",
   "scripts": {
+    "login": "aws sso login --profile AWSAdministratorAccess-600627346413",
+    "build:static-endpoints": "node scripts/generate-endpoints.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node dev-api.js"
+    "start": "node local-server.js",
+    "deploy-data:dev": "bash ./deploy-data.sh dev AWSAdministratorAccess-600627346413",
+    "deploy-data:staging": "bash ./deploy-data.sh staging AWSAdministratorAccess-600627346413",
+    "deploy-data:prod": "bash ./deploy-data.sh prod AWSAdministratorAccess-600627346413",
+    "generate-api:dev": "node ./generate-api-gateway-terraform.js dev",
+    "generate-api:staging": "node ./generate-api-gateway-terraform.js staging"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "date-fns": "^4.1.0",
+    "duckdb": "^1.2.1",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.0",
+    "json-schema-ref-parser": "^9.0.9",
+    "openapi-backend": "^5.12.0",
+    "qs": "^6.14.0"
   }
 }
