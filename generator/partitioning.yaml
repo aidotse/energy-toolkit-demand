@@ -1,0 +1,34 @@
+# generator/partitioning.yaml
+
+# After you’ve defined *what* parameters and scenarios you support
+# in api/parameters.yaml, come here to declare *how* to shard
+# your Parquet dataset on disk. Tweak this list to match:
+#  1) the filters most often used in your queries (for pruning)
+#  2) your target file sizes (so you don’t end up with tiny or huge files)
+partitionKeys:
+  # 1. Top‐level time partition: extract the year from your period.start timestamp
+  - path: period.start
+    transform: year
+
+  # 2. Geography dimension: always partition by your primary geography level
+  - path: dimensions.geography
+
+  # 3. (Optional) secondary geography split: uncomment if you want county/sub‐county folders
+  # - dimensions.geography.level2?
+
+  # 4. Segment dimension: partition by your top‐level segment slice
+  - path: dimensions.segment.level1
+
+  # 5. (Optional) subsegment: only if you routinely filter on this deeper level
+  # - dimensions.segment.level2?
+
+  # 6. Scenario knobs: list only those scenario fields you commonly filter on.
+  #    If you don’t need every scenario as a folder (to avoid too many small files),
+  #    omit it here and let row‐group pruning handle it instead.
+  - path: scenario.growth
+  # - scenario.co2_price     # add additional knobs as needed
+
+# Tune this to hit your desired file size:
+#  - at 1h resolution, ~100 000 rows ≈ 2–10 MB per file (depending on other columns)
+#  - adjust upward for sparser data, downward if files grow too large (>100 MB)
+rowGroupSize: 100000

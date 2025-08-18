@@ -1,0 +1,131 @@
+# api/parameters.yaml
+  # Defines the public API parameters (filters & scenarios) for GET /demand
+
+  components:
+    parameters:
+
+      period:
+        name: period
+        in: query
+        description: >
+          Time period (between `start` and `end`) to query,
+          aggregated to the specified `resolution` with the
+          specified `aggregation` function. 
+        required: true
+        schema:
+          type: object
+          required: [start, resolution, aggregation]
+          properties:
+            start:
+              type: string
+              description: >
+                Inclusive lower bound, ISO‐8601 time ()
+                or truncated according to `resolution`
+                (e.g. `2030` for resolution `1Y`).
+            end:
+              type: string
+              description: >
+                Inclusive lower bound, ISO‐8601 time ()
+                or truncated according to `resolution`
+                (e.g. `2030` for resolution `1Y`). If no `end` is
+                specified then the `end` is inferred by `resolution`.
+            resolution:
+              type: string
+              enum: {{RESOLUTIONS}}
+              description: Time/bin size for the output series
+            aggregation:
+              type: string
+              enum: {{AGGREGATIONS}}
+              description: Aggregation function applied within each time bin
+
+      dimensions:
+        name: dimensions
+        in: query
+        description: >
+          Dimensions (non-scenario parameters) are divided into geography and segment. 
+        required: true
+        schema:
+          type: object
+          required:
+            - geography
+            - segment
+          properties:
+            geography:
+              description: >
+                Which geography codes to include:
+                • `<code>` → that one geography
+                • `all`    → every geography
+                • `total`  → all geographies combined
+                • `[code1,code2,…]` → multiple specific geographies
+              oneOf:
+                # single-code, "all", or "total"
+                - type: string
+                  anyOf:
+                    - enum: ['all', 'total']
+                    - $ref: './parameters-geography.yaml#/geographies'
+                # multi-code list (may include "total")
+                - type: array
+                  items:
+                    anyOf:
+                      - enum: [total]
+                      - $ref: './parameters-geography.yaml#/geographies'
+                      
+            segment:
+              type: object
+              required:
+                - level1
+              properties:
+                level1:
+                  description: >
+                    $ref: '../config.yaml#/segments/level1/description'
+                    • `<name>`  → that one segment
+                    • `all`     → return each segment separately
+                    • `total`   → collapse (sum) across all real segments
+                    • `[...names]` → multiple specific segments
+                  oneOf:
+                    # single segment, "all", or "total"
+                    - type: string
+                      anyOf:
+                        - enum: ['all', 'total']
+                        - $ref: './parameters-segment.yaml#/level1'
+                    # multi-segment list (may include "total")
+                    - type: array
+                      items:
+                        anyOf:
+                          - enum: [total]
+                          - $ref: './parameters-segment.yaml#/level1'
+
+      scenario:
+        name: scenario
+        in: query
+        description: >
+          Model parameters ("what‐if" knobs) that modify the data values.
+          Defined values and defaults are published by GET /scenarios.
+        required: false
+        schema:
+          type: object
+          properties:
+            {{SCENARIO_PROPERTIES}}
+          # No additionalProperties section
+
+      # Used by /demand and similar data-series endpoints
+      responseFormat:
+        name: format
+        in: query
+        description: Response format
+        schema:
+          type: string
+          enum:
+            - json
+            - csv
+
+      # Used by /geographies (and any geojson endpoints)
+      geoFormat:
+        name: format
+        in: query
+        description: Response format
+        schema:
+          type: string
+          enum:
+            - json
+            - geojson

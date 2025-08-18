@@ -1,0 +1,6 @@
+level1:
+  type: string
+  enum:
+    - buildings
+    - industry
+    - transport

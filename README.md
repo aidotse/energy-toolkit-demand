@@ -1,13 +1,19 @@
-# Behovskartan
+# Demand Toolit
 
-This repo contains Behovskartan starting from version 2.0 and is developed in collaboration with Energimyndigheten. The project aims to develop a framework for modelling, analyzing, and communicating future electricity demand.
+This is a monorepo containing the three independently usable applications
 
-The framework should be:
+- Generator (`/generator`)
 
-+ Open-source: with public data, but it should also allow for internal use with proprietary/confidential data and knowledge
-+ Useful: it should provide insights to non-experts and be a powerful tool for experts 
-+ Portable: it should be easy to set up, modify, and deploy in various environments
-+ Secure: we assure security through simplicity, with file-based data and models
+A python-based tool for generating forecasts of future energy demand. This repo ships with an example forecast model of the regional electricity demand 2025-2044 (clear out the example model with the `clear-example.py` script in `/generator`)
+
+- API (`/api`)
+
+A flexible API that can either output local CSV files, serve a local API (OpenAPI 3.1), or is ready to deploy to a cloud service.
+
+- Exporer (`/explorer`)
+
+An adaptible web application for exploring the data through text 
+
 
 ## Uses cases
 

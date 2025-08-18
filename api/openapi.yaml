@@ -1,0 +1,162 @@
+openapi: 3.1.0
+info:
+  title: Demand Toolkit API
+  version: 0.0.5
+  description: |
+    Machine-readable specification for the Demand Toolkit endpoints.
+    All legal values for query-field variants are retrieved via **GET /parameters**.
+
+servers:
+  - url: https://{domain}/{stage}
+    variables:
+      domain:
+        default: placeholder.example.com   # override per-deployment
+        description: Public hostname or proxy base path
+      stage:
+        default: dev
+        enum: [dev, staging, prod]
+
+components:
+  parameters:
+    period:
+      $ref: './parameters.yaml#/components/parameters/period'
+    dimensions:
+      $ref: './parameters.yaml#/components/parameters/dimensions'
+    scenario:
+      $ref: './parameters.yaml#/components/parameters/scenario'
+    responseFormat:
+      $ref: './parameters.yaml#/components/parameters/responseFormat'
+    geoFormat:
+      $ref: './parameters.yaml#/components/parameters/geoFormat'
+  schemas:
+    GeoFeatureCollection:
+      $ref: './schemas/common-schemas.yaml#/components/schemas/GeoFeatureCollection'
+  responses:
+    InvalidCombination:
+      $ref: './responses/common-responses.yaml#/components/responses/InvalidCombination'
+
+paths:
+
+  /geographies:
+    get:
+      operationId: getGeographies
+      summary: List of geographies metadata, in JSON or GeoJSON
+      # no more division/filter parameter here
+      parameters:
+        - $ref: '#/components/parameters/geoFormat'
+      responses:
+        '200':
+          description: Geographies metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/GeoFeatureCollection'
+
+  /config:
+    get:
+      operationId: getConfig
+      summary: Data-generator configuration
+      responses:
+        '200':
+          description: JSON document
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /scenarios:
+    get:
+      operationId: getScenarios
+      summary: Enumerated list of valid scenario permutations
+      responses:
+        '200':
+          description: JSON array
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+
+  /parameters:
+    get:
+      operationId: getParameters
+      summary: Lookup tables for every query-field
+      responses:
+        '200':
+          description: JSON document of arrays
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /globals:
+    get:
+      operationId: getGlobals
+      summary: Global hourly extrema across all scenarios, geographies, segments
+      responses:
+        '200':
+          description: Minimum and maximum hourly values
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  min:
+                    type: number
+                    description: The lowest hourly value across the entire dataset
+                  max:
+                    type: number
+                    description: The highest hourly value across the entire dataset
+                required: [min, max]
+
+  /aggregations:
+    get:
+      operationId: getAggregations
+      summary: Available resolution-aggregation combinations
+      responses:
+        '200':
+          description: JSON array of aggregation options
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common-schemas.yaml#/components/schemas/AggregationsResponse'
+
+  /demand:
+    get:
+      operationId: getDemand
+      summary: Demand time‐series at arbitrary resolution
+      parameters:
+        - $ref: '#/components/parameters/period'
+        - $ref: '#/components/parameters/dimensions'
+        - $ref: '#/components/parameters/scenario'
+        - $ref: '#/components/parameters/responseFormat'
+      responses:
+        '200':
+          description: Time‐series response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    period:
+                      type: string
+                      format: date-time
+                    geography:
+                      type: string
+                    segment:
+                      type: string
+                    growth:
+                      type: number
+                    value:
+                      type: number
+            text/csv:
+              schema:
+                type: string
+                format: binary
