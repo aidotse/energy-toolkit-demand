@@ -5,7 +5,6 @@ import os
 import json
 from typing import Union, List, Optional
 
-
 # --- Unified Utilities for DuckDB & Parquet Scaffolds ---
 
 def connect_or_passthrough(source: Union[duckdb.DuckDBPyConnection, Path]) -> duckdb.DuckDBPyConnection:
@@ -177,32 +176,21 @@ def list_columns(
             con.close()
     raise ValueError(f"Unsupported source for list_columns: {source}")
 
-
-import duckdb
-import json
-import pandas as pd
-from pathlib import Path
-from typing import Union, List, Optional
-
-from generator.library.db import infer_single_table
-
 def read_data(
     source: Union[duckdb.DuckDBPyConnection, Path],
-    years: List[int] = None,
-    geographies: List[str] = None,
-    sectors: List[str] = None,
     where: Optional[str] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
+    skip_partitions: bool = False
 ) -> pd.DataFrame:
     """
-    Read rows from a DuckDB table or Parquet scaffold, preserving the original
-    column order and dropping any scaffold-added columns as recorded in
-    `_column_metadata.json`.
+    Read rows from a DuckDB table, a .duckdb file, or a Parquet scaffold.
 
-    - For DuckDB sources (connection or .duckdb), `table` is required;
-      optional `where` and `limit` apply.
-    - For Parquet scaffolds (directory), filters by `years`, `geographies`,
-      and `sectors` only.
+    Filtering:
+      - `where`: SQL WHERE clause string (without the 'WHERE' keyword)
+      - `limit`: integer row limit
+
+    If `skip_partitions=True` on a Parquet scaffold, drops scaffold-added
+    columns per `_column_metadata.json`.
     """
     def apply_metadata(path: Path, df: pd.DataFrame) -> pd.DataFrame:
         meta_file = path / "_column_metadata.json"
@@ -210,7 +198,6 @@ def read_data(
             info = json.loads(meta_file.read_text())
             col_order = info.get("column_order", [])
             added = set(info.get("added_columns", []))
-            # keep only originally written columns, in the recorded order
             keep = [c for c in col_order if c in df.columns and c not in added]
             return df[keep]
         return df
@@ -226,12 +213,13 @@ def read_data(
         if limit:
             query += f" LIMIT {limit}"
         df = source.execute(query).fetchdf()
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
         return df
 
     src = Path(source)
+
     # .duckdb file
-    if src.is_file() and src.suffix == '.duckdb':
+    if src.is_file() and src.suffix == ".duckdb":
         con = duckdb.connect(database=str(src), read_only=True)
         try:
             table = infer_single_table(con)
@@ -243,9 +231,8 @@ def read_data(
             if limit:
                 query += f" LIMIT {limit}"
             df = con.execute(query).fetchdf()
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            # apply metadata to drop scaffold-added columns
-            return apply_metadata(src, df)
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            return apply_metadata(src, df) if skip_partitions else df
         finally:
             con.close()
 
@@ -253,26 +240,16 @@ def read_data(
     if src.is_dir():
         con = duckdb.connect()
         try:
-            sql = [f"SELECT * FROM parquet_scan('{str(src / '**' / '*.parquet')}', hive_partitioning=TRUE)"]
-            clauses = []
-            if years:
-                yrs = ','.join(str(y) for y in years)
-                clauses.append(f"timestamp_year IN ({yrs})")
-            if geographies:
-                geogs = ','.join(f"'{g}'" for g in geographies)
-                clauses.append(f"geography IN ({geogs})")
-            if sectors:
-                secs = ','.join(f"'{s}'" for s in sectors)
-                clauses.append(f"sector IN ({secs})")
-            if clauses:
-                sql.append("WHERE " + " AND ".join(clauses))
+            query = (
+                f"SELECT * FROM parquet_scan('{str(src / '**' / '*.parquet')}', hive_partitioning=TRUE)"
+            )
+            if where:
+                query += f" WHERE {where}"
             if limit:
-                sql.append(f"LIMIT {limit}")
-            query = " ".join(sql)
+                query += f" LIMIT {limit}"
             df = con.execute(query).fetchdf()
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            # apply metadata to drop scaffold-added columns
-            return apply_metadata(src, df)
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            return apply_metadata(src, df) if skip_partitions else df
         finally:
             con.close()
 
@@ -294,20 +271,17 @@ def write_df_to_scaffold(
         partition_specs: list of either:
           - str: existing column or builtin ('timestamp_year' or 'year')
           - tuple(orig_col, part_name): derive new column part_name from df[orig_col]
-        parquet_kwargs: passed through to pandas.to_parquet (engine, compression, etc.)
+        parquet_kwargs: passed through to pandas.to_parquet
     """
     root = Path(root_path)
     root.mkdir(parents=True, exist_ok=True)
 
-    # 1) Prepare and normalize
     df_out = df.copy()
     df_out['timestamp'] = pd.to_datetime(df_out['timestamp'])
 
-    # 2) Capture the original columns
     base_columns = df_out.columns.tolist()
-
-    # 3) Derive partitions
     actual_parts: List[str] = []
+
     for spec in partition_specs:
         if isinstance(spec, str):
             if spec in ('timestamp_year', 'year'):
@@ -316,7 +290,10 @@ def write_df_to_scaffold(
                 actual_parts.append(part_name)
             else:
                 if spec not in df_out.columns:
-                    raise ValueError(f"Partition column '{spec}' not found in DataFrame.")
+                    if spec == "scenario_id":
+                        df_out["scenario_id"] = "base"
+                    else:
+                        raise ValueError(f"Partition column '{spec}' not found in DataFrame.")
                 actual_parts.append(spec)
         else:
             orig_col, part_name = spec
@@ -329,12 +306,11 @@ def write_df_to_scaffold(
                 df_out[part_name] = df_out[orig_col]
                 actual_parts.append(part_name)
 
-    # 4) Write the Parquet dataset
     if parquet_kwargs is None:
         parquet_kwargs = {'engine': 'pyarrow', 'compression': 'snappy', 'index': False}
+
     df_out.to_parquet(str(root), partition_cols=actual_parts, **parquet_kwargs)
 
-    # 5) Record metadata: final column order and which were added
     final_columns = df_out.columns.tolist()
     added_columns = [c for c in final_columns if c not in base_columns]
 
