@@ -55,57 +55,31 @@ def process_scenario(
     scenario_schema: List[str],
     output_path: Path,
     partition: List[str],
-    base_scenario: str = "base"
+    base_scenario: str = "base",
 ) -> str:
     """
     Process a single scenario:
-    - Loads base data from scaffold
+    - Loads base data from scaffold (scenario_id=base_scenario)
     - Applies growth curves based on scenario parameters
-    - Adds scenario_id and scenario columns
+    - Adds scenario_id and scenario_* columns (compact numeric where possible)
     - Writes the result to a Hive-style partitioned Parquet scaffold
-
-    Args:
-        scenario: scenario dict (must include the keys referenced in scenario_schema)
-        scenario_params: per-parameter config:
-            {
-              "<param>": {
-                  "segment": "<segment-name>",
-                  "geography": "all" | "<geo>" | list[str] (optional),
-                  "how": "multiply" | "add" (default "multiply"),
-                  # one of the following to resolve the curve
-                  "curves_by_value": {<scenario_value>: CurveLike} | ...
-                  "curve_path_template": "path/like/{param}=...{value}...{start_year}...",
-                  "curve_like": CurveLike
-              },
-              ...
-            }
-        scenario_schema: ordered list of parameter names, used to build scenario_id
-        output_path: Path to OUTPUT scaffold root for scenarios
-        partition: list of partition columns (must include "scenario_id")
-        base_scenario: scenario_id of the base scenario to load data from
     """
-    # 1) Build scenario_id
+    # 1) Build scenario_id string
     scenario_id = _scenario_id_from_schema(scenario, scenario_schema)
     print(f"Processing scenario: {scenario_id}")
 
-    # 2) Load base scenario
-    df = read_data(output_path,where=f"scenario_id='{base_scenario}'")
-    df = df.copy()
-    #print(f"Loaded base scenario: {base_scenario}")
+    # 2) Load base data
+    df = read_data(output_path, where=f"scenario_id='{base_scenario}'").copy()
 
-    # 3) Apply each param's curve to its target slice
-    #print("Applying growth curves to scenario parameters...")
+    # 3) Apply each param's curve
     for param_name, param_cfg in scenario_params.items():
         if param_name not in scenario:
-            # Not provided -> skip
             continue
 
         value = scenario[param_name]
         curve_df = _resolve_curve_for_param(param_cfg, scenario, value)
-        #print(f"Resolved curve for param '{param_name}' with value '{value}'")
         how = param_cfg.get("how", "multiply")
 
-        # target slice
         seg = param_cfg["segment"]
         geo_spec = param_cfg.get("geography", "all")
 
@@ -115,35 +89,33 @@ def process_scenario(
         elif isinstance(geo_spec, (list, tuple, set)):
             mask &= df["geography"].isin(list(geo_spec))
 
-        if not mask.any():
-            # Nothing to do for this param (no matching rows)
-            continue
-
-        # Apply on the slice then assign back
-        slice_df = df.loc[mask, ["timestamp", "value"]].copy()
-        slice_df = apply_growth_curve_to_value(slice_df, curve_df, how=how, target_col="value")
-        df.loc[mask, "value"] = slice_df["value"].values
-        #print(f"Applied curve for param {param_name}")
+        if mask.any():
+            slice_df = df.loc[mask, ["timestamp", "value"]].copy()
+            slice_df = apply_growth_curve_to_value(slice_df, curve_df, how=how, target_col="value")
+            df.loc[mask, "value"] = slice_df["value"].values
 
     # 4) Attach scenario metadata
     df["scenario_id"] = scenario_id
-    for k in scenario_params.keys():
-        col = f"scenario_{k}"
-        df[col] = scenario.get(k)
+    for k in scenario_schema:
+        v = scenario.get(k, 0)
+        # write as compact numeric if possible
+        try:
+            df[f"scenario_{k}"] = pd.Series(v, index=df.index, dtype=pd.Int8Dtype())
+        except Exception:
+            df[f"scenario_{k}"] = v  # fallback (string or float)
 
-    # 5) Persist to scaffold (ensure scenario_id is a partition column)
+    # 5) Persist to scaffold
     if "scenario_id" not in partition:
         partition = ["scenario_id", *partition]
 
-    #print("Writing scenario data to scaffold...")
     write_df_to_scaffold(
         df=df,
         root_path=output_path,
         partition_specs=partition,
+        parquet_kwargs={"engine": "pyarrow", "compression": "zstd", "compression_level": 3, "index": False}
     )
 
     return scenario_id
-
 
 def process_scenario_sql(
     scenario: dict,
@@ -160,8 +132,8 @@ def process_scenario_sql(
 
     con = duckdb.connect()
 
-    # Base parquet glob
-    base_glob = str(output_path / "**" / "*.parquet")
+    # Base parquet glob - scan only the base scenario directory to avoid performance degradation
+    base_glob = str(output_path / f"scenario_id={base_scenario}" / "**" / "*.parquet")
 
     # Build SELECT for base with only necessary columns
     needed_cols = {"timestamp", "value", "geography", "segment"}

@@ -6,6 +6,10 @@ import yaml from 'js-yaml';
 import { findProjectRoot, getApiDir, getDataDir, resolveFromRoot, resolveFromApi } from '../../paths.js';
 import { generateParameters, generateGeographies, generateScenarios, generateAggregations, generateConfig } from './endpoints.js';
 
+/**
+ * Builds all static endpoint data files from configuration sources
+ * @returns {Promise<void>}
+ */
 export async function buildStaticEndpoints() {
   // Use our path utilities to ensure consistent paths
   const projectRoot = findProjectRoot();
@@ -24,14 +28,12 @@ export async function buildStaticEndpoints() {
 
   try {
     console.log('Generating parameters.json...');
-    // Use resolveFromApi to get absolute paths to API files
-    const paramsPath = resolveFromApi('parameters.yaml');
+    // Use resolveFromApi to get absolute path to OpenAPI file
     const openapiPath = resolveFromApi('openapi.yaml');
-    
-    console.log(`Using parameters file: ${paramsPath}`);
+
     console.log(`Using OpenAPI file: ${openapiPath}`);
-    
-    const params = await generateParameters(paramsPath, openapiPath);
+
+    const params = await generateParameters(null, openapiPath);
     
     const paramsOutputPath = path.join(dataDir, 'parameters.json');
     console.log(`Writing parameters to: ${paramsOutputPath}`);
@@ -59,20 +61,29 @@ export async function buildStaticEndpoints() {
       JSON.stringify(geos, null, 2) + '\n'
     );
     
-    // Also save the geojson path for reference
-    const geojsonPath = await generateGeographies(config, 'geojson');
-    console.log(`GeoJSON file path: ${geojsonPath}`);
+    // Copy GeoJSON file to data directory
+    const geojsonSourcePath = await generateGeographies(config, 'geojson');
+    console.log(`GeoJSON source file: ${geojsonSourcePath}`);
+
+    // Make sure we have an absolute path
+    const absoluteSourcePath = path.isAbsolute(geojsonSourcePath)
+      ? geojsonSourcePath
+      : path.resolve(projectRoot, geojsonSourcePath);
+
+    const geojsonOutputPath = path.join(dataDir, 'geographies.geojson');
+    console.log(`Copying GeoJSON from: ${absoluteSourcePath}`);
+    console.log(`Copying GeoJSON to: ${geojsonOutputPath}`);
+
+    if (fs.existsSync(absoluteSourcePath)) {
+      fs.copyFileSync(absoluteSourcePath, geojsonOutputPath);
+      console.log(`✅ GeoJSON file copied successfully`);
+    } else {
+      console.warn(`Warning: GeoJSON source file not found: ${absoluteSourcePath}`);
+    }
     
     console.log('Generating scenarios.json...');
-    // Load the parameters-scenario.yaml file
-    const scenariosParamsPath = resolveFromApi('parameters-scenario.yaml');
-    console.log(`Using scenarios parameters file: ${scenariosParamsPath}`);
-    
-    const scenariosParamsContent = fs.readFileSync(scenariosParamsPath, 'utf8');
-    const scenariosParams = yaml.load(scenariosParamsContent);
-    
-    // Generate scenarios with both config and scenario parameters
-    const scen = await generateScenarios(config, scenariosParams);
+    // Generate scenarios directly from config.yaml
+    const scen = await generateScenarios(config);
     const scenOutputPath = path.join(dataDir, 'scenarios.json');
     console.log(`Writing scenarios to: ${scenOutputPath}`);
     

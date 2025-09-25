@@ -37,11 +37,17 @@ app.use((req, res) =>
 );
 
 // 0) Bootstrap DuckDB once, reuse the same connection
+/** @type {duckdb.Database} */
 const db = new duckdb.Database(':memory:');
+/** @type {duckdb.Connection} */
 const conn = db.connect();
 
-// A generic static‐file handler for any GET operation whose operationId begins with “get”
-// and whose spec lives under ./data/<base>.(json|geojson)
+/**
+ * Handler for geography endpoint - serves static files in JSON or GeoJSON format
+ * @param {import('openapi-backend').Context} c - OpenAPI context
+ * @param {import('express').Request} req - Express request
+ * @param {import('express').Response} res - Express response
+ */
 api.register('getGeographies', (c, req, res) => {
   // Pick the format from ?format=… or default to json
   const fmt = (c.request.query.format === 'geojson' ? 'geojson' : 'json');
@@ -78,60 +84,37 @@ staticOps.forEach((op) => {
   });
 });
 
-api.register('getGlobals', async (c, req, res) => {
-  try {
-    // Query DuckDB for global min and max of t.value
-    const sql = `
-      SELECT
-        MIN(value) AS min,
-        MAX(value) AS max
-      FROM read_parquet('${path.join(__dirname,'data')}/**/*.parquet')`;
-    const [{ min, max }] = await new Promise((ok, nok) =>
-      conn.all(sql, (e, rows) => (e ? nok(e) : ok(rows)))
-    );
-
-    // Send as JSON
-    res.json({ min: Number(min), max: Number(max) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 api.register('getDemand', async (c, req, res) => {
   try {
-    const { period, dimensions, scenario } = c.request.query;
+    const { period, geography, segment, scenario_id } = c.request.query;
     const fmt = c.request.query.format || 'json';
 
     // 1) Pull out common filters
     const { start, end } = parsePeriod(c.request.query.period);
-    const resolution   = period.resolution;   // '1h' | '1d' | '1M' | '1Y'
+    const resolution   = period.resolution;   // '1h' | '1w' | '1M' | '1Y'
     const aggregation  = period.aggregation;  // 'mean' | 'sum'
-    const geoFilter    = dimensions.geography;
-    const segFilter    = dimensions.segment.level1;
-    const growthFilter = scenario.growth;
+    const geoFilter    = geography;
+    const segFilter    = segment;
+    const scenarioFilter = scenario_id;
 
     // 2) Map resolution → SQL truncation expression + alias
     let timeExpr, timeAlias;
     switch (resolution) {
       case '1h':
-        timeExpr  = `t."period.start"`;
-        timeAlias = 'period';
-        break;
-      case '1d':
-        timeExpr  = `DATE_TRUNC('day', t."period.start")`;
+        timeExpr  = `t.timestamp`;
         timeAlias = 'period';
         break;
       case '1w':
-        timeExpr = `DATE_TRUNC('week', t."period.start")`;
+        timeExpr = `DATE_TRUNC('week', t.timestamp)`;
         timeAlias = 'period';
         break;
       case '1M':
-        timeExpr  = `DATE_TRUNC('month', t."period.start")`;
+        timeExpr  = `DATE_TRUNC('month', t.timestamp)`;
         timeAlias = 'period';
         break;
       case '1Y':
-        timeExpr  = `DATE_TRUNC('year', t."period.start")`;
+        timeExpr  = `DATE_TRUNC('year', t.timestamp)`;
         timeAlias = 'period';
         break;
       default:
@@ -143,23 +126,23 @@ api.register('getDemand', async (c, req, res) => {
 
     // 4) Build WHERE clauses
     const wheres = [
-      `t."period.start" >= TIMESTAMP '${start}'`,
-      `t."period.start" <=  TIMESTAMP '${end}'`
+      `t.timestamp >= TIMESTAMP '${start}'`,
+      `t.timestamp <=  TIMESTAMP '${end}'`
     ];
 
     // geography filter
     if (geoFilter !== 'all' && geoFilter !== 'total') {
-      wheres.push(`t."dimensions.geography" = '${geoFilter}'`);
+      wheres.push(`t.geography = '${geoFilter}'`);
     }
 
     // segment filter
     if (segFilter !== 'all' && segFilter !== 'total') {
-      wheres.push(`t."dimensions.segment.level1" = '${segFilter}'`);
+      wheres.push(`t.segment = '${segFilter}'`);
     }
 
-    // growth (scenario) filter
-    if (growthFilter !== undefined && growthFilter !== 'all') {
-      wheres.push(`t."scenario.growth" = ${growthFilter}`);
+    // scenario filter
+    if (scenarioFilter !== undefined && scenarioFilter !== 'all') {
+      wheres.push(`t.scenario_id = '${scenarioFilter}'`);
     }
 
     // 5) Decide GROUP BY keys and SELECT clause parts
@@ -173,8 +156,8 @@ api.register('getDemand', async (c, req, res) => {
       // no GROUP BY
     }
     else if (geoFilter === 'all') {
-      selectExtras.push(`t."dimensions.geography" AS geography`);
-      groupBy.push(`t."dimensions.geography"`);
+      selectExtras.push(`t.geography AS geography`);
+      groupBy.push(`t.geography`);
     }
     else {
       // single geography (already WHERE'd above)
@@ -186,20 +169,20 @@ api.register('getDemand', async (c, req, res) => {
       selectExtras.push(`'total' AS segment`);
     }
     else if (segFilter === 'all') {
-      selectExtras.push(`t."dimensions.segment.level1" AS segment`);
-      groupBy.push(`t."dimensions.segment.level1"`);
+      selectExtras.push(`t.segment AS segment`);
+      groupBy.push(`t.segment`);
     }
     else {
       selectExtras.push(`'${segFilter}' AS segment`);
     }
 
-    // growth (scenario)
-    if (growthFilter === 'all') {
-      selectExtras.push(`t."scenario.growth" AS growth`);
-      groupBy.push(`t."scenario.growth"`);
+    // scenario
+    if (scenarioFilter === 'all') {
+      selectExtras.push(`t.scenario_id AS scenario_id`);
+      groupBy.push(`t.scenario_id`);
     }
     else {
-      selectExtras.push(`'${growthFilter}' AS growth`);
+      selectExtras.push(`'${scenarioFilter}' AS scenario_id`);
     }
 
     // 6) Put it all together
@@ -232,14 +215,14 @@ api.register('getDemand', async (c, req, res) => {
 
     // 9) Send back JSON or CSV
     if (fmt === 'csv') {
-      const header = Object.keys(rows[0] || {}).join(','); 
+      const header = Object.keys(rows[0] || {}).join(',');
       const lines = rows.map(r => {
           return [
             // ensure ISO format for the period
             formatPeriod(r.period, resolution),
             r.geography,
             r.segment,
-            r.growth,
+            r.scenario_id,
             r.value
           ].join(',');
       });

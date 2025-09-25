@@ -10,6 +10,24 @@ components:
           type: array
           items: {}   # refine later with full GeoJSON schema if desired
 
+    DemandRow:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        value: { type: number }
+        geography: { type: string }
+        segment: { type: string }
+        scenario_id: { type: string }
+        timestamp_year: { type: integer }
+      required: [timestamp, value, geography, segment, scenario_id]
+      patternProperties:
+        '^scenario_[a-z0-9_]+$':
+          oneOf:
+            - type: integer
+            - type: number
+            - type: string
+      additionalProperties: false
+
     CsvBinary:
       type: string
       format: binary

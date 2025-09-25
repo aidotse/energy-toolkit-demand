@@ -6,8 +6,9 @@ import yaml from 'js-yaml';
 import $RefParser from 'json-schema-ref-parser';
 
 /**
- * Reads parameters.yaml and openapi.yaml, inlines $refs,
- * and emits a trimmed array of public parameter definitions.
+ * Reads openapi.yaml and emits parameter definitions based on the API spec.
+ * Since we no longer use external parameter files, this returns an empty array
+ * or minimal parameter information extracted directly from the OpenAPI spec.
  * Each entry has:
  *   - name: the parameter key or nested key
  *   - required: boolean
@@ -15,15 +16,14 @@ import $RefParser from 'json-schema-ref-parser';
  *   - endpoints: [path, …]
  */
 export async function generateParameters(paramsPath, openapiPath) {
-  console.log(`Generating parameters from ${paramsPath} and ${openapiPath}`);
-  
-  // 1) Load & dereference parameters.yaml
-  const rawParams = fs.readFileSync(paramsPath, 'utf8');
-  const paramsDoc = yaml.load(rawParams);
+  console.log(`Generating parameters from OpenAPI: ${openapiPath}`);
+
+  // Since we're not using parameters.yaml anymore, create an empty parameters document
+  const paramsDoc = { components: { parameters: {} } };
   
   try {
-    // Attempt to dereference the parameters document
-    const fullParams = await $RefParser.dereference(paramsPath, paramsDoc);
+    // Use the empty parameters document directly since we don't have external parameter files
+    const fullParams = paramsDoc;
     
     // 2) Load and parse openapi.yaml
     const rawApi = fs.readFileSync(openapiPath, 'utf8');

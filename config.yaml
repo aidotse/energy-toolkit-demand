@@ -1,39 +1,65 @@
 useGenerator: true
 useAPI: true
 useExplorer: true
-name: counties-prototype
+name: behovskartan2
 version: 0.1.0
 access: public
-start: '2024-01-01T00:00:00Z'
+start: '2025-01-01T00:00:00Z'
 end: '2044-12-31T23:00:00Z'
 baseResolution: 1h
 baseAggregation: mean
-segments:
-  level1:
-    description: Primary segments
-    values:
-      - name: buildings
-        label: Buildings
-      - name: industry
-        label: Industry
-      - name: transport
-        label: Transport
-  level2: null
+segment:
+  description: Segments
+  values:
+    - name: housing
+      label: housing
+    - name: transport
+      label: transport
+    - name: industry
+      label: industry
 scenario:
+  useBaseAsDefaultScenario: true
   scenarios:
-    - name: growth
+    - name: housing_electrification
       type: index
       items:
         - value: 0
-          label: Low
+          label: '0'
         - value: 1
-          label: Mid
+          label: '1'
         - value: 2
-          label: High
-      default: 1
-      description: Economic growth in the geography
+          label: '2'
+        - value: 3
+          label: '3'
+        - value: 4
+          label: '4'
+      description: ''
+    - name: transport_electrification
+      type: index
+      items:
+        - value: 0
+          label: '0'
+        - value: 1
+          label: '1'
+        - value: 2
+          label: '2'
+        - value: 3
+          label: '3'
+        - value: 4
+          label: '4'
+      description: ''
+    - name: industry_transition
+      type: index
+      items:
+        - value: 0
+          label: '0'
+        - value: 1
+          label: '1'
+        - value: 2
+          label: '2'
+      description: ''
 geography:
-  file: generator/input/public/geographies/sweden-counties.geojson
+  file: generator/input/geographies/sweden-counties.geojson
   geographies:
     - id: '01'
       name: Stockholms län
@@ -100,12 +126,11 @@ geography:
       type: county
 generator:
   rowGroupSize: 100000
-  useScenarioId: true
   partitionKeys:
-    - path: period.start
-      transform: year
-    - path: dimensions.geography
-    - path: scenario._id
+    - scenario_id
+    - geography
+    - segment
+    - timestamp_year
 api:
   resolutions:
     - 1h

@@ -2,3 +2,14 @@ data/
 data_old/
 package-lock.json
 node_modules/
+old/
+
+# Generated documentation (keep source files, ignore generated output)
+docs/api/
+docs/openapi/
+!docs/API_DOCUMENTATION_GUIDE.md
+!docs/.gitkeep
+
+# Test coverage
+coverage/
+.nyc_output/

@@ -48,49 +48,27 @@ export async function askGeoJSONConfig() {
 }
 
 export async function askSegmentation() {
-  const level1Desc = await input({ message: 'Description for top-level segments', default: 'Primary segments' });
-  const topSegmentsRaw = await input({
-    message: 'Top-level segments (comma separated)'
+  const description = await input({ message: 'Description for segments', default: 'Segments' });
+  const segmentsRaw = await input({
+    message: 'Segments (comma separated)'
   });
-  const topSegments = topSegmentsRaw.split(',').map(s => s.trim()).filter(Boolean);
+  const segments = segmentsRaw.split(',').map(s => s.trim()).filter(Boolean);
 
-  const level1 = [];
-  for (const name of topSegments) {
+  const values = [];
+  for (const name of segments) {
     const label = await input({ message: `Label for segment '${name}'`, default: name });
-    level1.push({ name, label });
+    values.push({ name, label });
   }
 
-  const submode = await select({
-    message: 'Sub-level segmentation?',
-    choices: [
-      { name: 'None', value: 'none' },
-      { name: 'Common', value: 'common' },
-      { name: 'Per segment', value: 'per' }
-    ],
-    default: 'none'
-  });
-
-  let level2 = null;
-  if (submode === 'common') {
-    const level2Desc = await input({ message: 'Description for sub-level segments', default: 'Sub-segments (common)' });
-    const subSegmentsRaw = await input({ message: 'Sub-level segments (comma separated)' });
-    const subSegments = subSegmentsRaw.split(',').map(s => s.trim()).filter(Boolean);
-    level2 = { description: level2Desc, values: subSegments.map(name => ({ name, label: name })) };
-  } else if (submode === 'per') {
-    const level2Desc = await input({ message: 'Description for sub-level segments', default: 'Sub-segments per top-level' });
-    const per = {};
-    for (const seg of level1) {
-      const subsRaw = await input({ message: `Sub-segments for '${seg.name}' (comma separated)` });
-      const subs = subsRaw.split(',').map(s => s.trim()).filter(Boolean);
-      per[seg.name] = subs.map(name => ({ name, label: name }));
-    }
-    level2 = { description: level2Desc, values: per };
-  }
-
-  return { segments: { level1: { description: level1Desc, values: level1 }, level2 } };
+  return { segment: { description, values } };
 }
 
 export async function askScenarios() {
+  const useBaseAsDefaultScenario = await confirm({
+    message: 'Use base scenare as default scenario?',
+    default: true
+  });
+
   const numScenariosStr = await input({ message: 'Number of scenarios to configure', default: '1' });
   const numScenarios = Number(numScenariosStr);
   const scenarios = [];
@@ -123,8 +101,11 @@ export async function askScenarios() {
       values = [true, false];
     }
 
-    const defaultStr = await input({ message: 'Default value', default: values[0] });
-    const defaultVal = type === 'boolean' ? (defaultStr === 'true' || defaultStr === true) : Number(defaultStr);
+    let defaultVal;
+    if (!useBaseAsDefaultScenario) {
+      const defaultStr = await input({ message: 'Default value', default: values[0] });
+      defaultVal = type === 'boolean' ? (defaultStr === 'true' || defaultStr === true) : Number(defaultStr);
+    }
 
     const wantLabels = await confirm({ message: 'Provide custom labels?', default: false });
     const items = [];
@@ -137,7 +118,11 @@ export async function askScenarios() {
       }
     }
 
-    scenarios.push({ name, type, items, default: defaultVal, description });
+    const scenario = { name, type, items, description };
+    if (!useBaseAsDefaultScenario) {
+      scenario.default = defaultVal;
+    }
+    scenarios.push(scenario);
   }
-  return { scenario:{ scenarios } };
+  return { scenario: { useBaseAsDefaultScenario, scenarios } };
 }

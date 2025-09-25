@@ -5,13 +5,18 @@
   "scripts": {
     "login": "aws sso login --profile AWSAdministratorAccess-600627346413",
     "build:static-endpoints": "node scripts/generate-endpoints.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "start": "node local-server.js",
-    "deploy-data:dev": "bash ./deploy-data.sh dev AWSAdministratorAccess-600627346413",
-    "deploy-data:staging": "bash ./deploy-data.sh staging AWSAdministratorAccess-600627346413",
-    "deploy-data:prod": "bash ./deploy-data.sh prod AWSAdministratorAccess-600627346413",
-    "generate-api:dev": "node ./generate-api-gateway-terraform.js dev",
-    "generate-api:staging": "node ./generate-api-gateway-terraform.js staging"
+    "docs:build": "typedoc",
+    "docs:serve": "npx http-server docs/api -p 8081 -o",
+    "docs:watch": "typedoc --watch",
+    "docs:openapi": "node scripts/generate-openapi-docs.js",
+    "docs:serve-openapi": "npm run docs:openapi && npx http-server docs/openapi -p 8082 -o",
+    "docs:build-all": "npm run docs:build && npm run docs:openapi",
+    "docs:serve-all": "npm run docs:build-all && echo 'API Docs: http://localhost:8081' && echo 'OpenAPI Docs: http://localhost:8082' && npx http-server docs -p 8080 -o"
   },
   "author": "",
   "license": "ISC",
@@ -25,5 +30,21 @@
     "json-schema-ref-parser": "^9.0.9",
     "openapi-backend": "^5.12.0",
     "qs": "^6.14.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.5.2",
+    "@types/qs": "^6.14.0",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "http-server": "^14.1.1",
+    "supertest": "^7.1.4",
+    "swagger-ui-dist": "^5.29.0",
+    "typedoc": "^0.28.13",
+    "typedoc-plugin-markdown": "^4.9.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }

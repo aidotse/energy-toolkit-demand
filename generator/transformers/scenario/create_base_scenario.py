@@ -32,6 +32,8 @@ def create_base_scenario(
     growth_curve: Optional["CurveLike"] = None,
     growth_mode: Literal["multiply", "add"] = "multiply",
     base_scenario: str = "base",
+    scenario_schema: Optional[List[str]] = None,
+    scenario_defaults: Optional[dict] = None,
 ) -> dict:
     """
     Create the base scenario by extending a base year into future years,
@@ -143,7 +145,17 @@ def create_base_scenario(
 
         extended["timestamp"] = pd.to_datetime(extended["timestamp"], utc=False)
         extended = extended[base_schema]
-        extended["scenario_id"] = base_scenario
+
+    extended["scenario_id"] = base_scenario
+    if scenario_schema:
+        for param in scenario_schema:
+            default_val = None
+            if scenario_defaults and param in scenario_defaults:
+                default_val = scenario_defaults[param]
+            # add or overwrite as Int8 column
+            extended[f"scenario_{param}"] = pd.Series(
+                [default_val] * len(extended), dtype=pd.Int8Dtype()
+            )
 
 
     # 4) Write out
@@ -153,7 +165,7 @@ def create_base_scenario(
             extended,
             root_path=out_data or in_data,
             partition_specs=partition,
-            parquet_kwargs={"engine": "pyarrow", "compression": "snappy", "index": False},
+            parquet_kwargs={"engine": "pyarrow", "compression": "zstd", "compression_level": 3, "index": False},
         )
     else:
         # DuckDB path: overwrite the single table (preserve original column order)

@@ -3,8 +3,39 @@ info:
   title: Demand Toolkit API
   version: 0.0.5
   description: |
-    Machine-readable specification for the Demand Toolkit endpoints.
+    # Demand Toolkit API
+
+    The Demand Toolkit API provides access to demand forecasting data across multiple
+    temporal resolutions and geographic boundaries. This API serves as the data layer
+    for the complete Demand Toolkit framework, which includes:
+
+    - **Python Generator**: Creates demand forecasts and scenarios
+    - **Node.js API**: Serves forecasting data (this API)
+    - **Svelte Explorer**: Interactive web interface for data exploration
+
+    ## Key Features
+
+    - **Multi-format Output**: JSON and GeoJSON support for geographic data
+    - **Temporal Flexibility**: Hourly to yearly resolution support
+    - **Scenario Management**: Multiple forecasting scenarios with parameter combinations
+    - **Geographic Boundaries**: Configurable geographic divisions (counties, municipalities, etc.)
+    - **Parameter Validation**: All parameters are validated against available data
+
+    ## Getting Started
+
+    1. Use **GET /config** to understand the dataset configuration
+    2. Use **GET /parameters** to discover valid parameter combinations
+    3. Use **GET /scenarios** to explore available forecasting scenarios
+    4. Use **GET /geographies** to get geographic boundary data
+
     All legal values for query-field variants are retrieved via **GET /parameters**.
+
+  contact:
+    name: Demand Toolkit Team
+    url: https://github.com/aidotse/behovskartan
+  license:
+    name: ISC
+    url: https://opensource.org/licenses/ISC
 
 servers:
   - url: https://{domain}/{stage}
@@ -20,10 +51,12 @@ components:
   parameters:
     period:
       $ref: './parameters.yaml#/components/parameters/period'
-    dimensions:
-      $ref: './parameters.yaml#/components/parameters/dimensions'
-    scenario:
-      $ref: './parameters.yaml#/components/parameters/scenario'
+    geography:
+      $ref: './parameters.yaml#/components/parameters/geography'
+    segment:
+      $ref: './parameters.yaml#/components/parameters/segment'
+    scenarioId:
+      $ref: './parameters.yaml#/components/parameters/scenarioId'
     responseFormat:
       $ref: './parameters.yaml#/components/parameters/responseFormat'
     geoFormat:
@@ -31,6 +64,9 @@ components:
   schemas:
     GeoFeatureCollection:
       $ref: './schemas/common-schemas.yaml#/components/schemas/GeoFeatureCollection'
+    DemandRow:
+      $ref: './schemas/common-schemas.yaml#/components/schemas/DemandRow'
+
   responses:
     InvalidCombination:
       $ref: './responses/common-responses.yaml#/components/responses/InvalidCombination'
@@ -40,22 +76,74 @@ paths:
   /geographies:
     get:
       operationId: getGeographies
-      summary: List of geographies metadata, in JSON or GeoJSON
-      # no more division/filter parameter here
+      summary: Get geographic boundaries and metadata
+      description: |
+        Returns a list of geographic boundaries available in the dataset. This endpoint
+        supports both JSON format (for metadata) and GeoJSON format (for spatial data
+        including geometry definitions).
+
+        **Use Cases:**
+        - Get list of available geographic divisions (counties, municipalities, etc.)
+        - Retrieve geographic metadata (names, IDs, types)
+        - Download GeoJSON for mapping and visualization
+        - Understand the geographic scope of the demand forecasting dataset
+
+        The response format is determined by the `format` query parameter.
       parameters:
         - $ref: '#/components/parameters/geoFormat'
       responses:
         '200':
-          description: Geographies metadata
+          description: |
+            Geographic boundaries and metadata. Response format depends on the `format` parameter:
+            - `json` (default): Array of geography metadata objects
+            - `geojson`: GeoJSON FeatureCollection with geometry data
           content:
             application/json:
               schema:
                 type: array
                 items:
                   type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique identifier for the geographic boundary
+                      example: "SE-AB"
+                    name:
+                      type: string
+                      description: Human-readable name of the geographic area
+                      example: "Stockholms län"
+                    type:
+                      type: string
+                      description: Type of geographic division
+                      example: "county"
+                  required: [id, name, type]
+              examples:
+                counties:
+                  summary: Swedish counties
+                  value:
+                    - id: "SE-AB"
+                      name: "Stockholms län"
+                      type: "county"
+                    - id: "SE-C"
+                      name: "Gävleborgs län"
+                      type: "county"
             application/geo+json:
               schema:
                 $ref: '#/components/schemas/GeoFeatureCollection'
+              examples:
+                geojson:
+                  summary: GeoJSON with county boundaries
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          id: "SE-AB"
+                          name: "Stockholms län"
+                          type: "county"
+                        geometry:
+                          type: "MultiPolygon"
+                          coordinates: [[[18.0, 59.0], [18.1, 59.0], [18.1, 59.1], [18.0, 59.1], [18.0, 59.0]]]
 
   /config:
     get:
@@ -94,25 +182,6 @@ paths:
               schema:
                 type: object
 
-  /globals:
-    get:
-      operationId: getGlobals
-      summary: Global hourly extrema across all scenarios, geographies, segments
-      responses:
-        '200':
-          description: Minimum and maximum hourly values
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  min:
-                    type: number
-                    description: The lowest hourly value across the entire dataset
-                  max:
-                    type: number
-                    description: The highest hourly value across the entire dataset
-                required: [min, max]
 
   /aggregations:
     get:
@@ -132,8 +201,9 @@ paths:
       summary: Demand time‐series at arbitrary resolution
       parameters:
         - $ref: '#/components/parameters/period'
-        - $ref: '#/components/parameters/dimensions'
-        - $ref: '#/components/parameters/scenario'
+        - $ref: '#/components/parameters/geography'
+        - $ref: '#/components/parameters/segment'
+        - $ref: '#/components/parameters/scenarioId'
         - $ref: '#/components/parameters/responseFormat'
       responses:
         '200':
@@ -143,19 +213,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    period:
-                      type: string
-                      format: date-time
-                    geography:
-                      type: string
-                    segment:
-                      type: string
-                    growth:
-                      type: number
-                    value:
-                      type: number
+                  $ref: '#/components/schemas/DemandRow'
             text/csv:
               schema:
                 type: string

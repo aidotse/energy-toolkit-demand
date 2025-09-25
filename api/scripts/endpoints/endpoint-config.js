@@ -1,10 +1,74 @@
-// api/scripts/endpoints/endpoint-config.js
+/**
+ * @fileoverview Configuration endpoint generator for the Demand Toolkit API.
+ *
+ * This module generates configuration data for the API's /config endpoint based on
+ * access levels. It filters configuration data to ensure sensitive information
+ * is only exposed to appropriate access levels.
+ *
+ * @module endpoints/config
+ * @version 0.0.1
+ * @author Demand Toolkit Team
+ */
 
 /**
- * Generates configuration data based on access level
+ * Generates configuration data based on access level and privacy requirements.
  *
- * @param {Object} config - The configuration object from config.yaml
- * @returns {Object} - Configuration object with appropriate fields based on access level
+ * This function takes the full configuration object from config.yaml and returns
+ * a filtered version appropriate for the specified access level. Public configurations
+ * expose most settings while private configurations only expose essential metadata.
+ *
+ * **Access Levels:**
+ * - `public`: Returns full configuration excluding internal-only fields (useGenerator, useAPI, useExplorer)
+ * - `private`: Returns only essential metadata fields for limited public access
+ *
+ * @param {Object} config - The complete configuration object from config.yaml
+ * @param {string} config.name - Name of the demand forecasting configuration
+ * @param {string} config.access - Access level ('public' or 'private')
+ * @param {string} config.start - Start date/time for the forecasting period
+ * @param {string} config.end - End date/time for the forecasting period
+ * @param {string} config.baseResolution - Base temporal resolution (1h, 1d, 1M, 1Y)
+ * @param {string} config.baseAggregation - Base aggregation method (sum, mean, etc.)
+ * @param {string} [config.version] - Configuration version (public only)
+ * @param {Object} [config.geography] - Geography definitions (public only)
+ * @param {boolean} [config.useGenerator] - Internal flag (filtered out)
+ * @param {boolean} [config.useAPI] - Internal flag (filtered out)
+ * @param {boolean} [config.useExplorer] - Internal flag (filtered out)
+ *
+ * @returns {Object} Filtered configuration object appropriate for the access level
+ *
+ * @throws {Error} When config is null/undefined
+ * @throws {Error} When access property is missing
+ * @throws {Error} When access level is invalid (not 'public' or 'private')
+ * @throws {Error} When required fields are missing for private access
+ *
+ * @example
+ * // Generate public configuration
+ * const publicConfig = await generateConfig({
+ *   name: 'Sweden Energy Demand 2025-2044',
+ *   access: 'public',
+ *   version: '1.0.0',
+ *   start: '2025-01-01',
+ *   end: '2044-12-31',
+ *   baseResolution: '1h',
+ *   baseAggregation: 'sum',
+ *   geography: { /* geography config * / },
+ *   useGenerator: true // This will be filtered out
+ * });
+ * // Returns full config without useGenerator, useAPI, useExplorer
+ *
+ * @example
+ * // Generate private configuration
+ * const privateConfig = await generateConfig({
+ *   name: 'Confidential Forecast',
+ *   access: 'private',
+ *   start: '2025-01-01',
+ *   end: '2044-12-31',
+ *   baseResolution: '1d',
+ *   baseAggregation: 'mean'
+ * });
+ * // Returns only: name, access, start, end, baseResolution, baseAggregation
+ *
+ * @since 0.0.1
  */
 export async function generateConfig(config) {
   try {

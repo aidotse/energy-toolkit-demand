@@ -3,7 +3,6 @@ import { askProjectComponents, askProjectConfig, askTimeSpan, askGeoJSONConfig, 
 import { loadGeoJSON } from './load-geojson.js';
 import { mergeAndSave } from './write-config.js';
 import { generateAPISupport } from './generate-api.js';
-import { generatePartition } from './generate-partition.js';
 
 (async function main() {
   try {
@@ -36,8 +35,7 @@ import { generatePartition } from './generate-partition.js';
     // Generator support
     if (comps.useGenerator) {
       const dataStructure = await askDataStructure();
-      const partitionKeys = await generatePartition(cfg, dataStructure['useScenarioId'], dataStructure['rowGroupSize']);
-      cfg = { ...cfg, generator: { ...dataStructure, ...partitionKeys } };
+      cfg = { ...cfg, generator: { ...dataStructure } };
     }
 
     // API support

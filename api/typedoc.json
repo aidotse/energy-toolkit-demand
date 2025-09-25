@@ -1,0 +1,55 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Demand Toolkit API",
+  "entryPoints": [
+    "./utils.js",
+    "./config.js",
+    "./scripts/endpoints/endpoint-config.js",
+    "./scripts/endpoints/endpoint-geographies.js",
+    "./scripts/endpoints/endpoint-parameters.js",
+    "./scripts/endpoints/endpoint-scenarios.js",
+    "./scripts/endpoints/endpoint-aggregations.js",
+    "./scripts/generate-endpoints.js"
+  ],
+  "out": "./docs/api",
+  "theme": "default",
+  "includeVersion": true,
+  "excludeExternals": true,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "hideGenerator": false,
+  "readme": "README.md",
+  "plugin": ["typedoc-plugin-markdown"],
+  "gitRevision": "main",
+  "excludeReferences": false,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core",
+    "Endpoints",
+    "Scripts",
+    "Utilities",
+    "*"
+  ],
+  "sort": ["source-order"],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "skipErrorChecking": true,
+  "treatWarningsAsErrors": false,
+  "emit": "both",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}
