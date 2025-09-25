@@ -76,7 +76,7 @@
                             fram det här verktyget för att visualisera och förklara. Analysen som presenteras här är framtagen av AI Sweden som ett exempel.
                         </p>
                         <p class="mb-4">
-                            Elenergibehovet i <GeoSelect {parameterData} bind:geography /> <SelectText items={getGeos(parameterData.geographies)} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameterData['years'][0]} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameterData} property="start-year" /></b> till år <b>{year}</b>. 
+                            Elenergibehovet i <GeoSelect {parameters} bind:geography /> <SelectText items={getGeos(parameters.geographies || [])} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameters['years']?.[0] || 2025} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameters} property="start-year" /></b> till år <b>{year}</b>.
                         </p>
                     </div>
                     <div class="w-full lg:w-1/2 flex items-center justify-center">
@@ -105,7 +105,7 @@
                     befolkning och högre industriell aktivitet. Samtidigt kan landsbygdsområden se en mer måttlig ökning i elbehov, främst drivet av jordbruk och mindre industrier.
                 </p>
                 <div class="w-full px-12 mx-auto">
-                    <GeoBarChart {yearData} {parameterData} {year} {geography} {scenario} />
+                    <GeoBarChart {yearData} parameters={parameters} {year} {geography} {scenario} />
                 </div>
             </div>
         </Section>
@@ -179,7 +179,7 @@
                         </p>
                     </div>
                     <div class="w-full lg:w-1/2">
-                        <Histogram {hourData} {geography} resolution='1h' {sector} aggregation='mean' {year} {scenario} />
+                        <Histogram {hourData} {geography} resolution='1h' sector={segment} aggregation='mean' {year} {scenario} />
                     </div>
                 </div>
             </div>
@@ -202,7 +202,7 @@
                         </p>
                     </div>
                 </div>
-                <TimeLine {dayData} {geography} resolution='1d' {sector} aggregation='sum' {year} {scenario} />
+                <TimeLine {dayData} {geography} resolution='1d' sector={segment} aggregation='sum' {year} {scenario} />
             </div>
         </Section>
     </main>
@@ -210,15 +210,15 @@
     <!-- Map -->
     <div class="fixed top-0 right-0 w-full lg:absolute lg:top-0 lg:left-[67%] lg:w-[33%] 2xl:left-[60%] 2xl:w-[40%] h-[calc(100vh)] overflow-y-hidden transition-transform lg:transform-none duration-300 ease-in-out {toggleMap ? 'translate-x-0' : 'translate-x-full'}"
     >
-        <Map 
-            {geojsonData}
+        <Map
+            geojsonData={geojson}
             {year}
             bind:geography
             {yearData}
-            {parameterData}
+            parameterData={parameters}
             {scenario}
-            lower_bound={globalsData['lower_bound']}
-            upper_bound={globalsData['upper_bound']} 
+            lower_bound={globals['lower_bound']}
+            upper_bound={globals['upper_bound']}
         />    
     </div>
 </div>

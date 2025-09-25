@@ -1,31 +1,40 @@
-import { fetchJSON } from '$lib/dataService';
-import { makeDemandQuery } from '$lib/utilities';
+import {
+    fetchDemandData,
+    fetchConfig,
+    fetchScenarios,
+    fetchParameters,
+    fetchGlobals,
+    fetchGeographies,
+    type DemandRow
+} from '$lib/dataService';
+import { makeDemandQuery, makeGeographiesQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
 
 // Function to create histogram bins
 export const load: PageLoad = async ({ fetch, params }) => {
-
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     // Initial state
     const geography = 'all';
     const segment = 'all';
 
     try {
-        // 1) Static endpoints
+        // 1) Static endpoints using new API functions
         const [config, scenarios, parameters, globals, geojson] = await Promise.all([
-            fetchJSON(`${API_BASE_URL}/config`),
-            fetchJSON(`${API_BASE_URL}/scenarios`),
-            fetchJSON(`${API_BASE_URL}/parameters`),
-            fetchJSON(`${API_BASE_URL}/globals`),
-            fetchJSON(`${API_BASE_URL}/geographies?format=geojson`),
+            fetchConfig(),
+            fetchScenarios(),
+            fetchParameters(),
+            fetchGlobals(),
+            fetchGeographies('geojson'),
         ]);
 
-        // pick the default scenario and default year
-        const scenario = scenarios.find((s: any) => s.default);
+        // Pick the default scenario and default year
+        const scenario = scenarios.find((s: any) => s.default) || scenarios[0];
         const year = 2030;
 
-        // 2) Time-series calls
+        // Get scenario ID for API calls
+        const scenarioId = scenario?.id || scenario?.scenario_id || 'default';
+
+        // 2) Time-series calls using new API functions
         // Hourly mean for selected year
         const hourQuery = makeDemandQuery({
             start: `${year}-01-01`,
@@ -34,9 +43,10 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'mean',
             geography,
             segment,
-            growth: scenario.growth
+            scenarioId,
+            growth: scenario?.growth  // Legacy fallback
         });
-        const hourData = await fetchJSON(`${API_BASE_URL}/demand?${hourQuery}`);
+        const hourData = await fetchDemandData(hourQuery);
 
         // Daily sum
         const dayQuery = makeDemandQuery({
@@ -46,9 +56,10 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            growth: scenario.growth
+            scenarioId,
+            growth: scenario?.growth  // Legacy fallback
         });
-        const dayData = await fetchJSON(`${API_BASE_URL}/demand?${dayQuery}`);
+        const dayData = await fetchDemandData(dayQuery);
 
         // Annual for this one county/segment
         const yearQuery = makeDemandQuery({
@@ -58,21 +69,27 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            growth: scenario.growth
+            scenarioId,
+            growth: scenario?.growth  // Legacy fallback
         });
-        const yearData = await fetchJSON(`${API_BASE_URL}/demand?${yearQuery}`);
+        const yearData = await fetchDemandData(yearQuery);
 
         // Annual across all years for that geo/segment
+        // Use config or parameters to determine year range
+        const startYear = parameters?.filter?.year?.[0] || config?.start_year || 2025;
+        const endYear = parameters?.filter?.year?.slice(-1)?.[0] || config?.end_year || 2050;
+
         const allYearsQuery = makeDemandQuery({
-            start: String(parameters.filter.year[0]),
-            end:   String(parameters.filter.year.slice(-1)[0] + 1),
+            start: String(startYear),
+            end:   String(endYear + 1),
             resolution: '1Y',
             aggregation:'sum',
             geography,
             segment,
-            growth: scenario.growth
+            scenarioId,
+            growth: scenario?.growth  // Legacy fallback
         });
-        const allYearsData = await fetchJSON(`${API_BASE_URL}/demand?${allYearsQuery}`);
+        const allYearsData = await fetchDemandData(allYearsQuery);
         
         // Return all data
         return {
@@ -83,28 +100,30 @@ export const load: PageLoad = async ({ fetch, params }) => {
             year,
             geography,
             segment,
+            scenario,
             geojson,
             hourData,
             dayData,
             yearData,
             allYearsData
         };
-    } catch (error) {
-        console.error('Error loading data:', error.message);
+    } catch (error: any) {
+        console.error('Error loading data:', error?.message || error);
         // Return default fallback values in case of error
         return {
             config: null,
-            scenarios: null,
-            parameters: null,
-            globals: null,
-            year: 0,
-            geography: null,
-            segment: null,
-            geojson: null,
-            hourData: null,
-            dayData: null,
-            yearData: null,
-            allYearsData: null
+            scenarios: [],
+            parameters: {},
+            globals: {},
+            year: 2030,
+            geography: 'all',
+            segment: 'all',
+            scenario: null,
+            geojson: { type: 'FeatureCollection', features: [] },
+            hourData: [],
+            dayData: [],
+            yearData: [],
+            allYearsData: []
         };
     }
 }

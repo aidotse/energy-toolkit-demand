@@ -9,8 +9,8 @@
     import * as m from '$paraglide/messages';
 
     let { data }: PageProps = $props();
-    const { config, scenarios, parameterData, globalsData, geojsonData }  = data;
-	let { year, geography, sector, hourData, dayData, yearData, allYearsData } = $state(data);
+    const { config, scenarios, parameters, globals, geojson }  = data;
+	let { year, geography, segment, hourData, dayData, yearData, allYearsData } = $state(data);
 
     let toggleControls = $state(true);
     let scenario = $state(scenarios.find((s: any) => s.default));
@@ -19,7 +19,7 @@
 <div class="max-w-7xl mx-auto pt-16">
     <Sidebar {toggleControls}>
         <svelte:fragment slot="scenario">
-            <Scenario {config} bind:scenario {scenarios} />
+            <Scenario parameters={parameters} bind:scenario {scenarios} />
         </svelte:fragment>
     </Sidebar>
     <h1 class="text-3xl font-bold pt-8 pb-4">{m['graphs_page']()}</h1>
