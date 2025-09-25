@@ -1,0 +1,17 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "low": "Low",
+  "mid": "Mid",
+  "high": "High",
+  "growth": "Economic growth",
+  "housing_flex": "Housing flex",
+  "industry_flex": "Industry flex",
+  "transport_flex": "Transport flex",
+  "transport_electrification": "Transport electrification",
+  "industry_transition": "Industry transition",
+  "explore_page": "Explore",
+  "graphs_page": "Graphs",
+  "about_page": "About",
+  "toolkit_page": "Toolkit",
+  "contact_page": "Contact"
+}

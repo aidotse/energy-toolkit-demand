@@ -1,0 +1,17 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "low": "Låg",
+  "mid": "Medel",
+  "high": "Hög",
+  "growth": "Ekonomisk tillväxt",
+  "housing_flex": "Flex hushåll",
+  "industry_flex": "Flex industri",
+  "transport_flex": "Flex transport",
+  "transport_electrification": "Transportelektrifiering",
+  "industry_transition": "Industriomställning",
+  "explore_page": "Utforska",
+  "graphs_page": "Grafer",
+  "about_page": "Om projektet",
+  "toolkit_page": "Demand Toolkit",
+  "contact_page": "Kontakt"
+}

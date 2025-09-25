@@ -1,15 +1,21 @@
-# Behovskartan
+# Demand Toolit
 
-This repo contains Behovskartan starting from version 2.0 and is developed in collaboration with Energimyndigheten. The project aims to develop a framework for modelling, analyzing, and communicating future electricity demand.
+This is a monorepo containing the three independently usable applications
 
-The framework should be:
+- Generator (`/generator`)
 
-+ Open-source: with public data, but it should also allow for internal use with proprietary/confidential data and knowledge
-+ Useful: it should provide insights to non-experts and be a powerful tool for experts 
-+ Portable: it should be easy to set up, modify, and deploy in various environments
-+ Secure: we assure security through simplicity, with file-based data and models
+A python-based tool for generating forecasts of future energy demand. This repo ships with an example forecast model of the regional electricity demand 2025-2044 (clear out the example model with the `clear-example.py` script in `/generator`)
 
-# Uses cases
+- API (`/api`)
+
+A flexible API that can either output local CSV files, serve a local API (OpenAPI 3.1), or is ready to deploy to a cloud service.
+
+- Exporer (`/explorer`)
+
+An adaptible web application for exploring the data through text 
+
+
+## Uses cases
 
 _This is an initial desciption that will be refined._
 
@@ -19,11 +25,16 @@ _This is an initial desciption that will be refined._
 
 The frontend is furthermore built with future development in mind. It is relatively simple to adapt the frontend for additional analytics or different data.
 
-# Modelling philosophy
+## Modelling philosophy
 
 This project takes the view that the best foundation for modelling future demand is the current demand. The (future) demand projections in this project are therefore transformations of historical (actual) electricity demand. The transformations are modular and can be freely combined to produce scenarios.
 
-# Structure of the repo
+
+### Work left to do
+
+The intent has been to create a framework that will allow for any method of modelling future demand. **This goal has not been fully realized.** More work is needed to generalize the framework in future versions.
+
+## Structure of the repo
 
 This repo is divided into three parts.
 ├── api
@@ -44,6 +55,23 @@ Each csv files contains a 1-year timeseries of electricity demand for a given ye
 This folder contains the demand-modelling application. A generator takes configs as input and produces output in the api folder. The config describes each scenario as a combination of specified input data, transformations applied, and parameters.
 
 Input data is stored in the folders input/private and input/public. Notebooks and other code specific to a type of data is stored alongside the data files, while code that runs in each scenario should be placed in /transformers.
+
+#### The config file
+
+1. Config globals
+
+- config-name: 
+- access: 
+- start-time: 
+- end-time: 
+- resolution: 1h, 3h, 1d, 1ME, 1YE
+- geography: type (e.g. county, municipality etc.) and source (GeoJSON)
+
+2. The scenario object
+
+
+3. The transformers
+4.  The output object
 
 #### Transformer types
 

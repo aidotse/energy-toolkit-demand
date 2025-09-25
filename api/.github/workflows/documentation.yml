@@ -1,0 +1,152 @@
+name: Generate and Deploy Documentation
+
+on:
+  push:
+    branches: [ main, update-api ]
+    paths:
+      - 'api/**/*.js'
+      - 'api/openapi.yaml'
+      - 'api/package.json'
+      - 'api/README.md'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'api/**/*.js'
+      - 'api/openapi.yaml'
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'api/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Generate static endpoints (for context)
+        working-directory: ./api
+        run: npm run build:static-endpoints
+        continue-on-error: true  # Don't fail if config files are missing
+
+      - name: Run tests
+        working-directory: ./api
+        run: npm test
+
+      - name: Generate TypeDoc documentation
+        working-directory: ./api
+        run: npm run docs:build
+
+      - name: Generate OpenAPI documentation
+        working-directory: ./api
+        run: npm run docs:openapi
+
+      - name: Create documentation index
+        working-directory: ./api
+        run: |
+          mkdir -p docs
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Demand Toolkit API Documentation</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 40px; background: #f6f8fa; }
+                  .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                  h1 { color: #24292e; border-bottom: 1px solid #e1e4e8; padding-bottom: 10px; }
+                  .doc-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 30px 0; }
+                  .doc-card { border: 1px solid #e1e4e8; border-radius: 6px; padding: 20px; text-decoration: none; color: inherit; }
+                  .doc-card:hover { border-color: #0366d6; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+                  .doc-title { font-size: 18px; font-weight: 600; color: #0366d6; margin-bottom: 8px; }
+                  .doc-description { color: #586069; line-height: 1.4; }
+                  .badge { background: #f1f8ff; color: #0366d6; padding: 2px 6px; border-radius: 3px; font-size: 12px; font-weight: 500; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🔧 Demand Toolkit API Documentation</h1>
+                  <p>Comprehensive documentation for the Demand Toolkit API, including interactive specifications and detailed code references.</p>
+
+                  <div class="doc-links">
+                      <a href="./api/" class="doc-card">
+                          <div class="doc-title">📚 API Reference <span class="badge">TypeDoc</span></div>
+                          <div class="doc-description">Complete reference for all JavaScript modules, functions, and utilities with examples and type information.</div>
+                      </a>
+
+                      <a href="./openapi/" class="doc-card">
+                          <div class="doc-title">🌐 Interactive API <span class="badge">OpenAPI</span></div>
+                          <div class="doc-description">Interactive API specification with try-it-out functionality, request/response examples, and endpoint testing.</div>
+                      </a>
+                  </div>
+
+                  <h2>📋 Quick Links</h2>
+                  <ul>
+                      <li><a href="../README.md">Getting Started Guide</a></li>
+                      <li><a href="./API_DOCUMENTATION_GUIDE.md">Documentation Guide</a></li>
+                      <li><a href="https://github.com/aidotse/behovskartan">Source Code</a></li>
+                  </ul>
+
+                  <p><small>📅 Generated on $(date)</small></p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: api/docs/
+          retention-days: 30
+
+      - name: Deploy to GitHub Pages (on main branch)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./api/docs
+          destination_dir: api
+
+  documentation-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'api/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Check documentation builds
+        working-directory: ./api
+        run: |
+          npm run docs:build
+          npm run docs:openapi
+          echo "✅ Documentation builds successfully"
+
+      - name: Validate OpenAPI spec
+        working-directory: ./api
+        run: |
+          npx @apidevtools/swagger-parser validate openapi.yaml
+          echo "✅ OpenAPI specification is valid"

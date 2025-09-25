@@ -1,0 +1,59 @@
+components:
+  schemas:
+    GeoFeatureCollection:
+      type: object
+      required: [type, features]
+      properties:
+        type:
+          const: FeatureCollection
+        features:
+          type: array
+          items: {}   # refine later with full GeoJSON schema if desired
+
+    DemandRow:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        value: { type: number }
+        geography: { type: string }
+        segment: { type: string }
+        scenario_id: { type: string }
+        timestamp_year: { type: integer }
+      required: [timestamp, value, geography, segment, scenario_id]
+      patternProperties:
+        '^scenario_[a-z0-9_]+$':
+          oneOf:
+            - type: integer
+            - type: number
+            - type: string
+      additionalProperties: false
+
+    CsvBinary:
+      type: string
+      format: binary
+      description: Gzipped CSV payload (raw bytes)
+
+    AggregationOption:
+      type: object
+      required:
+        - resolution
+        - aggregation
+      properties:
+        resolution:
+          type: string
+          description: Time resolution (e.g. "1h", "1d", "1ME", "1YE")
+        aggregation:
+          description: >
+            Either a single aggregation method, or multiple methods supported
+            at that resolution.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+
+    AggregationsResponse:
+      type: array
+      description: List of available resolution-aggregation combinations
+      items:
+        $ref: '#/components/schemas/AggregationOption'

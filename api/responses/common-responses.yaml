@@ -1,0 +1,16 @@
+components:
+  responses:
+    InvalidCombination:
+      description: Invalid or unknown combination of scenario / filter parameters.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error, hint]
+            properties:
+              error:
+                type: string
+                example: Invalid scenario and/or filter combination
+              hint:
+                type: string
+                example: See GET /scenarios and GET /aggregations for valid options

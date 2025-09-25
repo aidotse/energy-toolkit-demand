@@ -1,0 +1,142 @@
+useGenerator: true
+useAPI: true
+useExplorer: true
+name: behovskartan2
+version: 0.1.0
+access: public
+start: '2025-01-01T00:00:00Z'
+end: '2044-12-31T23:00:00Z'
+baseResolution: 1h
+baseAggregation: mean
+segment:
+  description: Segments
+  values:
+    - name: housing
+      label: housing
+    - name: transport
+      label: transport
+    - name: industry
+      label: industry
+scenario:
+  useBaseAsDefaultScenario: true
+  scenarios:
+    - name: housing_electrification
+      type: index
+      items:
+        - value: 0
+          label: '0'
+        - value: 1
+          label: '1'
+        - value: 2
+          label: '2'
+        - value: 3
+          label: '3'
+        - value: 4
+          label: '4'
+      description: ''
+    - name: transport_electrification
+      type: index
+      items:
+        - value: 0
+          label: '0'
+        - value: 1
+          label: '1'
+        - value: 2
+          label: '2'
+        - value: 3
+          label: '3'
+        - value: 4
+          label: '4'
+      description: ''
+    - name: industry_transition
+      type: index
+      items:
+        - value: 0
+          label: '0'
+        - value: 1
+          label: '1'
+        - value: 2
+          label: '2'
+      description: ''
+geography:
+  file: generator/input/geographies/sweden-counties.geojson
+  geographies:
+    - id: '01'
+      name: Stockholms län
+      type: county
+    - id: '03'
+      name: Uppsala län
+      type: county
+    - id: '04'
+      name: Södermanlands län
+      type: county
+    - id: '05'
+      name: Östergötlands län
+      type: county
+    - id: '06'
+      name: Jönköpings län
+      type: county
+    - id: '07'
+      name: Kronobergs län
+      type: county
+    - id: '08'
+      name: Kalmar län
+      type: county
+    - id: '09'
+      name: Gotlands län
+      type: county
+    - id: '10'
+      name: Blekinge län
+      type: county
+    - id: '12'
+      name: Skåne län
+      type: county
+    - id: '13'
+      name: Hallands län
+      type: county
+    - id: '14'
+      name: Västra Götalands län
+      type: county
+    - id: '17'
+      name: Värmlands län
+      type: county
+    - id: '18'
+      name: Örebro län
+      type: county
+    - id: '19'
+      name: Västmanlands län
+      type: county
+    - id: '20'
+      name: Dalarnas län
+      type: county
+    - id: '21'
+      name: Gävleborgs län
+      type: county
+    - id: '22'
+      name: Västernorrlands län
+      type: county
+    - id: '23'
+      name: Jämtlands län
+      type: county
+    - id: '24'
+      name: Västerbottens län
+      type: county
+    - id: '25'
+      name: Norrbottens län
+      type: county
+generator:
+  rowGroupSize: 100000
+  partitionKeys:
+    - scenario_id
+    - geography
+    - segment
+    - timestamp_year
+api:
+  resolutions:
+    - 1h
+    - 1w
+    - 1M
+    - 1Y
+  aggregations:
+    - sum
+    - mean
