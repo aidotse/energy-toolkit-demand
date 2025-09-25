@@ -38,7 +38,7 @@
             <AreaChart {geography} {year} {scenario} aggregationInit='sum' {allYearsData} />
         </div>
         <SectorArc {yearData} {geography} {year} {scenario} />
-        <TimeLine {dayData} {geography} resolution='1d' {sector} aggregation='sum' {year} {scenario} />
-        <Histogram {hourData} {geography} resolution='1h' {sector} aggregation='mean' {year} {scenario} />
+        <TimeLine {dayData} {geography} resolution='1d' sector={segment} aggregation='sum' {year} {scenario} />
+        <Histogram {hourData} {geography} resolution='1h' sector={segment} aggregation='mean' {year} {scenario} />
     </div>
 </div>

@@ -76,7 +76,7 @@
                             fram det här verktyget för att visualisera och förklara. Analysen som presenteras här är framtagen av AI Sweden som ett exempel.
                         </p>
                         <p class="mb-4">
-                            Elenergibehovet i <GeoSelect {parameters} bind:geography /> <SelectText items={getGeos(parameters.geographies || [])} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameters['years']?.[0] || 2025} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet {parameters} property="start-year" /></b> till år <b>{year}</b>.
+                            Elenergibehovet i <GeoSelect parameterData={parameters} bind:geography /> <SelectText items={getGeos(parameters?.geographies || [])} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameters?.years?.[0] || 2025} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet parameterData={parameters} property="start-year" /></b> till år <b>{year}</b>.
                         </p>
                     </div>
                     <div class="w-full lg:w-1/2 flex items-center justify-center">
@@ -105,7 +105,7 @@
                     befolkning och högre industriell aktivitet. Samtidigt kan landsbygdsområden se en mer måttlig ökning i elbehov, främst drivet av jordbruk och mindre industrier.
                 </p>
                 <div class="w-full px-12 mx-auto">
-                    <GeoBarChart {yearData} parameters={parameters} {year} {geography} {scenario} />
+                    <GeoBarChart {yearData} parameterData={parameters} {year} {geography} {scenario} />
                 </div>
             </div>
         </Section>
@@ -190,7 +190,7 @@
                 <div class="flex flex-col lg:flex-row w-full">
                     <div class="w-full lg:w-1/2">
                         <p>
-                            Det finns många sätt att dyka djupare i modellen. Bakom varje graf och diagram finns tidsserier uppdelade på scenario och sektor, med en upplösning på {config['resolution']}. 
+                            Det finns många sätt att dyka djupare i modellen. Bakom varje graf och diagram finns tidsserier uppdelade på scenario och sektor, med en upplösning på {config?.resolution || '1h'}. 
                             På sidan <a href="/charts" target="_blank">Grafer</a> kan du se fler grafer, sätta parametrar och ladda ner visualiseringar för presentationer. Du kan också ladda ner data
                             från vår API.
                         </p>
@@ -217,8 +217,8 @@
             {yearData}
             parameterData={parameters}
             {scenario}
-            lower_bound={globals['lower_bound']}
-            upper_bound={globals['upper_bound']}
+            lower_bound={globals?.lower_bound || 0}
+            upper_bound={globals?.upper_bound || 1000000}
         />    
     </div>
 </div>
