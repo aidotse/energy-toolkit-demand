@@ -436,7 +436,6 @@ api.register('getDemand', async (c, req, res) => {
           ORDER BY ${timeAlias}
         `;
       }
-    }
 
     console.log('SQL Query:', sql);
     console.log('Period start/end:', start, end);
