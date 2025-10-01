@@ -4,24 +4,16 @@
     import SectorArc from '$lib/components/SectorArc.svelte';
     import Histogram from '$lib/components/Histogram.svelte';
 	import type { PageProps } from './$types';
-    import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
-    import Scenario from '$lib/components/sidebar/Scenario.svelte';
     import * as m from '$paraglide/messages';
 
     let { data }: PageProps = $props();
     const { config, scenarios, parameters, globals, geojson }  = data;
 	let { year, geography, segment, hourData, dayData, yearData, allYearsData } = $state(data);
 
-    let toggleControls = $state(true);
     let scenario = $state(scenarios.find((s: any) => s.default));
 </script>
 
-<div class="max-w-7xl mx-auto pt-16">
-    <Sidebar {toggleControls}>
-        <svelte:fragment slot="scenario">
-            <Scenario parameters={parameters} bind:scenario {scenarios} />
-        </svelte:fragment>
-    </Sidebar>
+<div class="max-w-7xl mx-auto px-6 md:px-12">
     <h1 class="text-3xl font-bold pt-8 pb-4">{m['graphs_page']()}</h1>
     <div class="flex flex-row gap-16">
         <p class="w-[60%]">

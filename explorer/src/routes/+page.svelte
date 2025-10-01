@@ -23,7 +23,7 @@
 
 <div class="min-h-screen bg-surface-100">
     <!-- Toggle button for mobile map/content switch -->
-    <div class="fixed top-20 right-4 z-40 md:hidden">
+    <div class="fixed top-16 right-4 z-40 lg:hidden">
         <div class="flex gap-2">
             <button
                 onclick={() => toggleMap = false}
@@ -191,7 +191,8 @@
         </main>
 
         <!-- Map -->
-        <aside class="lg:w-1/3 2xl:w-2/5 lg:sticky lg:top-22 lg:h-screen transition-transform lg:transform-none duration-300 {toggleMap ? 'fixed inset-0 z-30 translate-x-0' : 'fixed inset-0 z-30 translate-x-full lg:translate-x-0 lg:relative'}"
+        <aside class="lg:w-1/3 2xl:w-2/5 lg:sticky lg:top-14 transition-transform lg:transform-none duration-300 {toggleMap ? 'fixed inset-0 z-30 translate-x-0' : 'fixed inset-0 z-30 translate-x-full lg:translate-x-0 lg:relative'}"
+        style="height: calc(100vh - 3.5rem);"
         >
             <Map
                 geojsonData={geojson}

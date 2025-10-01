@@ -25,6 +25,8 @@ class NavigationState {
 	comparisonScenarios = $state<any[]>([]);
 	mobileMenuOpen = $state(false);
 	scenarioModalOpen = $state(false);
+	scenarioDropdownOpen = $state(false);
+	tempParameters = $state<Record<string, any>>({});
 
 	togglePanel() {
 		this.panelExpanded = !this.panelExpanded;
@@ -40,10 +42,29 @@ class NavigationState {
 
 	toggleScenarioModal() {
 		this.scenarioModalOpen = !this.scenarioModalOpen;
+		if (this.scenarioModalOpen) {
+			this.scenarioDropdownOpen = false; // Close dropdown if modal opens
+		}
+	}
+
+	toggleScenarioDropdown() {
+		this.scenarioDropdownOpen = !this.scenarioDropdownOpen;
+		if (this.scenarioDropdownOpen) {
+			this.scenarioModalOpen = false; // Close modal if dropdown opens
+		}
 	}
 
 	setScenario(scenario: any) {
 		this.currentScenario = scenario;
+		this.scenarioDropdownOpen = false;
+		this.scenarioModalOpen = false;
+	}
+
+	applyScenario() {
+		// Apply temp parameters to current scenario
+		// This will be implemented when we add parameter selection
+		this.scenarioDropdownOpen = false;
+		this.scenarioModalOpen = false;
 	}
 
 	toggleComparisonMode() {

@@ -8,8 +8,25 @@
 	import { ThemeSwitch, Menu, MenuItem } from 'svelte-ux';
 	import { Menu as MenuIcon, X } from 'lucide-svelte';
 	import { navigationState } from '$lib/stores/navigation.svelte';
+	import ScenarioSelectorPill from './ScenarioSelectorPill.svelte';
+	import ScenarioDropdown from './ScenarioDropdown.svelte';
+	import ScenarioBottomSheet from './ScenarioBottomSheet.svelte';
+	import MobileMenu from './MobileMenu.svelte';
 	import * as m from '$paraglide/messages';
 	import { languageTag, availableLanguageTags, setLanguageTag } from '$paraglide/runtime';
+
+	// Props
+	let {
+		currentScenario = 'Default Scenario',
+		scenarios = [],
+		baseScenarios = [],
+		parameters = {}
+	}: {
+		currentScenario?: string;
+		scenarios?: any[];
+		baseScenarios?: any[];
+		parameters?: any;
+	} = $props();
 
 	const navigation = [
 		{ name: m['explore_page'](), href: '/' },
@@ -44,8 +61,11 @@
 			{/each}
 		</div>
 
-		<!-- Right: Utilities -->
+		<!-- Right: Scenario Pill + Utilities -->
 		<div class="flex items-center justify-end gap-4">
+			<!-- Scenario Selector Pill -->
+			<ScenarioSelectorPill {currentScenario} />
+
 			<!-- Language Selector -->
 			<Menu placement="bottom-end">
 				<button
@@ -68,6 +88,12 @@
 			<ThemeSwitch />
 		</div>
 	</div>
+
+	<!-- Scenario Dropdown (Desktop) -->
+	<ScenarioDropdown {scenarios} {baseScenarios} {parameters} />
+
+	<!-- Scenario Bottom Sheet (Mobile) -->
+	<ScenarioBottomSheet {scenarios} {baseScenarios} {parameters} />
 </nav>
 
 <!-- Mobile/Tablet Top Bar -->
@@ -88,15 +114,18 @@
 			{/if}
 		</button>
 
-		<!-- Center: Logo -->
-		<a href="/" class="flex items-center gap-2">
-			<img src="/logo.svg" alt="Logo" class="h-7" />
-			<span class="text-base font-bold">Behovskartan 2</span>
-		</a>
+		<!-- Center: Scenario Pill (Mobile) -->
+		<ScenarioSelectorPill {currentScenario} />
 
 		<!-- Right: Theme Switch -->
 		<div class="flex items-center">
 			<ThemeSwitch />
 		</div>
 	</div>
+
+	<!-- Scenario Bottom Sheet (Mobile) -->
+	<ScenarioBottomSheet {scenarios} {baseScenarios} {parameters} />
 </nav>
+
+<!-- Mobile Menu Drawer -->
+<MobileMenu />
