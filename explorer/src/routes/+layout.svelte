@@ -1,17 +1,23 @@
 <script lang="ts">
 	import "../app.css";
-	import Header from '$lib/components/Header.svelte';
 	import { i18n } from '$lib/i18n';
 	import { ParaglideJS } from '@inlang/paraglide-sveltekit';
-	import { ThemeInit, Toggle, Menu, MenuItem, ThemeSwitch, ButtonGroup, Button } from 'svelte-ux';
+	import TopNavigationBar from '$lib/components/navigation/TopNavigationBar.svelte';
+	import ScenarioPanel from '$lib/components/navigation/ScenarioPanel.svelte';
+	import { navigationState } from '$lib/stores/navigation.svelte';
+
 	let { children } = $props();
 </script>
 
 <ParaglideJS {i18n}>
-	<div class="flex-1 h-full overflow-hidden">
-		<!-- Main Content -->
-		<div class="flex-grow">
-			{@render children()}
-		</div>
+	<!-- New Navigation Structure -->
+	<TopNavigationBar />
+	<ScenarioPanel />
+
+	<!-- Main Content Area -->
+	<div
+		class="transition-all duration-300 {navigationState.panelExpanded ? 'pt-22' : 'pt-22'}"
+	>
+		{@render children()}
 	</div>
 </ParaglideJS>

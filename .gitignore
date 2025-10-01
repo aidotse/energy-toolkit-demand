@@ -169,6 +169,8 @@ terraform/
 
 # Other
 UPDATE.md
+EXPLORER_PAGE_LAYOUT.md
+EXPLORER_PLAN.md
 CLAUDE.md
 PLANS.md
 .vscode/

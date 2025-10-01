@@ -28,6 +28,14 @@ export default {
         serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'], // Serif fonts
         mono: ['Menlo', 'Monaco', 'Consolas', '"Courier New"', 'monospace'], // Monospace fonts
       },
+      spacing: {
+        '14': '3.5rem',   // 56px - nav height
+        '22': '5.5rem',   // 88px - nav + collapsed panel
+        '46': '11.5rem',  // 184px - nav + expanded panel
+      },
+      scale: {
+        '98': '0.98',     // For active button states
+      },
     },
   },
 

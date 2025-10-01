@@ -4,11 +4,7 @@
     import SelectText from '$lib/components/inline/SelectText.svelte';
     import Snippet from '$lib/components/inline/Snippet.svelte';
     import Change from '$lib/components/inline/Change.svelte';
-    // import GoTo from '$lib/components/GoTo.svelte'; // Unused
     import Map from '$lib/components/map/Map.svelte';
-    import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
-    import IndexNavigation from '$lib/components/sidebar/IndexNavigation.svelte';
-    // import Scenario from '$lib/components/sidebar/Scenario.svelte'; // Temporarily disabled   
     import AreaChart from '$lib/components/AreaChart.svelte';
     import GeoBarChart from '$lib/components/GeoBarChart.svelte';
     import TimeLine from '$lib/components/TimeLine.svelte';
@@ -17,56 +13,41 @@
     import Explainer from '$lib/components/Explainer.svelte';
     import Section from '$lib/components/Section.svelte';
 	import type { PageProps } from './$types';
-    import { handleAnchorClick, getGeos } from '$lib/utilities';
-    // import { fade, slide } from 'svelte/transition'; // Unused
+    import { getGeos } from '$lib/utilities';
 
     let { data }: PageProps = $props();
     const { config, parameters, globals, geojson, year, segment, scenario, hourData, dayData, yearData, sectorData, allYearsData }  = data;
-    // const scenarios = data.scenarios; // Temporarily unused due to disabled Scenario component
     let geography = $state(data.geography); // Make geography reactive since it's bound to components
-    let toggleControls = $state(false);
     let toggleMap = $state(false);
-
-    const index = [
-        { id: "section1", text: "Framtidens elbehov" },
-        { id: "section2", text: "Vem behöver elen?" },
-        { id: "section3", text: "Hur snabbt kan det gå?" },
-        { id: "section4", text: "Vilken roll kommer flex spela?" },
-        { id: "section5", text: "Utforska djupare" }
-    ]
-
 </script>
 
-<div class="flex w-full h-[calc(100vh)] overflow-hidden">
-    <Sidebar bind:toggleControls>
-        <svelte:fragment slot="index">
-            <IndexNavigation {index} {handleAnchorClick} />
-        </svelte:fragment>
-        <svelte:fragment slot="scenario">
-            <!-- Temporarily disabled due to config dependency -->
-            <!-- <Scenario {parameters} bind:scenario {scenarios} /> -->
-            <div class="p-4 text-sm text-gray-600">
-                Scenario controls temporarily disabled
-            </div>
-        </svelte:fragment>
-    </Sidebar>
-
-    <!-- Toggle button for small screens -->
-    <div class="absolute top-6 right-8 z-50 md:hidden overflow-hidden w-8">
-        <div class="flex transition-transform duration-300 ease-in-out"
-            style="transform: translateX({toggleMap ? '-100%' : '0'})"
-        >
-            <div class="flex-shrink-0">
-                <MapIcon class="h-8 w-8" onclick={() => toggleMap = true}/>
-            </div>
-            <div class="flex-shrink-0">
-                <NotebookIcon class="h-8 w-8" onclick={() => toggleMap = false} />
-            </div>
+<div class="min-h-screen bg-surface-100">
+    <!-- Toggle button for mobile map/content switch -->
+    <div class="fixed top-20 right-4 z-40 md:hidden">
+        <div class="flex gap-2">
+            <button
+                onclick={() => toggleMap = false}
+                class="p-2 rounded-lg {!toggleMap
+                    ? 'bg-primary text-white'
+                    : 'bg-white dark:bg-gray-800'} shadow-lg"
+            >
+                <NotebookIcon class="h-6 w-6" />
+            </button>
+            <button
+                onclick={() => toggleMap = true}
+                class="p-2 rounded-lg {toggleMap
+                    ? 'bg-primary text-white'
+                    : 'bg-white dark:bg-gray-800'} shadow-lg"
+            >
+                <MapIcon class="h-6 w-6" />
+            </button>
         </div>
     </div>
 
-    <!-- Main content -->
-    <main class="flex flex-col w-full lg:w-[67%] 2xl:w-[60%] bg-surface-100 text-surface-content max-h-screen overflow-y-scroll scrollbar-none transition-transform lg:transform-none duration-300 ease-in-out {toggleMap ? '-translate-x-full' : 'translate-x-0'} mb-12">
+    <!-- Main content container -->
+    <div class="flex flex-col lg:flex-row">
+        <!-- Main content -->
+        <main class="flex-1 lg:w-2/3 2xl:w-3/5 overflow-y-auto px-6 md:px-12 max-w-screen-2xl mx-auto transition-transform lg:transform-none duration-300 {toggleMap ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}">
         <Section id="section1">
             <div class="flex flex-col grow">
                 <h1 class="text-3xl font-bold pt-24 pb-4">Framtidens elbehov</h1>
@@ -207,20 +188,21 @@
                 <TimeLine {dayData} {geography} resolution='1d' sector={segment} aggregation='sum' {year} {scenario} />
             </div>
         </Section>
-    </main>
+        </main>
 
-    <!-- Map -->
-    <div class="fixed top-0 right-0 w-full lg:absolute lg:top-0 lg:left-[67%] lg:w-[33%] 2xl:left-[60%] 2xl:w-[40%] h-[calc(100vh)] overflow-y-hidden transition-transform lg:transform-none duration-300 ease-in-out {toggleMap ? 'translate-x-0' : 'translate-x-full'}"
-    >
-        <Map
-            geojsonData={geojson}
-            {year}
-            bind:geography
-            {yearData}
-            parameterData={parameters}
-            {scenario}
-            lower_bound={(globals as any)?.lower_bound || 0}
-            upper_bound={(globals as any)?.upper_bound || 1000000}
-        />    
+        <!-- Map -->
+        <aside class="lg:w-1/3 2xl:w-2/5 lg:sticky lg:top-22 lg:h-screen transition-transform lg:transform-none duration-300 {toggleMap ? 'fixed inset-0 z-30 translate-x-0' : 'fixed inset-0 z-30 translate-x-full lg:translate-x-0 lg:relative'}"
+        >
+            <Map
+                geojsonData={geojson}
+                {year}
+                bind:geography
+                {yearData}
+                parameterData={parameters}
+                {scenario}
+                lower_bound={(globals as any)?.lower_bound || 0}
+                upper_bound={(globals as any)?.upper_bound || 1000000}
+            />
+        </aside>
     </div>
 </div>
