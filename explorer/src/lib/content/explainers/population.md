@@ -1,0 +1,3 @@
+#### Befolkning
+
+Befolkningstillväxt samt flytt mellan olika geografier styr elbehovet i från hushåll och övrig verksamhet. Det är främst behovet av el för uppvärmning som påverkar lastkurvan för geografin. Vi använder SBSs modeller för...

@@ -139,8 +139,9 @@ cython_debug/
 test-results
 node_modules
 
-# Library in frontend
+# Library in frontend and explorer
 !frontend/src/lib
+!explorer/src/lib
 
 # Output
 .output
