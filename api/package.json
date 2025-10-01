@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "login": "aws sso login --profile AWSAdministratorAccess-600627346413",
+    "generate-api": "node generate-api.js",
     "build:static-endpoints": "node scripts/generate-endpoints.js",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
@@ -22,6 +23,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@inquirer/prompts": "^7.8.6",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "duckdb": "^1.2.1",

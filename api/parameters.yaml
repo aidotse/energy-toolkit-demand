@@ -1,0 +1,86 @@
+components:
+  parameters:
+    period:
+      name: period
+      in: query
+      required: true
+      description: Time period specification for the query
+      schema:
+        type: object
+        properties:
+          start:
+            type: string
+            description: Start date/time (ISO 8601 format)
+            example: '2025-01-01'
+          end:
+            type: string
+            description: End date/time (ISO 8601 format)
+            example: '2026-01-01'
+          resolution:
+            type: string
+            enum:
+              - 1h
+              - 1d
+              - 1w
+              - 1M
+              - 1Y
+            description: Temporal resolution
+            example: 1h
+          aggregation:
+            type: string
+            enum:
+              - sum
+              - mean
+            description: Aggregation method
+            example: sum
+        required:
+          - start
+          - end
+          - resolution
+          - aggregation
+    geography:
+      name: geography
+      in: query
+      required: true
+      description: Geographic boundary identifier
+      schema:
+        type: string
+        example: all
+    segment:
+      name: segment
+      in: query
+      required: true
+      description: Demand segment identifier
+      schema:
+        type: string
+        example: all
+    scenarioId:
+      name: scenarioId
+      in: query
+      required: false
+      description: Scenario identifier for forecasting
+      schema:
+        type: string
+        example: default
+    responseFormat:
+      name: format
+      in: query
+      required: false
+      description: Response format
+      schema:
+        type: string
+        enum:
+          - json
+          - csv
+        default: json
+    geoFormat:
+      name: format
+      in: query
+      required: false
+      description: Geographic data response format
+      schema:
+        type: string
+        enum:
+          - json
+          - geojson
+        default: json

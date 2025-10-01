@@ -72,4 +72,4 @@ partition:
   full_partition: [scenario_id, geography, segment, timestamp_year]
 
 clear_ouptput_flag: false
-clear_api_flag: true
+clear_api_flag: false

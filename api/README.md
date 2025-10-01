@@ -17,11 +17,43 @@ The Demand Toolkit API provides endpoints for accessing demand forecasting data 
 
 ## API Endpoints
 
-- `GET /geographies` - List of geographic boundaries
+### Static Endpoints
+- `GET /geographies` - List of geographic boundaries (JSON or GeoJSON)
 - `GET /config` - Configuration metadata
 - `GET /scenarios` - Available forecasting scenarios
 - `GET /parameters` - Valid parameter combinations
 - `GET /aggregations` - Available aggregation methods
+- `GET /globals` - Pre-computed global statistics and bounds
+
+### Dynamic Endpoints
+- `GET /demand` - Time-series demand data with flexible aggregation (uses DuckDB)
+
+## Data Structure
+
+The API uses a nested Parquet file structure for efficient querying:
+
+```
+api/data/
+├── base/
+│   └── default/
+│       └── data.parquet           # Base scenario (21 geographies × 3 segments × 8760 hours × 26 years)
+├── scenarios/
+│   ├── housing_electrification=0/
+│   │   └── transport_electrification=0/
+│   │       └── industry_transition=0/
+│   │           └── data.parquet   # Parametric scenario files
+│   └── ... (75 scenario combinations)
+└── aggregated/                    # Pre-computed aggregations for fast queries
+    ├── geography_yearly.parquet   # Yearly totals per geography
+    ├── segment_yearly.parquet     # Yearly totals per segment
+    ├── national_yearly.parquet    # Yearly national totals
+    └── scenario_metadata.parquet  # Scenario parameter combinations
+```
+
+### Query Performance
+- **Dynamic queries**: DuckDB scans Parquet files with predicate pushdown
+- **Pre-aggregated tables**: 50-100x faster for common yearly queries
+- **UNION queries**: Combines base and scenario data with schema normalization
 
 ## Quick Start
 
@@ -30,17 +62,32 @@ The Demand Toolkit API provides endpoints for accessing demand forecasting data 
    npm install
    ```
 
-2. **Generate static endpoint data:**
+2. **Generate data** (requires Python generator):
    ```bash
-   npm run build:static-endpoints
+   # Run generator first to create Parquet files
+   cd ../generator
+   jupyter notebook notebooks/generator_notebook-county.ipynb
    ```
 
-3. **Start local server:**
+3. **Generate static endpoints and globals:**
+   ```bash
+   cd ../api
+   node generate-api.js --defaults
+   ```
+
+4. **Start local server:**
    ```bash
    npm start
+   # API available at http://localhost:4010
    ```
 
-4. **Access API documentation:**
+5. **Test the API:**
+   ```bash
+   curl http://localhost:4010/globals
+   curl "http://localhost:4010/demand?period.start=2030&period.end=2031&period.resolution=1Y&period.aggregation=sum&geography=total&segment=total&scenarioId=default"
+   ```
+
+6. **Access API documentation:**
    ```bash
    npm run docs:build
    npm run docs:serve
@@ -71,6 +118,32 @@ The API follows a modular architecture with:
 - **Configuration** (`config.js`) - Environment-specific settings
 - **Endpoint Generators** (`scripts/endpoints/`) - Static data generation
 - **OpenAPI Specification** (`openapi.yaml`) - API contract definition
+- **Local Server** (`local-server.js`) - Express + OpenAPI Backend + DuckDB
+- **API Generation** (`generate-api.js`) - Orchestrates static endpoint generation and globals computation
+
+### Server Components
+
+**Local Server** (`local-server.js`):
+- Uses OpenAPI Backend for request validation and routing
+- Serves static JSON files for `/config`, `/parameters`, `/scenarios`, `/geographies`, `/aggregations`, `/globals`
+- Uses DuckDB for dynamic `/demand` queries against Parquet files
+- Supports CORS for local development with Explorer frontend
+
+**API Generation** (`generate-api.js`):
+- Validates data directory exists and contains Parquet files
+- Generates all static JSON endpoints from config files
+- Computes global statistics with DuckDB analysis of Parquet data
+- Creates `globals.json` with aggregation-specific bounds
+
+### Endpoint Generation
+
+Static endpoints are generated from configuration files:
+1. `parameters.json` ← `/api/parameters.yaml` + `/api/openapi.yaml`
+2. `geographies.json` / `geographies.geojson` ← `/config.yaml`
+3. `scenarios.json` ← `/config.yaml` (scenario parameter combinations)
+4. `aggregations.json` ← `/config.yaml` (resolution-aggregation combinations)
+5. `config.json` ← `/config.yaml` (filtered for public access)
+6. `globals.json` ← DuckDB analysis of Parquet files
 
 ## Development
 

@@ -6,9 +6,8 @@ import yaml from 'js-yaml';
 import $RefParser from 'json-schema-ref-parser';
 
 /**
- * Reads openapi.yaml and emits parameter definitions based on the API spec.
- * Since we no longer use external parameter files, this returns an empty array
- * or minimal parameter information extracted directly from the OpenAPI spec.
+ * Reads parameters.yaml and openapi.yaml to generate parameter values from actual data files.
+ * Generates parameters.json with actual parameter values available in the API.
  * Each entry has:
  *   - name: the parameter key or nested key
  *   - required: boolean
@@ -16,14 +15,22 @@ import $RefParser from 'json-schema-ref-parser';
  *   - endpoints: [path, …]
  */
 export async function generateParameters(paramsPath, openapiPath) {
-  console.log(`Generating parameters from OpenAPI: ${openapiPath}`);
+  console.log(`Generating parameters from parameters.yaml: ${paramsPath}`);
 
-  // Since we're not using parameters.yaml anymore, create an empty parameters document
-  const paramsDoc = { components: { parameters: {} } };
-  
+  let paramsDoc;
+
   try {
-    // Use the empty parameters document directly since we don't have external parameter files
-    const fullParams = paramsDoc;
+    // Read the parameters.yaml file
+    if (fs.existsSync(paramsPath)) {
+      const rawParams = fs.readFileSync(paramsPath, 'utf8');
+      paramsDoc = yaml.load(rawParams);
+      console.log(`Loaded parameters.yaml with ${Object.keys(paramsDoc.components?.parameters || {}).length} parameter definitions`);
+    } else {
+      throw new Error(`Parameters file not found: ${paramsPath}`);
+    }
+
+    // Use $RefParser to resolve all $ref dependencies in parameters.yaml
+    const fullParams = await $RefParser.dereference(paramsDoc);
     
     // 2) Load and parse openapi.yaml
     const rawApi = fs.readFileSync(openapiPath, 'utf8');
@@ -45,6 +52,64 @@ export async function generateParameters(paramsPath, openapiPath) {
   const out = [];
   const paramsObj = fullParams.components?.parameters || {};
 
+  // Helper function to load actual parameter values from data files
+  const loadParameterValues = (paramName) => {
+    const dataDir = path.resolve(path.dirname(openapiPath), 'data');
+
+    try {
+      switch (paramName) {
+        case 'geography': {
+          const geoFile = path.join(dataDir, 'parameters.json');
+          if (fs.existsSync(geoFile)) {
+            const data = JSON.parse(fs.readFileSync(geoFile, 'utf8'));
+            return data.geographies || [];
+          }
+          break;
+        }
+        case 'segment': {
+          const segFile = path.join(dataDir, 'parameters.json');
+          if (fs.existsSync(segFile)) {
+            const data = JSON.parse(fs.readFileSync(segFile, 'utf8'));
+            return data.segments || [];
+          }
+          break;
+        }
+        case 'scenarioId': {
+          const scenFile = path.join(dataDir, 'parameters.json');
+          if (fs.existsSync(scenFile)) {
+            const data = JSON.parse(fs.readFileSync(scenFile, 'utf8'));
+            return data.scenario_ids || [];
+          }
+          break;
+        }
+        case 'format':
+        case 'responseFormat': {
+          const paramFile = path.join(dataDir, 'parameters.json');
+          if (fs.existsSync(paramFile)) {
+            const data = JSON.parse(fs.readFileSync(paramFile, 'utf8'));
+            return data.formats || ['json', 'csv'];
+          }
+          break;
+        }
+        case 'geoFormat': {
+          const paramFile = path.join(dataDir, 'parameters.json');
+          if (fs.existsSync(paramFile)) {
+            const data = JSON.parse(fs.readFileSync(paramFile, 'utf8'));
+            return data.geo_formats || ['json', 'geojson'];
+          }
+          break;
+        }
+        default:
+          return [];
+      }
+    } catch (err) {
+      console.warn(`Could not load values for parameter ${paramName}: ${err.message}`);
+      return [];
+    }
+
+    return [];
+  };
+
   const getEnum = arr => arr.map(v => v);
 
   for (const [paramKey, paramDef] of Object.entries(paramsObj)) {
@@ -57,6 +122,18 @@ export async function generateParameters(paramsPath, openapiPath) {
         name: baseName,
         required: reqRoot,
         values: getEnum(schema.enum),
+        endpoints
+      });
+      continue;
+    }
+
+    // If no enum in schema, try to load from data files
+    const actualValues = loadParameterValues(baseName);
+    if (actualValues.length > 0 && !schema.properties) {
+      out.push({
+        name: baseName,
+        required: reqRoot,
+        values: actualValues,
         endpoints
       });
       continue;
@@ -77,45 +154,26 @@ export async function generateParameters(paramsPath, openapiPath) {
           sub.oneOf.forEach(branch => {
             if (Array.isArray(branch.enum)) {
               values.push(...getEnum(branch.enum));
-            } else if (branch.$ref) {
-              // Handle $ref in oneOf - this is where references to parameters-geography.yaml, etc. are
-              try {
-                // Extract the file path and reference path from the $ref
-                const refParts = branch.$ref.split('#/');
-                if (refParts.length === 2) {
-                  const refFile = refParts[0];
-                  const refPath = refParts[1].split('/');
-                  
-                  if (refFile) {
-                    // Resolve the file path relative to the parameters.yaml file
-                    const refFilePath = path.resolve(path.dirname(paramsPath), refFile);
-                    if (fs.existsSync(refFilePath)) {
-                      // Load the referenced file
-                      const refContent = yaml.load(fs.readFileSync(refFilePath, 'utf8'));
-                      
-                      // Navigate to the referenced property
-                      let current = refContent;
-                      for (const segment of refPath) {
-                        if (current && current[segment]) {
-                          current = current[segment];
-                        } else {
-                          current = null;
-                          break;
-                        }
-                      }
-                      
-                      // If we found an array, add its values
-                      if (Array.isArray(current)) {
-                        values.push(...current);
-                      }
-                    }
-                  }
-                }
-              } catch (err) {
-                console.error(`Error resolving reference ${branch.$ref}: ${err.message}`);
-              }
             }
           });
+        } else {
+          // Try to get values based on the property name for nested parameters
+          const propertyPath = `${baseName}.${fullPath.join('.')}`;
+          if (key === 'resolution') {
+            const dataDir = path.resolve(path.dirname(openapiPath), 'data');
+            const paramFile = path.join(dataDir, 'parameters.json');
+            if (fs.existsSync(paramFile)) {
+              const data = JSON.parse(fs.readFileSync(paramFile, 'utf8'));
+              values = data.resolutions || ['1h', '1d', '1M', '1Y'];
+            }
+          } else if (key === 'aggregation') {
+            const dataDir = path.resolve(path.dirname(openapiPath), 'data');
+            const paramFile = path.join(dataDir, 'parameters.json');
+            if (fs.existsSync(paramFile)) {
+              const data = JSON.parse(fs.readFileSync(paramFile, 'utf8'));
+              values = data.aggregations || ['sum', 'mean'];
+            }
+          }
         }
 
         const isLeaf = !sub.properties;

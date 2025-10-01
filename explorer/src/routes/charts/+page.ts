@@ -28,7 +28,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
         ]);
 
         // Pick the default scenario and default year
-        const scenario = scenarios.find((s: any) => s.default) || scenarios[0];
+        const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];
         const year = 2030;
 
         // Get scenario ID for API calls
@@ -43,8 +43,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'mean',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const hourData = await fetchDemandData(hourQuery);
 
@@ -56,8 +55,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const dayData = await fetchDemandData(dayQuery);
 
@@ -69,8 +67,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const yearData = await fetchDemandData(yearQuery);
 
@@ -86,8 +83,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const allYearsData = await fetchDemandData(allYearsQuery);
         

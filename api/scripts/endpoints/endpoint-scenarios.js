@@ -30,7 +30,8 @@ export async function generateScenarios(config) {
     // Create scenario objects with metadata
     const scenarioObjects = combinations.map((combo, index) => {
       const scenarioId = createScenarioId(combo);
-      const isDefault = useBaseAsDefault && isBaseScenario(combo);
+      // Don't mark any generated combinations as default - only the dedicated "default" scenario
+      const isDefault = false;
 
       return {
         scenario_id: scenarioId,

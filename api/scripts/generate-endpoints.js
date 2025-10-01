@@ -28,12 +28,14 @@ export async function buildStaticEndpoints() {
 
   try {
     console.log('Generating parameters.json...');
-    // Use resolveFromApi to get absolute path to OpenAPI file
+    // Use resolveFromApi to get absolute path to OpenAPI and parameters files
     const openapiPath = resolveFromApi('openapi.yaml');
+    const paramsPath = resolveFromApi('parameters.yaml');
 
     console.log(`Using OpenAPI file: ${openapiPath}`);
+    console.log(`Using parameters file: ${paramsPath}`);
 
-    const params = await generateParameters(null, openapiPath);
+    const params = await generateParameters(paramsPath, openapiPath);
     
     const paramsOutputPath = path.join(dataDir, 'parameters.json');
     console.log(`Writing parameters to: ${paramsOutputPath}`);

@@ -195,10 +195,159 @@ paths:
               schema:
                 $ref: './schemas/common-schemas.yaml#/components/schemas/AggregationsResponse'
 
+  /globals:
+    get:
+      operationId: getGlobals
+      summary: Global statistics and bounds for data visualization
+      description: |
+        Returns pre-computed global statistics including minimum and maximum values
+        across different aggregation levels. These bounds are optimized for different
+        visualization contexts (maps, sector charts, national time series).
+
+        **Use Cases:**
+        - Map color scaling: Use `bounds.map_yearly_geography` for yearly geography totals
+        - Sector charts: Use `bounds.sector_yearly` for yearly segment totals
+        - National time series: Use `bounds.national_yearly` for yearly national totals
+        - Raw data analysis: Use `bounds.raw` for hourly data points
+
+        **Data Structure:**
+        The API provides both legacy top-level bounds (for backward compatibility) and
+        aggregation-specific bounds under the `bounds` object. The nested structure at
+        `/api/data/base/` and `/api/data/scenarios/` is queried via DuckDB to compute
+        realistic bounds for each aggregation level.
+
+        Statistics are computed during API generation from all Parquet files using DuckDB.
+      responses:
+        '200':
+          description: Global statistics with aggregation-specific bounds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lower_bound:
+                    type: number
+                    description: Legacy minimum value (raw data) - for backward compatibility
+                    example: -20.41
+                  upper_bound:
+                    type: number
+                    description: Legacy maximum value (raw data) - for backward compatibility
+                    example: 12497.73
+                  computed_at:
+                    type: string
+                    format: date-time
+                    description: Timestamp when statistics were computed
+                    example: "2025-01-01T00:00:00Z"
+                  metadata:
+                    type: object
+                    properties:
+                      total_records:
+                        type: integer
+                        description: Total number of hourly records analyzed
+                        example: 14357952
+                      mean_value:
+                        type: number
+                        description: Average value across raw hourly data
+                        example: 500.25
+                    description: Statistical metadata about raw data
+                  bounds:
+                    type: object
+                    description: Aggregation-specific bounds for different visualization contexts
+                    properties:
+                      raw:
+                        type: object
+                        description: Bounds for raw hourly data points
+                        properties:
+                          lower_bound:
+                            type: number
+                            example: -20.41
+                          upper_bound:
+                            type: number
+                            example: 12497.73
+                          description:
+                            type: string
+                            example: "Raw data points (hourly values)"
+                      map_yearly_geography:
+                        type: object
+                        description: Bounds for yearly totals per geography (optimal for map color scaling)
+                        properties:
+                          lower_bound:
+                            type: number
+                            example: 50000000
+                          upper_bound:
+                            type: number
+                            example: 30000000000
+                          description:
+                            type: string
+                            example: "Yearly totals per geography (for map color scaling)"
+                      sector_yearly:
+                        type: object
+                        description: Bounds for yearly totals per sector (optimal for sector charts)
+                        properties:
+                          lower_bound:
+                            type: number
+                            example: 10000000000
+                          upper_bound:
+                            type: number
+                            example: 100000000000
+                          description:
+                            type: string
+                            example: "Yearly totals per sector (for sector charts)"
+                      national_yearly:
+                        type: object
+                        description: Bounds for yearly national totals (optimal for time series)
+                        properties:
+                          lower_bound:
+                            type: number
+                            example: 100000000000
+                          upper_bound:
+                            type: number
+                            example: 500000000000
+                          description:
+                            type: string
+                            example: "Yearly national totals (for time series)"
+                required: [lower_bound, upper_bound, computed_at, bounds]
+
   /demand:
     get:
       operationId: getDemand
       summary: Demand time‐series at arbitrary resolution
+      description: |
+        Returns demand time-series data with flexible aggregation and filtering options.
+        This endpoint uses DuckDB to query Parquet files stored in a nested directory structure.
+
+        **Data Structure:**
+        The API queries data from two directories:
+        - `/api/data/base/` - Base scenario files (e.g., `base/default/data.parquet`)
+        - `/api/data/scenarios/` - Parametric scenarios (e.g., `scenarios/housing_electrification=2/.../data.parquet`)
+
+        **Query Performance:**
+        - Uses DuckDB for efficient Parquet scanning with predicate pushdown
+        - Pre-aggregated tables available for common yearly queries (50-100x faster)
+        - UNION queries combine base and scenario data with schema normalization
+
+        **Aggregation Behavior:**
+        - `geography='all'`: Returns separate rows per geography (GROUP BY geography)
+        - `geography='total'`: Returns single row with sum across all geographies
+        - `geography='01'`: Returns single row for specific geography
+        - Same pattern applies to `segment` parameter
+        - `scenarioId='all'`: Returns separate rows per scenario
+
+        **Resolution Support:**
+        - `1h` - Hourly data (raw timestamps)
+        - `1d` - Daily aggregates (DATE_TRUNC to day)
+        - `1w` - Weekly aggregates (DATE_TRUNC to week)
+        - `1M` - Monthly aggregates (DATE_TRUNC to month)
+        - `1Y` - Yearly aggregates (DATE_TRUNC to year)
+
+        **Response Format:**
+        Each row contains:
+        - `period`: ISO 8601 timestamp (start of aggregation period)
+        - `value`: Aggregated value (sum or mean based on aggregation parameter)
+        - `geography`: Geography ID or 'total'
+        - `segment`: Segment name or 'total'
+        - `scenario_id`: Scenario identifier
+
       parameters:
         - $ref: '#/components/parameters/period'
         - $ref: '#/components/parameters/geography'
@@ -207,14 +356,58 @@ paths:
         - $ref: '#/components/parameters/responseFormat'
       responses:
         '200':
-          description: Time‐series response
+          description: Time‐series response with aggregated demand data
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/DemandRow'
+              examples:
+                yearly_national:
+                  summary: Yearly national totals
+                  value:
+                    - period: "2030-01-01T00:00:00Z"
+                      value: 158031200000
+                      geography: "total"
+                      segment: "total"
+                      scenario_id: "default"
+                    - period: "2031-01-01T00:00:00Z"
+                      value: 161209300000
+                      geography: "total"
+                      segment: "total"
+                      scenario_id: "default"
+                geography_breakdown:
+                  summary: Geography breakdown for specific year
+                  value:
+                    - period: "2030-01-01T00:00:00Z"
+                      value: 18848740000
+                      geography: "01"
+                      segment: "total"
+                      scenario_id: "default"
+                    - period: "2030-01-01T00:00:00Z"
+                      value: 4922399000
+                      geography: "03"
+                      segment: "total"
+                      scenario_id: "default"
+                hourly_data:
+                  summary: Hourly data for specific geography
+                  value:
+                    - period: "2030-01-01T00:00:00Z"
+                      value: 661.05
+                      geography: "01"
+                      segment: "housing"
+                      scenario_id: "default"
+                    - period: "2030-01-01T01:00:00Z"
+                      value: 651.64
+                      geography: "01"
+                      segment: "housing"
+                      scenario_id: "default"
             text/csv:
               schema:
                 type: string
                 format: binary
+              example: |
+                period,geography,segment,scenario_id,value
+                2030-01-01T00:00:00Z,total,total,default,158031200000
+                2031-01-01T00:00:00Z,total,total,default,161209300000

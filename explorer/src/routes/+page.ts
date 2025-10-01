@@ -4,18 +4,15 @@ import {
     fetchScenarios,
     fetchParameters,
     fetchGlobals,
-    fetchGeographies,
-    type DemandRow
+    fetchGeographies
 } from '$lib/dataService';
-import { makeDemandQuery, makeGeographiesQuery } from '$lib/utilities';
+import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
+export const load: PageLoad = async () => {
 
-// Function to create histogram bins
-export const load: PageLoad = async ({ fetch, params }) => {
-
-    // Initial state
-    const geography = 'all';
-    const segment = 'all';
+    // Initial state - use aggregated values for overview
+    const geography = 'total'; // Total across all geographies (server-side aggregated)
+    const segment = 'total'; // Total across all segments (server-side aggregated)
 
     try {
         // 1) Static endpoints using new API functions
@@ -28,7 +25,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
         ]);
 
         // Pick the default scenario and default year
-        const scenario = scenarios.find((s: any) => s.default) || scenarios[0];
+        const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];
         const year = 2030;
 
         // Get scenario ID for API calls
@@ -43,8 +40,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'mean',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const hourData = await fetchDemandData(hourQuery);
 
@@ -56,28 +52,38 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const dayData = await fetchDemandData(dayQuery);
 
-        // Annual for this one county/segment
+        // Annual for map (all geographies, aggregated segments)
         const yearQuery = makeDemandQuery({
             start: String(year),
             end:   String(year + 1),
             resolution: '1Y',
             aggregation:'sum',
-            geography,
-            segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            geography: 'all',
+            segment: 'total',
+            scenarioId
         });
         const yearData = await fetchDemandData(yearQuery);
 
-        // Annual across all years for that geo/segment
-        // Use config or parameters to determine year range
-        const startYear = parameters?.filter?.year?.[0] || config?.start_year || 2025;
-        const endYear = parameters?.filter?.year?.slice(-1)?.[0] || config?.end_year || 2050;
+        // Annual sector data for SectorArc (all geographies, all segments separately)
+        const sectorQuery = makeDemandQuery({
+            start: String(year),
+            end:   String(year + 1),
+            resolution: '1Y',
+            aggregation:'sum',
+            geography: 'all',
+            segment: 'all', // Get all segments separately
+            scenarioId
+        });
+        const sectorData = await fetchDemandData(sectorQuery);
+
+        // Annual across limited years for performance
+        // Use a smaller year range initially
+        const startYear = 2025;
+        const endYear = 2035; // Reduced from 2050 to limit data load
 
         const allYearsQuery = makeDemandQuery({
             start: String(startYear),
@@ -86,17 +92,28 @@ export const load: PageLoad = async ({ fetch, params }) => {
             aggregation:'sum',
             geography,
             segment,
-            scenarioId,
-            growth: scenario?.growth  // Legacy fallback
+            scenarioId
         });
         const allYearsData = await fetchDemandData(allYearsQuery);
-        
+
+        // Use appropriate bounds from globals endpoint
+        // If the new bounds structure exists, use map-specific bounds, otherwise fallback
+        const mapBounds = globals?.bounds?.map_yearly_geography || {
+            lower_bound: globals?.lower_bound || 0,
+            upper_bound: globals?.upper_bound || 30000000
+        };
+
         // Return all data
         return {
             config,
             scenarios,
             parameters,
-            globals,
+            globals: {
+                ...globals,
+                // Override with map-specific bounds for the Map component
+                lower_bound: mapBounds.lower_bound,
+                upper_bound: mapBounds.upper_bound
+            },
             year,
             geography,
             segment,
@@ -105,6 +122,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             hourData,
             dayData,
             yearData,
+            sectorData,
             allYearsData
         };
     } catch (error: any) {
@@ -123,6 +141,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
             hourData: [],
             dayData: [],
             yearData: [],
+            sectorData: [],
             allYearsData: []
         };
     }

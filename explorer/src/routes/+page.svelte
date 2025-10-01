@@ -2,14 +2,13 @@
     import { Map as MapIcon, Notebook as NotebookIcon } from 'lucide-svelte';
     import GeoSelect from '$lib/components/inline/GeoSelect.svelte';
     import SelectText from '$lib/components/inline/SelectText.svelte';
-    import GrowthSelect from '$lib/components/inline/GrowthSelect.svelte';
     import Snippet from '$lib/components/inline/Snippet.svelte';
     import Change from '$lib/components/inline/Change.svelte';
-    import GoTo from '$lib/components/GoTo.svelte';
+    // import GoTo from '$lib/components/GoTo.svelte'; // Unused
     import Map from '$lib/components/map/Map.svelte';
     import Sidebar from '$lib/components/sidebar/Sidebar.svelte';
     import IndexNavigation from '$lib/components/sidebar/IndexNavigation.svelte';
-    import Scenario from '$lib/components/sidebar/Scenario.svelte';   
+    // import Scenario from '$lib/components/sidebar/Scenario.svelte'; // Temporarily disabled   
     import AreaChart from '$lib/components/AreaChart.svelte';
     import GeoBarChart from '$lib/components/GeoBarChart.svelte';
     import TimeLine from '$lib/components/TimeLine.svelte';
@@ -19,11 +18,12 @@
     import Section from '$lib/components/Section.svelte';
 	import type { PageProps } from './$types';
     import { handleAnchorClick, getGeos } from '$lib/utilities';
-    import { fade, slide } from 'svelte/transition';
+    // import { fade, slide } from 'svelte/transition'; // Unused
 
     let { data }: PageProps = $props();
-    const { config, scenarios, parameters, globals, geojson }  = data;
-	let { year, geography, segment, scenario, hourData, dayData, yearData, allYearsData } = $state(data);
+    const { config, parameters, globals, geojson, year, segment, scenario, hourData, dayData, yearData, sectorData, allYearsData }  = data;
+    // const scenarios = data.scenarios; // Temporarily unused due to disabled Scenario component
+    let geography = $state(data.geography); // Make geography reactive since it's bound to components
     let toggleControls = $state(false);
     let toggleMap = $state(false);
 
@@ -35,8 +35,6 @@
         { id: "section5", text: "Utforska djupare" }
     ]
 
-    console.log(parameters, scenarios, scenario)
-
 </script>
 
 <div class="flex w-full h-[calc(100vh)] overflow-hidden">
@@ -45,7 +43,11 @@
             <IndexNavigation {index} {handleAnchorClick} />
         </svelte:fragment>
         <svelte:fragment slot="scenario">
-            <Scenario {parameters} bind:scenario {scenarios} />
+            <!-- Temporarily disabled due to config dependency -->
+            <!-- <Scenario {parameters} bind:scenario {scenarios} /> -->
+            <div class="p-4 text-sm text-gray-600">
+                Scenario controls temporarily disabled
+            </div>
         </svelte:fragment>
     </Sidebar>
 
@@ -76,7 +78,7 @@
                             fram det här verktyget för att visualisera och förklara. Analysen som presenteras här är framtagen av AI Sweden som ett exempel.
                         </p>
                         <p class="mb-4">
-                            Elenergibehovet i <GeoSelect parameterData={parameters} bind:geography /> <SelectText items={getGeos(parameters?.geographies || [])} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={parameters?.years?.[0] || 2025} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet parameterData={parameters} property="start-year" /></b> till år <b>{year}</b>.
+                            Elenergibehovet i <GeoSelect parameterData={parameters} bind:geography /> <SelectText items={getGeos((geojson as any)?.features || [])} bind:geography /> väntas i det här scenariot öka med <b><Change {geography} aggregation='sum' {scenario} startYear={(parameters as any)?.years?.[0] || 2025} year={year} {allYearsData} percentage={true} /></b> från år <b><Snippet parameterData={parameters} property="start-year" /></b> till år <b>{year}</b>.
                         </p>
                     </div>
                     <div class="w-full lg:w-1/2 flex items-center justify-center">
@@ -124,7 +126,7 @@
                         </p>
                     </div>
                     <div class="flex flex-col w-full lg:w-1/2">
-                        <SectorArc {yearData} {geography} {year} {scenario} />
+                        <SectorArc yearData={sectorData} {geography} {year} {scenario} />
                     </div>
                 </div>
                 <h3 class="text-2xl font-bold pt-20 pb-4">Hushållen och övrig bebyggelse</h3>
@@ -217,8 +219,8 @@
             {yearData}
             parameterData={parameters}
             {scenario}
-            lower_bound={globals?.lower_bound || 0}
-            upper_bound={globals?.upper_bound || 1000000}
+            lower_bound={(globals as any)?.lower_bound || 0}
+            upper_bound={(globals as any)?.upper_bound || 1000000}
         />    
     </div>
 </div>

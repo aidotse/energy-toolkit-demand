@@ -43,7 +43,7 @@ beforeAll(async () => {
   });
 
   // Register other static endpoints
-  const staticOps = ['getConfig', 'getParameters', 'getScenarios', 'getAggregations'];
+  const staticOps = ['getConfig', 'getParameters', 'getScenarios', 'getAggregations', 'getGlobals'];
   staticOps.forEach((op) => {
     api.register(op, (c, req, res) => {
       const base = op.replace(/^get/, '').toLowerCase();
@@ -192,6 +192,57 @@ describe('API Server Integration Tests', () => {
 
       expect(response.headers['content-type']).toContain('application/json');
       expect(response.body).toBeInstanceOf(Array);
+    });
+  });
+
+  describe('GET /globals', () => {
+    test('should return global statistics and bounds', async () => {
+      const response = await request(app)
+        .get('/globals')
+        .expect(200);
+
+      expect(response.headers['content-type']).toContain('application/json');
+
+      // Check legacy top-level fields
+      expect(response.body).toHaveProperty('lower_bound');
+      expect(response.body).toHaveProperty('upper_bound');
+      expect(response.body).toHaveProperty('computed_at');
+
+      // Check that bounds are numbers
+      expect(typeof response.body.lower_bound).toBe('number');
+      expect(typeof response.body.upper_bound).toBe('number');
+    });
+
+    test('should include aggregation-specific bounds', async () => {
+      const response = await request(app)
+        .get('/globals')
+        .expect(200);
+
+      // Check for nested bounds object
+      expect(response.body).toHaveProperty('bounds');
+      expect(response.body.bounds).toHaveProperty('raw');
+      expect(response.body.bounds).toHaveProperty('map_yearly_geography');
+      expect(response.body.bounds).toHaveProperty('sector_yearly');
+      expect(response.body.bounds).toHaveProperty('national_yearly');
+
+      // Check structure of each bound set
+      expect(response.body.bounds.raw).toHaveProperty('lower_bound');
+      expect(response.body.bounds.raw).toHaveProperty('upper_bound');
+      expect(response.body.bounds.raw).toHaveProperty('description');
+
+      expect(response.body.bounds.map_yearly_geography).toHaveProperty('lower_bound');
+      expect(response.body.bounds.map_yearly_geography).toHaveProperty('upper_bound');
+      expect(response.body.bounds.map_yearly_geography).toHaveProperty('description');
+    });
+
+    test('should include metadata', async () => {
+      const response = await request(app)
+        .get('/globals')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('metadata');
+      expect(response.body.metadata).toHaveProperty('total_records');
+      expect(typeof response.body.metadata.total_records).toBe('number');
     });
   });
 

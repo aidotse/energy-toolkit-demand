@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { askProjectComponents, askProjectConfig, askTimeSpan, askGeoJSONConfig, askSegmentation, askScenarios, askDataStructure, askApiParameters } from './prompts.js';
+import { askProjectComponents, askProjectConfig, askTimeSpan, askGeoJSONConfig, askSegmentation, askScenarios, askDataStructure } from './prompts.js';
 import { loadGeoJSON } from './load-geojson.js';
 import { mergeAndSave } from './write-config.js';
-import { generateAPISupport } from './generate-api.js';
 
 (async function main() {
   try {
@@ -38,11 +37,11 @@ import { generateAPISupport } from './generate-api.js';
       cfg = { ...cfg, generator: { ...dataStructure } };
     }
 
-    // API support
+    // API support - note API generation moved to separate script
     if (comps.useAPI) {
-      const apiParams = await askApiParameters();
-      cfg = { ...cfg, api: { ...apiParams } };
-      await generateAPISupport(cfg);
+      console.log('\n📌 API Configuration');
+      console.log('API generation has been moved to a separate script.');
+      console.log('After data generation, run: cd api && npm run generate-api');
     }
   } catch (err) {
     console.error(err.message);
