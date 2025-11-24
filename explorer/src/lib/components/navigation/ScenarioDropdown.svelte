@@ -25,30 +25,11 @@
 	// Local state
 	let dropdownRef: HTMLDivElement | undefined;
 
-	// Extract parameter ranges from scenarios
-	const parameterRanges = $derived.by(() => {
-		const ranges: Record<string, Set<number>> = {};
-
-		scenarios.forEach((scenario) => {
-			if (scenario.parameters) {
-				Object.entries(scenario.parameters).forEach(([key, value]) => {
-					if (!ranges[key]) ranges[key] = new Set();
-					ranges[key].add(value as number);
-				});
-			}
-		});
-
-		// Convert to sorted arrays
-		const result: Record<string, number[]> = {};
-		Object.entries(ranges).forEach(([key, valueSet]) => {
-			result[key] = Array.from(valueSet).sort((a, b) => a - b);
-		});
-
-		return result;
-	});
+	// Get scenario parameter metadata from parameters endpoint
+	const scenarioParameters = $derived(parameters?.scenarioParameters || {});
 
 	// Get parameter names in alphabetical order
-	const parameterNames = $derived(Object.keys(parameterRanges).sort());
+	const parameterNames = $derived(Object.keys(scenarioParameters).sort());
 
 	// Find matching scenario based on temp parameters
 	const matchingScenario = $derived.by(() => {
@@ -122,10 +103,14 @@
 	}
 
 	function handleAddComparison() {
-		// TODO: Add current scenario to comparison
 		if (matchingScenario) {
-			scenarioState.setScenario(matchingScenario);
+			scenarioState.addToStaged(matchingScenario);
 		}
+		// Keep dropdown open to allow adding more scenarios
+	}
+
+	function handleApplyComparison() {
+		scenarioState.applyComparison();
 		navigationState.toggleScenarioDropdown();
 	}
 </script>
@@ -151,6 +136,53 @@
 
 		<!-- Scrollable Content -->
 		<div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+			<!-- Staged Comparison Scenarios Section -->
+			{#if scenarioState.stagedComparisonScenarios.length > 0}
+				<div>
+					<div class="flex items-center justify-between mb-3">
+						<h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+							Comparison Queue ({scenarioState.stagedComparisonScenarios.length}/3)
+						</h4>
+						<button
+							onclick={() => scenarioState.clearStaged()}
+							class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+						>
+							Clear All
+						</button>
+					</div>
+					<div class="space-y-2">
+						{#each scenarioState.stagedComparisonScenarios as scenario, index}
+							<div
+								class="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+							>
+								<div class="flex items-center gap-2">
+									<div
+										class="w-3 h-3 rounded-full"
+										style="background-color: {index === 0 ? '#3b82f6' : index === 1 ? '#10b981' : '#f59e0b'}"
+									></div>
+									<span class="text-sm font-medium text-gray-900 dark:text-white"
+										>{scenario.name}</span
+									>
+									{#if index === 0}
+										<span
+											class="text-xs px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+											>baseline</span
+										>
+									{/if}
+								</div>
+								<button
+									onclick={() => scenarioState.removeFromStaged(scenario)}
+									class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+									aria-label="Remove"
+								>
+									<X class="w-4 h-4" />
+								</button>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<!-- Quick Select Section -->
 			{#if defaultScenario}
 				<div>
@@ -178,10 +210,7 @@
 				{#each parameterNames as paramName}
 					<ParameterGroup
 						label={paramName.replace(/_/g, ' ')}
-						options={parameterRanges[paramName].map((value) => ({
-							label: String(value),
-							value
-						}))}
+						options={scenarioParameters[paramName]?.options || []}
 						selected={navigationState.tempParameters[paramName]}
 						onselect={(value) => {
 							navigationState.tempParameters = {
@@ -224,18 +253,31 @@
 			<div class="flex items-center gap-2">
 				<button
 					onclick={handleAddComparison}
-					disabled={!matchingScenario}
+					disabled={!matchingScenario || scenarioState.stagedComparisonScenarios.length >= 3}
 					class="px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Add to Compare
+					{#if scenarioState.stagedComparisonScenarios.length >= 3}
+						Max 3 Scenarios
+					{:else}
+						Add to Compare
+					{/if}
 				</button>
-				<button
-					onclick={handleApply}
-					disabled={!matchingScenario}
-					class="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					Apply
-				</button>
+				{#if scenarioState.stagedComparisonScenarios.length >= 2}
+					<button
+						onclick={handleApplyComparison}
+						class="px-6 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+					>
+						Apply Comparison
+					</button>
+				{:else}
+					<button
+						onclick={handleApply}
+						disabled={!matchingScenario}
+						class="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						Apply
+					</button>
+				{/if}
 			</div>
 		</div>
 	</div>

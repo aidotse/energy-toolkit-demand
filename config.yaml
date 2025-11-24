@@ -5,7 +5,7 @@ name: behovskartan2
 version: 0.1.0
 access: public
 start: '2025-01-01T00:00:00Z'
-end: '2044-12-31T23:00:00Z'
+end: '2050-12-31T23:00:00Z'
 baseResolution: 1h
 baseAggregation: mean
 segment:

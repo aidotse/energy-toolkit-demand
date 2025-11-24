@@ -13,5 +13,8 @@
   "graphs_page": "Grafer",
   "about_page": "Om projektet",
   "toolkit_page": "Demand Toolkit",
-  "contact_page": "Kontakt"
+  "contact_page": "Kontakt",
+  "data_page": "Data & API",
+  "reports_page": "Analys",
+  "scenario_analysis": "Scenarioanalys"
 }

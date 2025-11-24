@@ -13,5 +13,8 @@
   "graphs_page": "Graphs",
   "about_page": "About",
   "toolkit_page": "Toolkit",
-  "contact_page": "Contact"
+  "contact_page": "Contact",
+  "data_page": "Data & API",
+  "reports_page": "Analysis",
+  "scenario_analysis": "Scenario Analysis"
 }

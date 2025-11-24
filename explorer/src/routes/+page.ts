@@ -1,148 +1,197 @@
 import {
-    fetchDemandData,
-    fetchConfig,
-    fetchScenarios,
-    fetchParameters,
-    fetchGlobals,
-    fetchGeographies
+	fetchDemandData,
+	fetchConfig,
+	fetchScenarios,
+	fetchParameters,
+	fetchGlobals,
+	fetchGeographies
 } from '$lib/dataService';
 import { makeDemandQuery } from '$lib/utilities';
+import { loadContent, type ContentFile } from '$lib/contentLoader';
 import type { PageLoad } from './$types';
-export const load: PageLoad = async () => {
 
-    // Initial state - use aggregated values for overview
-    const geography = 'total'; // Total across all geographies (server-side aggregated)
-    const segment = 'total'; // Total across all segments (server-side aggregated)
+export const load: PageLoad = async ({ fetch }) => {
+	// Report page configuration
+	const geography = 'total'; // National totals
+	const segment = 'total'; // All segments combined initially
+	const year = 2045; // Default year for report
+	const startYear = 2025;
+	const endYear = 2050;
 
-    try {
-        // 1) Static endpoints using new API functions
-        const [config, scenarios, parameters, globals, geojson] = await Promise.all([
-            fetchConfig(),
-            fetchScenarios(),
-            fetchParameters(),
-            fetchGlobals(),
-            fetchGeographies('geojson'),
-        ]);
+	try {
+		// 1) Fetch static configuration data and content
+		const [config, scenarios, parameters, globals, geographies, geojson, contentSections] =
+			await Promise.all([
+				fetchConfig(fetch),
+				fetchScenarios(fetch),
+				fetchParameters(fetch),
+				fetchGlobals(fetch),
+				fetchGeographies('json', fetch),
+				fetchGeographies('geojson', fetch),
+				// Load content sections (using Swedish for now, will add i18n later)
+				Promise.all([
+					loadContent('sv', 'executive-summary'),
+					loadContent('sv', 'current-state'),
+					loadContent('sv', 'future-scenarios'),
+					loadContent('sv', 'key-insights')
+				])
+			]);
 
-        // Pick the default scenario and default year
-        const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];
-        const year = 2030;
+		// Get default scenario
+		const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];
+		const scenarioId = scenario?.id || scenario?.scenario_id || 'default';
 
-        // Get scenario ID for API calls
-        const scenarioId = scenario?.id || scenario?.scenario_id || 'default';
+		// 2) Fetch time series data for different visualizations
 
-        // 2) Time-series calls using new API functions
-        // Hourly mean for selected year
-        const hourQuery = makeDemandQuery({
-            start: `${year}-01-01`,
-            end:   `${year + 1}-01-01`,
-            resolution: '1h',
-            aggregation:'mean',
-            geography,
-            segment,
-            scenarioId
-        });
-        const hourData = await fetchDemandData(hourQuery);
+		// Full time range annual data for AreaChart (2025-2050)
+		const timeSeriesQuery = makeDemandQuery({
+			start: String(startYear),
+			end: String(endYear + 1),
+			resolution: '1Y',
+			aggregation: 'sum',
+			geography,
+			segment,
+			scenarioId
+		});
+		const timeSeriesData = await fetchDemandData(timeSeriesQuery, fetch);
 
-        // Daily sum
-        const dayQuery = makeDemandQuery({
-            start: `${year}-01-01`,
-            end:   `${year + 1}-01-01`,
-            resolution: '1d',
-            aggregation:'sum',
-            geography,
-            segment,
-            scenarioId
-        });
-        const dayData = await fetchDemandData(dayQuery);
+		// Hourly data for selected year (for Histogram distribution)
+		const hourlyQuery = makeDemandQuery({
+			start: `${year}-01-01`,
+			end: `${year + 1}-01-01`,
+			resolution: '1h',
+			aggregation: 'mean',
+			geography,
+			segment,
+			scenarioId
+		});
+		const hourlyData = await fetchDemandData(hourlyQuery, fetch);
 
-        // Annual for map (all geographies, aggregated segments)
-        const yearQuery = makeDemandQuery({
-            start: String(year),
-            end:   String(year + 1),
-            resolution: '1Y',
-            aggregation:'sum',
-            geography: 'all',
-            segment: 'total',
-            scenarioId
-        });
-        const yearData = await fetchDemandData(yearQuery);
+		// Daily data for selected year (for TimeLine daily patterns)
+		const dailyQuery = makeDemandQuery({
+			start: `${year}-01-01`,
+			end: `${year + 1}-01-01`,
+			resolution: '1d',
+			aggregation: 'sum',
+			geography,
+			segment,
+			scenarioId
+		});
+		const dailyData = await fetchDemandData(dailyQuery, fetch);
 
-        // Annual sector data for SectorArc (all geographies, all segments separately)
-        const sectorQuery = makeDemandQuery({
-            start: String(year),
-            end:   String(year + 1),
-            resolution: '1Y',
-            aggregation:'sum',
-            geography: 'all',
-            segment: 'all', // Get all segments separately
-            scenarioId
-        });
-        const sectorData = await fetchDemandData(sectorQuery);
+		// Segment breakdown for selected year (for segmentBars)
+		const segmentQuery = makeDemandQuery({
+			start: String(year),
+			end: String(year + 1),
+			resolution: '1Y',
+			aggregation: 'sum',
+			geography: 'total', // National total
+			segment: 'all', // All segments separately
+			scenarioId
+		});
+		const segmentData = await fetchDemandData(segmentQuery, fetch);
 
-        // Annual across limited years for performance
-        // Use a smaller year range initially
-        const startYear = 2025;
-        const endYear = 2035; // Reduced from 2050 to limit data load
+		// Geographic distribution for selected year (for Map and GeoBarChart)
+		const geoQuery = makeDemandQuery({
+			start: String(year),
+			end: String(year + 1),
+			resolution: '1Y',
+			aggregation: 'sum',
+			geography: 'all', // All geographies separately
+			segment: 'total', // Total across segments
+			scenarioId
+		});
+		const geoData = await fetchDemandData(geoQuery, fetch);
 
-        const allYearsQuery = makeDemandQuery({
-            start: String(startYear),
-            end:   String(endYear + 1),
-            resolution: '1Y',
-            aggregation:'sum',
-            geography,
-            segment,
-            scenarioId
-        });
-        const allYearsData = await fetchDemandData(allYearsQuery);
+		// Calculate key metrics from the data
+		const latestYearData = timeSeriesData[timeSeriesData.length - 1];
+		const firstYearData = timeSeriesData[0];
 
-        // Use appropriate bounds from globals endpoint
-        // If the new bounds structure exists, use map-specific bounds, otherwise fallback
-        const mapBounds = globals?.bounds?.map_yearly_geography || {
-            lower_bound: globals?.lower_bound || 0,
-            upper_bound: globals?.upper_bound || 30000000
-        };
+		const totalEnergy2050 = latestYearData?.value || 0;
+		const totalEnergy2025 = firstYearData?.value || 0;
+		const growthRate = totalEnergy2025 > 0
+			? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100
+			: 0;
 
-        // Return all data
-        return {
-            config,
-            scenarios,
-            parameters,
-            globals: {
-                ...globals,
-                // Override with map-specific bounds for the Map component
-                lower_bound: mapBounds.lower_bound,
-                upper_bound: mapBounds.upper_bound
-            },
-            year,
-            geography,
-            segment,
-            scenario,
-            geojson,
-            hourData,
-            dayData,
-            yearData,
-            sectorData,
-            allYearsData
-        };
-    } catch (error: any) {
-        console.error('Error loading data:', error?.message || error);
-        // Return default fallback values in case of error
-        return {
-            config: null,
-            scenarios: [],
-            parameters: {},
-            globals: {},
-            year: 2030,
-            geography: 'all',
-            segment: 'all',
-            scenario: null,
-            geojson: { type: 'FeatureCollection', features: [] },
-            hourData: [],
-            dayData: [],
-            yearData: [],
-            sectorData: [],
-            allYearsData: []
-        };
-    }
-}
+		// Calculate peak power from hourly data
+		const peakPower = hourlyData.reduce((max, d) => Math.max(max, d.value || 0), 0);
+
+		// Use map-specific bounds from globals
+		const mapBounds = globals?.bounds?.map_yearly_geography || {
+			lower_bound: globals?.lower_bound || 0,
+			upper_bound: globals?.upper_bound || 30000000
+		};
+
+		// Organize content sections by section name
+		const [executiveSummary, currentState, futureScenarios, keyInsights] = contentSections;
+		const content = {
+			executiveSummary,
+			currentState,
+			futureScenarios,
+			keyInsights
+		};
+
+		return {
+			config,
+			scenarios,
+			parameters,
+			globals: {
+				...globals,
+				lower_bound: mapBounds.lower_bound,
+				upper_bound: mapBounds.upper_bound
+			},
+			year,
+			geography,
+			segment,
+			scenario,
+			scenarioId,
+			geographies,
+			geojson,
+			// Chart data
+			timeSeriesData,
+			hourlyData,
+			dailyData,
+			segmentData,
+			geoData,
+			// Metrics
+			totalEnergy2050,
+			totalEnergy2025,
+			growthRate,
+			peakPower,
+			scenarioCount: scenarios.length,
+			// Content sections
+			content
+		};
+	} catch (error: any) {
+		console.error('Error loading report data:', error?.message || error);
+		return {
+			config: null,
+			scenarios: [],
+			parameters: {},
+			globals: {},
+			year: 2045,
+			geography: 'total',
+			segment: 'total',
+			scenario: null,
+			scenarioId: 'default',
+			geographies: [],
+			geojson: { type: 'FeatureCollection', features: [] },
+			timeSeriesData: [],
+			hourlyData: [],
+			dailyData: [],
+			segmentData: [],
+			geoData: [],
+			totalEnergy2050: 0,
+			totalEnergy2025: 0,
+			growthRate: 0,
+			peakPower: 0,
+			scenarioCount: 0,
+			content: {
+				executiveSummary: null,
+				currentState: null,
+				futureScenarios: null,
+				keyInsights: null
+			}
+		};
+	}
+};

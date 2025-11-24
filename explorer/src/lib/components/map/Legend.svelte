@@ -12,7 +12,7 @@
     ];
 </script>
 
-<div class="flex flex-col rounded shadow px-2 lg:px-3 pt-3 pb-2 bg-surface-100 text-surface-content">
+<div class="flex flex-col rounded shadow px-2 lg:px-3 pt-3 pb-2 bg-gray-100 text-gray-content">
     <!-- Gradient Bar -->
     <div class="w-full h-3 lg:h-5 rounded mb-1 legend-gradient"></div>
 

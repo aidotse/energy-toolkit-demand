@@ -8,6 +8,18 @@
  */
 
 /**
+ * Scenario object type
+ */
+export interface ScenarioObject {
+	id?: string;
+	scenario_id?: string;
+	name?: string;
+	parameters?: Record<string, any>;
+	color?: string; // Color for visualization in comparison mode
+	[key: string]: any;
+}
+
+/**
  * Base props that all chart components must accept
  */
 export interface BaseChartProps {
@@ -26,14 +38,24 @@ export interface BaseChartProps {
 	/** Year to display data for */
 	year?: number;
 
-	/** Scenario object containing scenario_id and parameters */
-	scenario?: {
-		id?: string;
-		scenario_id?: string;
-		name?: string;
-		parameters?: Record<string, any>;
-		[key: string]: any;
-	};
+	/**
+	 * @deprecated Use `scenarios` array instead for forward compatibility
+	 * Single scenario object containing scenario_id and parameters
+	 */
+	scenario?: ScenarioObject;
+
+	/**
+	 * Array of scenarios to display (for comparison mode)
+	 * When only one scenario provided, renders single scenario view
+	 * When 2-3 scenarios provided, enables comparison visualization
+	 */
+	scenarios?: ScenarioObject[];
+
+	/**
+	 * Enable scenario comparison mode
+	 * When true, component will render multiple scenarios with visual distinction
+	 */
+	comparisonMode?: boolean;
 
 	/** Additional CSS classes */
 	class?: string;
@@ -71,10 +93,10 @@ export interface GeographicChartProps extends BaseChartProps {
 }
 
 /**
- * Props for sector/segment chart components
+ * Props for segment/segment chart components
  */
-export interface SectorChartProps extends BaseChartProps {
-	/** Sector/segment filter (e.g., 'housing', 'transport', 'all') */
+export interface SegmentChartProps extends BaseChartProps {
+	/** Segment/segment filter (e.g., 'housing', 'transport', 'all') */
 	segment?: string;
 }
 
@@ -194,10 +216,9 @@ export interface AggregatedDataPoint {
 }
 
 /**
- * Helper type for sector/segment data
+ * Helper type for segment/segment data
  */
-export interface SectorDataPoint {
-	sector: string;
+export interface SegmentDataPoint {
 	segment: string;
 	value: number;
 	percentage?: number;
@@ -212,3 +233,35 @@ export interface GeographicDataPoint {
 	value: number;
 	properties?: Record<string, any>;
 }
+
+/**
+ * Helper type for multi-scenario time series data point
+ */
+export interface ComparisonTimeSeriesDataPoint {
+	timestamp: Date;
+	values: Record<string, number>; // scenario_id -> value
+	[key: string]: any;
+}
+
+/**
+ * Helper type for multi-scenario comparison metadata
+ */
+export interface ScenarioComparisonMetadata {
+	scenarios: ScenarioObject[];
+	colors: string[];
+	differences?: {
+		absolute: Record<string, number>; // scenario_id -> diff from baseline
+		percentage: Record<string, number>; // scenario_id -> % diff from baseline
+	};
+}
+
+/**
+ * Scenario color palette for comparison mode
+ * Up to 3 scenarios supported with distinct colors
+ */
+export const SCENARIO_COLORS = {
+	primary: '#3b82f6', // Blue
+	secondary: '#10b981', // Green
+	tertiary: '#f59e0b', // Amber
+	baseline: '#6b7280', // Gray (for baseline comparison)
+} as const;

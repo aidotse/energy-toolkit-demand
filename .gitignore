@@ -173,4 +173,8 @@ EXPLORER_PAGE_LAYOUT.md
 EXPLORER_PLAN.md
 CLAUDE.md
 PLANS.md
+WEEKEND.md
 .vscode/
+layerchart_docs/
+*storybook.log
+storybook-static

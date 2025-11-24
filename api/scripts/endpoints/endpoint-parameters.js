@@ -13,8 +13,12 @@ import $RefParser from 'json-schema-ref-parser';
  *   - required: boolean
  *   - values: enum array
  *   - endpoints: [path, …]
+ *
+ * @param {string} paramsPath - Path to parameters.yaml
+ * @param {string} openapiPath - Path to openapi.yaml
+ * @param {object} config - Config object from config.yaml (optional)
  */
-export async function generateParameters(paramsPath, openapiPath) {
+export async function generateParameters(paramsPath, openapiPath, config = null) {
   console.log(`Generating parameters from parameters.yaml: ${paramsPath}`);
 
   let paramsDoc;
@@ -203,7 +207,71 @@ export async function generateParameters(paramsPath, openapiPath) {
     }
   }
 
-    return out;
+  // Extract top-level parameter arrays from config
+  const topLevelParams = {};
+
+  if (config) {
+    // Years array from config start/end dates
+    if (config.start && config.end) {
+      const startYear = new Date(config.start).getFullYear();
+      const endYear = new Date(config.end).getFullYear();
+      const years = [];
+      for (let year = startYear; year <= endYear; year++) {
+        years.push(year);
+      }
+      topLevelParams.years = years;
+    }
+
+    // Geographies from config
+    if (config.geography && config.geography.geographies) {
+      topLevelParams.geographies = config.geography.geographies.map(g => g.id);
+    }
+
+    // Segments from config
+    if (config.segment && config.segment.values) {
+      topLevelParams.segments = config.segment.values.map(s => s.name);
+    }
+
+    // Resolutions from config
+    if (config.api && config.api.resolutions) {
+      topLevelParams.resolutions = config.api.resolutions;
+    }
+
+    // Aggregations from config
+    if (config.api && config.api.aggregations) {
+      topLevelParams.aggregations = config.api.aggregations;
+    }
+
+    // Formats
+    topLevelParams.formats = ['json', 'csv'];
+    topLevelParams.geo_formats = ['json', 'geojson'];
+  }
+
+  // Add scenario parameters metadata from config.yaml
+  const scenarioParameters = {};
+  if (config && config.scenario && config.scenario.scenarios) {
+    config.scenario.scenarios.forEach(param => {
+      if (param.name && Array.isArray(param.items)) {
+        scenarioParameters[param.name] = {
+          type: param.type || 'index',
+          description: param.description || '',
+          options: param.items.map(item => ({
+            value: item.value,
+            label: item.label || String(item.value)
+          }))
+        };
+      }
+    });
+  }
+
+  // Build final output object with all metadata
+  const result = {
+    ...topLevelParams,
+    parameters: out,
+    scenarioParameters: Object.keys(scenarioParameters).length > 0 ? scenarioParameters : undefined
+  };
+
+  return result;
   } catch (err) {
     console.error(`Error in generateParameters: ${err.message}`);
     console.error(err.stack);

@@ -13,8 +13,9 @@
 	const navigation = [
 		{ name: m['explore_page'](), href: '/' },
 		{ name: m['graphs_page'](), href: '/charts' },
+		{ name: m['reports_page'](), href: '/reports/scenario-analysis' },
 		{ name: m['about_page'](), href: '/about' },
-		{ name: m['contact_page'](), href: '/contact' }
+		{ name: m['data_page'](), href: '/data' }
 	];
 
 	function closeMenu() {

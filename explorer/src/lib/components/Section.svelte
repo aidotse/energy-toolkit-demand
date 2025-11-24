@@ -1,7 +1,10 @@
 <script>
-    let { id } = $props();
+    let { id, class: className = '' } = $props();
 </script>
 
-<section id={id} class="flex flex-col flex-1 mx-6 lg:mx-24 2xl:mx-auto 2xl:max-w-screen-lg">
+<section
+    id={id}
+    class="@container py-12 first:pt-24 {className}"
+>
     <slot />
 </section>

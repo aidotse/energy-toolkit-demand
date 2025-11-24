@@ -10,15 +10,27 @@
 
     let sliderRef: HTMLInputElement;
     let isInitialized = $state(false);
+    let tempYear = $state(year); // Local state for immediate slider updates
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     function handleRangeChange(value: number) {
-        year = value;
+        tempYear = value; // Update slider position immediately
+
+        // Clear existing timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        // Set new timer to update bound year value after 300ms
+        debounceTimer = setTimeout(() => {
+            year = value;
+        }, 300);
     }
 
     function getLabelPosition(): string {
         if (!sliderRef) return '0px';
 
-        const percent = (year - minYear) / (maxYear - minYear);
+        const percent = (tempYear - minYear) / (maxYear - minYear);
         const sliderWidth = sliderRef.offsetWidth;
 
         const thumbSize = 16;
@@ -45,7 +57,7 @@
             min={minYear}
             max={maxYear}
             step="1"
-            value={year}
+            value={tempYear}
             oninput={(e: Event) => handleRangeChange(Number((e.target as HTMLInputElement).value))}
             class="absolute top-1/2 -translate-y-1/2 w-full accent-blue-500 range-input"
         />
@@ -54,7 +66,7 @@
                 class="bubble-label absolute -top-[24px] text-[0.625rem] whitespace-nowrap bg-white text-gray-800 px-[4px] py-0.5 border rounded-sm transform -translate-x-1/2 transition-all z-10"
                 style="left: {getLabelPosition()}"
             >
-                {year}
+                {tempYear}
             </span>
         {/if}
     </div>

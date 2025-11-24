@@ -28,10 +28,15 @@ const createApiError = (message: string, url?: string, status?: number, statusTe
 
 /**
  * Basic JSON fetch with enhanced error handling
+ * @param url - URL to fetch
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchJSON = async (url: string): Promise<any> => {
+export const fetchJSON = async (url: string, customFetch?: typeof fetch): Promise<any> => {
+    // Use provided fetch or fall back to global fetch
+    const fetchFn = customFetch || fetch;
+
     try {
-        const response = await fetch(url);
+        const response = await fetchFn(url);
         if (!response.ok) {
             throw createApiError(
                 `API request failed: ${response.status} ${response.statusText}`,
@@ -52,12 +57,14 @@ export const fetchJSON = async (url: string): Promise<any> => {
 /**
  * Fetch demand timeseries data from the /demand endpoint
  * Returns array of DemandRow objects with timestamp, value, geography, segment, scenario_id
+ * @param queryParams - Query parameters for the demand endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchDemandData = async (queryParams: URLSearchParams): Promise<DemandRow[]> => {
+export const fetchDemandData = async (queryParams: URLSearchParams, customFetch?: typeof fetch): Promise<DemandRow[]> => {
     const url = `${API_BASE_URL}/demand?${queryParams.toString()}`;
 
     try {
-        const data = await fetchJSON(url);
+        const data = await fetchJSON(url, customFetch);
 
         // Validate and transform the data
         return data
@@ -78,10 +85,11 @@ export const fetchDemandData = async (queryParams: URLSearchParams): Promise<Dem
 
 /**
  * Fetch configuration from /config endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchConfig = async (): Promise<ApiConfig> => {
+export const fetchConfig = async (customFetch?: typeof fetch): Promise<ApiConfig> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/config`);
+        return await fetchJSON(`${API_BASE_URL}/config`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch config, using fallback:', error);
         return {
@@ -96,10 +104,11 @@ export const fetchConfig = async (): Promise<ApiConfig> => {
 
 /**
  * Fetch available scenarios from /scenarios endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchScenarios = async (): Promise<Scenario[]> => {
+export const fetchScenarios = async (customFetch?: typeof fetch): Promise<Scenario[]> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/scenarios`);
+        return await fetchJSON(`${API_BASE_URL}/scenarios`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch scenarios, using fallback:', error);
         return [{
@@ -114,10 +123,11 @@ export const fetchScenarios = async (): Promise<Scenario[]> => {
 
 /**
  * Fetch parameter definitions from /parameters endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchParameters = async (): Promise<Parameters> => {
+export const fetchParameters = async (customFetch?: typeof fetch): Promise<Parameters> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/parameters`);
+        return await fetchJSON(`${API_BASE_URL}/parameters`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch parameters, using fallback:', error);
         return {
@@ -134,10 +144,11 @@ export const fetchParameters = async (): Promise<Parameters> => {
 
 /**
  * Fetch global statistics from /globals endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchGlobals = async (): Promise<Globals> => {
+export const fetchGlobals = async (customFetch?: typeof fetch): Promise<Globals> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/globals`);
+        return await fetchJSON(`${API_BASE_URL}/globals`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch globals, using fallback:', error);
         return {
@@ -150,10 +161,11 @@ export const fetchGlobals = async (): Promise<Globals> => {
 /**
  * Fetch geographic data from /geographies endpoint
  * @param format - 'json' for metadata or 'geojson' for spatial data
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchGeographies = async (format: 'json' | 'geojson' = 'json'): Promise<any> => {
+export const fetchGeographies = async (format: 'json' | 'geojson' = 'json', customFetch?: typeof fetch): Promise<any> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/geographies?format=${format}`);
+        return await fetchJSON(`${API_BASE_URL}/geographies?format=${format}`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch geographies, using fallback:', error);
         if (format === 'geojson') {
@@ -169,10 +181,11 @@ export const fetchGeographies = async (format: 'json' | 'geojson' = 'json'): Pro
 
 /**
  * Fetch available aggregations from /aggregations endpoint
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
-export const fetchAggregations = async (): Promise<any[]> => {
+export const fetchAggregations = async (customFetch?: typeof fetch): Promise<any[]> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/aggregations`);
+        return await fetchJSON(`${API_BASE_URL}/aggregations`, customFetch);
     } catch (error) {
         console.warn('Failed to fetch aggregations, using fallback:', error);
         return [
@@ -193,6 +206,7 @@ export const fetchAggregations = async (): Promise<any[]> => {
  * @param resolution - Temporal resolution ('1h', '1d', '1M', '1Y')
  * @param aggregation - Aggregation method ('sum', 'mean')
  * @param scenarioId - Scenario ID (optional)
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
 export const fetchTimeseries = async (
     geography: string,
@@ -201,7 +215,8 @@ export const fetchTimeseries = async (
     end: string,
     resolution: string = '1h',
     aggregation: string = 'sum',
-    scenarioId?: string
+    scenarioId?: string,
+    customFetch?: typeof fetch
 ): Promise<DemandRow[]> => {
     const params = new URLSearchParams();
     params.set('period[start]', start);
@@ -215,7 +230,7 @@ export const fetchTimeseries = async (
         params.set('scenarioId', scenarioId);
     }
 
-    return fetchDemandData(params);
+    return fetchDemandData(params, customFetch);
 };
 
 /**
@@ -224,17 +239,19 @@ export const fetchTimeseries = async (
  * @param segment - Segment ID
  * @param year - Year (will fetch full year data)
  * @param scenarioId - Scenario ID (optional)
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
 export const fetchYearly = async (
     geography: string,
     segment: string,
     year: number,
-    scenarioId?: string
+    scenarioId?: string,
+    customFetch?: typeof fetch
 ): Promise<DemandRow[]> => {
     const start = `${year}-01-01T00:00:00Z`;
     const end = `${year + 1}-01-01T00:00:00Z`;
 
-    return fetchTimeseries(geography, segment, start, end, '1Y', 'sum', scenarioId);
+    return fetchTimeseries(geography, segment, start, end, '1Y', 'sum', scenarioId, customFetch);
 };
 
 /**
@@ -244,27 +261,29 @@ export const fetchYearly = async (
  * @param startYear - Start year (optional, defaults to 2025)
  * @param endYear - End year (optional, defaults to 2044)
  * @param scenarioId - Scenario ID (optional)
+ * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
 export const fetchAllYears = async (
     geography: string,
     segment: string,
     startYear: number = 2025,
     endYear: number = 2044,
-    scenarioId?: string
+    scenarioId?: string,
+    customFetch?: typeof fetch
 ): Promise<DemandRow[]> => {
     const start = `${startYear}-01-01T00:00:00Z`;
     const end = `${endYear + 1}-01-01T00:00:00Z`;
 
-    return fetchTimeseries(geography, segment, start, end, '1Y', 'sum', scenarioId);
+    return fetchTimeseries(geography, segment, start, end, '1Y', 'sum', scenarioId, customFetch);
 };
 
 /**
- * Calculate sector data from demand data by aggregating segments
+ * Calculate segment data from demand data by aggregating segments
  * @param demandData - Array of DemandRow objects
  * @param geography - Geography ID to filter by
- * @returns Array of {sector, value} objects
+ * @returns Array of {segment, value} objects
  */
-export const calculateSectorData = (demandData: DemandRow[], geography: string) => {
+export const calculateSegmentData = (demandData: DemandRow[], geography: string) => {
     if (!demandData || demandData.length === 0) {
         return [];
     }
@@ -275,13 +294,13 @@ export const calculateSectorData = (demandData: DemandRow[], geography: string) 
         ? demandData
         : demandData.filter(item => item.geography === geography);
 
-    // Aggregate by segment (which represents sectors)
-    const sectorTotals = geoData.reduce((acc, item) => {
+    // Aggregate by segment (which represents segments)
+    const segmentTotals = geoData.reduce((acc, item) => {
         acc[item.segment] = (acc[item.segment] || 0) + item.value;
         return acc;
     }, {} as Record<string, number>);
 
-    return Object.entries(sectorTotals).map(([sector, value]) => ({ sector, value }));
+    return Object.entries(segmentTotals).map(([segment, value]) => ({ segment, value }));
 };
 
 /**
@@ -306,9 +325,13 @@ export const calculateHistogram = (data: DemandRow[], field: keyof DemandRow, nu
         return [];
     }
 
-    // Find min and max values
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
+    // Find min and max values (avoid spread operator for large arrays to prevent stack overflow)
+    let minVal = values[0];
+    let maxVal = values[0];
+    for (let i = 1; i < values.length; i++) {
+        if (values[i] < minVal) minVal = values[i];
+        if (values[i] > maxVal) maxVal = values[i];
+    }
 
     // Handle edge case where all values are the same
     if (minVal === maxVal) {
@@ -342,7 +365,7 @@ export const calculateHistogram = (data: DemandRow[], field: keyof DemandRow, nu
  * Merge demand data into GeoJSON features by matching geography IDs
  * @param geojson - GeoJSON FeatureCollection
  * @param demandData - Array of DemandRow objects
- * @param year - Year for the data
+ * @param year - Year for the data (filters data to only this year)
  * @returns Updated GeoJSON with demand data merged into properties
  */
 export const mergeGeoData = (geojson: any, demandData: DemandRow[], year: number) => {
@@ -353,14 +376,20 @@ export const mergeGeoData = (geojson: any, demandData: DemandRow[], year: number
     // Create a map of geography -> aggregated values by segment
     const dataMap = new Map<string, Record<string, number>>();
 
-    demandData.forEach(row => {
-        if (!dataMap.has(row.geography)) {
-            dataMap.set(row.geography, {});
-        }
-        const geoData = dataMap.get(row.geography)!;
-        geoData[row.segment] = (geoData[row.segment] || 0) + row.value;
-        geoData['total'] = (geoData['total'] || 0) + row.value;
-    });
+    // Filter data to only the specified year before merging
+    demandData
+        .filter(row => {
+            const rowYear = row.timestamp_year || new Date(row.timestamp).getFullYear();
+            return rowYear === year;
+        })
+        .forEach(row => {
+            if (!dataMap.has(row.geography)) {
+                dataMap.set(row.geography, {});
+            }
+            const geoData = dataMap.get(row.geography)!;
+            geoData[row.segment] = (geoData[row.segment] || 0) + row.value;
+            geoData['total'] = (geoData['total'] || 0) + row.value;
+        });
 
     const updatedFeatures = geojson.features.map((feature: any) => {
         const geoID = feature.properties?.geo_id;

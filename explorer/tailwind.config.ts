@@ -13,6 +13,8 @@ export default {
     './node_modules/layerchart/**/*.{svelte,js}'
   ],
 
+  darkMode: 'class', // Enable class-based dark mode
+
   theme: {
     extend: {
       fontFamily: {

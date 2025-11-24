@@ -7,7 +7,16 @@ const config = {
     // Consult https://svelte.dev/docs/kit/integrations
     // for more information about preprocessors
     extensions: [".svelte", ".svx", ".md"],
-    preprocess: [vitePreprocess(), mdsvex({extensions: [".svx", ".md"]})],
+    preprocess: [
+        vitePreprocess(),
+        mdsvex({
+            extensions: [".svx", ".md"],
+            // Extract frontmatter as metadata export
+            layout: {
+                _: './src/lib/components/content/MarkdownLayout.svelte'
+            }
+        })
+    ],
 
     kit: {
 		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.

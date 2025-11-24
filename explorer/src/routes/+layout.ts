@@ -3,12 +3,12 @@ import type { LayoutLoad } from './$types';
 
 export const prerender = true;
 
-export const load: LayoutLoad = async () => {
+export const load: LayoutLoad = async ({ fetch }) => {
 	try {
 		// Load scenarios and parameters for the navigation
 		const [scenarios, parameters] = await Promise.all([
-			fetchScenarios(),
-			fetchParameters()
+			fetchScenarios(fetch),
+			fetchParameters(fetch)
 		]);
 
 		// Find default scenario or use first

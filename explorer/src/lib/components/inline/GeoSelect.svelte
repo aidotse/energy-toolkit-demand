@@ -1,15 +1,20 @@
 <script lang="ts">
-    let {parameterData, geography = $bindable()} = $props();
+    let {geographies = [], geography = $bindable()} = $props();
 
-    const options = (parameterData?.geographies || []).map((geo) => ({
-        label: geo.geo_name, // The text displayed in the dropdown
-        value: geo.geo_id,   // The value associated with the option
-    })).sort((a, b) => { // Sort alphabetically by label but put 'Sverige' first
-    return a.label === "Sverige" ? -1
-         : b.label === "Sverige" ? 1
-         : a.label.localeCompare(b.label, 'sv'); // Sort alphabetically for others
-
-    });
+    const options = geographies
+        .filter((geo: any) => geo && geo.id && geo.name) // Filter out invalid entries
+        .map((geo: any) => ({
+            label: geo.name, // The text displayed in the dropdown
+            value: geo.id,   // The value associated with the option
+        }))
+        .sort((a, b) => { // Sort alphabetically by label but put 'Sverige' first
+            // Defensive checks for undefined labels
+            if (!a.label) return 1;
+            if (!b.label) return -1;
+            return a.label === "Sverige" ? -1
+                 : b.label === "Sverige" ? 1
+                 : a.label.localeCompare(b.label, 'sv'); // Sort alphabetically for others
+        });
 
 </script>
 

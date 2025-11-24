@@ -27,6 +27,14 @@ export async function buildStaticEndpoints() {
   }
 
   try {
+    // Load config first as it's needed by multiple generators
+    console.log('Loading config.yaml...');
+    const configPath = resolveFromRoot('config.yaml');
+    console.log(`Using config file: ${configPath}`);
+
+    const configContent = fs.readFileSync(configPath, 'utf8');
+    const config = yaml.load(configContent);
+
     console.log('Generating parameters.json...');
     // Use resolveFromApi to get absolute path to OpenAPI and parameters files
     const openapiPath = resolveFromApi('openapi.yaml');
@@ -35,23 +43,17 @@ export async function buildStaticEndpoints() {
     console.log(`Using OpenAPI file: ${openapiPath}`);
     console.log(`Using parameters file: ${paramsPath}`);
 
-    const params = await generateParameters(paramsPath, openapiPath);
-    
+    const params = await generateParameters(paramsPath, openapiPath, config);
+
     const paramsOutputPath = path.join(dataDir, 'parameters.json');
     console.log(`Writing parameters to: ${paramsOutputPath}`);
-    
+
     fs.writeFileSync(
       paramsOutputPath,
       JSON.stringify(params, null, 2) + '\n'
     );
 
     console.log('Generating geographies.json...');
-    // Config file is in the root directory
-    const configPath = resolveFromRoot('config.yaml');
-    console.log(`Using config file: ${configPath}`);
-    
-    const configContent = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(configContent);
     
     // Generate JSON format geographies
     const geos = await generateGeographies(config, 'json');
