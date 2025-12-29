@@ -49,7 +49,7 @@
 				<div class="flex justify-end mb-5">
 					<div class="flex flex-col items-start gap-2">
 						<p class="text-xs text-white">
-							Ett samarbete mellan
+							Utvecklat med stöd av
 						</p>
 						<div class="flex items-center gap-4">
 						<a href="https://www.energimyndigheten.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
@@ -59,13 +59,6 @@
 								class="h-6 w-auto"
 							/>
 						</a>
-						<a href="https://www.ai.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
-							<img
-								src="/89ee3687-148f-4f22-b1f7-ea34b387c7a9 (1).png"
-								alt="AI Sweden"
-								class="h-8 w-auto"
-							/>
-						</a>
 						</div>
 					</div>
 				</div>
@@ -73,7 +66,7 @@
 					Sveriges framtida elbehov
 				</h1>
 				<p class="text-xl md:text-2xl text-primary-100 dark:text-primary-200 mb-2">
-					Prognoser och scenarier 2025–2050
+					Scenarier 2025–2050
 				</p>
 			</div>
 

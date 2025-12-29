@@ -17,6 +17,10 @@ segment:
       label: transport
     - name: industry
       label: industry
+    - name: services
+      label: services
+    - name: datacenters
+      label: datacenters
 scenario:
   useBaseAsDefaultScenario: true
   scenarios:
@@ -131,6 +135,9 @@ generator:
     - geography
     - segment
     - timestamp_year
+  profiles:
+    noise_amplitude: 0.02  # ±2% random variation per year
+    noise_seed: 42         # Random seed for reproducibility
 api:
   resolutions:
     - 1h
@@ -140,3 +147,247 @@ api:
   aggregations:
     - sum
     - mean
+
+# Independent parameter system (Strategy 2)
+# Each parameter generates segment-only parquet files
+# API combines them at query time
+parameters:
+  strategy: 2                          # 1=precomputed, 2=independent, 3=query-time
+  baseScenario: 'Beslutad Policy'      # Base for parameter calculations
+
+  definitions:
+    # Pattern: {segment}_{type} where type is 'growth' or 'flex'
+    housing_growth:
+      type: independent
+      description: "Housing demand growth rate"
+      segments: [housing]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "Baseline"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/housing_growth/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "Medium"
+          curve:
+            file: generator/input/scenarios/housing_growth/curves.parquet
+            filter: "index == 2"
+        - index: 3
+          label: "High"
+          curve:
+            file: generator/input/scenarios/housing_growth/curves.parquet
+            filter: "index == 3"
+
+    housing_flex:
+      type: independent
+      description: "Housing demand flexibility"
+      segments: [housing]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "None"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/housing_flex/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "High"
+          curve:
+            file: generator/input/scenarios/housing_flex/curves.parquet
+            filter: "index == 2"
+
+    transport_growth:
+      type: independent
+      description: "Transport demand growth rate"
+      segments: [transport]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "Baseline"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/transport_growth/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "Medium"
+          curve:
+            file: generator/input/scenarios/transport_growth/curves.parquet
+            filter: "index == 2"
+        - index: 3
+          label: "High"
+          curve:
+            file: generator/input/scenarios/transport_growth/curves.parquet
+            filter: "index == 3"
+
+    transport_flex:
+      type: independent
+      description: "Transport demand flexibility"
+      segments: [transport]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "None"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/transport_flex/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "High"
+          curve:
+            file: generator/input/scenarios/transport_flex/curves.parquet
+            filter: "index == 2"
+
+    industry_growth:
+      type: independent
+      description: "Industry demand growth rate"
+      segments: [industry]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "Baseline"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/industry_growth/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "Medium"
+          curve:
+            file: generator/input/scenarios/industry_growth/curves.parquet
+            filter: "index == 2"
+        - index: 3
+          label: "High"
+          curve:
+            file: generator/input/scenarios/industry_growth/curves.parquet
+            filter: "index == 3"
+
+    industry_flex:
+      type: independent
+      description: "Industry demand flexibility"
+      segments: [industry]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "None"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/industry_flex/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "High"
+          curve:
+            file: generator/input/scenarios/industry_flex/curves.parquet
+            filter: "index == 2"
+
+    services_growth:
+      type: independent
+      description: "Services demand growth rate"
+      segments: [services]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "Baseline"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/services_growth/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "Medium"
+          curve:
+            file: generator/input/scenarios/services_growth/curves.parquet
+            filter: "index == 2"
+        - index: 3
+          label: "High"
+          curve:
+            file: generator/input/scenarios/services_growth/curves.parquet
+            filter: "index == 3"
+
+    services_flex:
+      type: independent
+      description: "Services demand flexibility"
+      segments: [services]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "None"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/services_flex/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "High"
+          curve:
+            file: generator/input/scenarios/services_flex/curves.parquet
+            filter: "index == 2"
+
+    datacenters_growth:
+      type: independent
+      description: "Datacenters demand growth rate"
+      segments: [datacenters]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "Baseline"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/datacenters_growth/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "Medium"
+          curve:
+            file: generator/input/scenarios/datacenters_growth/curves.parquet
+            filter: "index == 2"
+        - index: 3
+          label: "High"
+          curve:
+            file: generator/input/scenarios/datacenters_growth/curves.parquet
+            filter: "index == 3"
+
+    datacenters_flex:
+      type: independent
+      description: "Datacenters demand flexibility"
+      segments: [datacenters]
+      geographies: all
+      how: multiply
+      values:
+        - index: 0
+          label: "None"
+          curve: null
+        - index: 1
+          label: "Low"
+          curve:
+            file: generator/input/scenarios/datacenters_flex/curves.parquet
+            filter: "index == 1"
+        - index: 2
+          label: "High"
+          curve:
+            file: generator/input/scenarios/datacenters_flex/curves.parquet
+            filter: "index == 2"
