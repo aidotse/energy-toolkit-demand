@@ -1,0 +1,24 @@
+# Dependencies (will be installed fresh)
+node_modules/
+
+# Development files
+*.md
+docs/
+tests/
+.github/
+vitest.config.js
+tsconfig.json
+typedoc.json
+
+# Git
+.git/
+.gitignore
+
+# Generated files
+coverage/
+
+# Environment files (should use runtime env vars)
+.env*
+
+# Build artifacts
+*.log
