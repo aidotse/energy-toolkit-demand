@@ -2,15 +2,23 @@
 
 The generator is a flexible framework for producing electricity demand forecasts. It outputs data in a format consumable by the API and Explorer components.
 
+## Vision
+
+The Generator is a **flexible framework/tool** for creating energy demand forecasts, not a fixed pipeline. Users fork this repo and customize input loaders, scenario definitions, and output formats for their specific forecasting needs.
+
+**Core Principle**: Separate reusable framework code (`generator/library/`, `generator/transformers/`) from project-specific customizations (`generator/input/`, `generator/notebooks/`, `config.yaml`).
+
 ## Table of Contents
 
 - [Overview](#overview)
 - [Current Architecture](#current-architecture)
 - [Output Schema](#output-schema)
 - [Configuration](#configuration)
+- [Behovskartan 2 Implementation](#behovskartan-2-implementation)
 - [Scenario Curve Notebooks](#scenario-curve-notebooks)
 - [Library Functions](#library-functions)
 - [Creating Custom Notebooks](#creating-custom-notebooks)
+- [Testing](#testing)
 - [Future Developments](#future-developments)
 
 ---
@@ -212,6 +220,54 @@ parameters:
           curve:
             file: generator/input/scenarios/housing_growth/curves.parquet
             filter: "index == 2"
+```
+
+---
+
+## Behovskartan 2 Implementation
+
+This section documents the specific implementation for the Behovskartan 2 project.
+
+### Input Data: Energy Agency Excel
+
+**File**: `generator/input/energy_agency_scenarios/framtida-elbehov-pa-lansniva.xlsx`
+
+| Property | Value |
+|----------|-------|
+| Sheet | `Elbehov_Siffror` |
+| Rows | 4914 |
+| Scenarios | 3 (Beslutad politik, Internationell Tillväxt, Lokal Miljöhänsyn) |
+| Counties | 21 Swedish counties |
+| Years | 5-year intervals (2025, 2030, 2035, 2040, 2045, 2050) |
+
+### Segment Mapping
+
+Map Energy Agency segments to load curves:
+
+| Excel Segment (Level 1) | Excel Segment (Level 2) | Load Curve |
+|-------------------------|-------------------------|------------|
+| Bostäder | * | housing |
+| Service | * | services |
+| Industri | Traditional | industry |
+| Industri | Datacenter | datacenters |
+| Transport | Personbilar | personal_transport |
+| Transport | Godstransport | transport |
+| Transport | Järnväg | rail |
+
+### Generated Data Summary
+
+```
+output/base/
+├── Beslutad Policy/          (~165 MB per scenario)
+├── Lokal Miljöhänsyn/
+└── Internationell Tillväxt/
+
+Total: 71,789,760 rows
+- 3 base scenarios
+- 5 segments (housing, services, industry, transport, datacenters)
+- 21 counties
+- 26 years (2025-2050)
+- ~8,760 hours/year
 ```
 
 ---
@@ -559,6 +615,44 @@ segments = [
     'industrial_heavy', 'industrial_light'
 ]
 ```
+
+---
+
+## Testing
+
+### Unit Tests
+
+```python
+def test_interpolation_preserves_endpoints():
+    """Interpolated values at source years match original."""
+
+def test_profile_sums_to_one():
+    """All load curves sum to 1.0 over 8760 hours."""
+
+def test_hourly_sum_equals_annual():
+    """Sum of hourly values equals annual total."""
+
+def test_flex_preserves_daily_total():
+    """Flex scenarios don't change daily energy totals."""
+```
+
+### Integration Tests
+
+```python
+def test_full_pipeline():
+    """Run complete pipeline and verify output structure."""
+
+def test_api_compatibility():
+    """Generated data works with existing API server."""
+```
+
+### Validation Notebook
+
+Use `generator/notebooks/verify_output.ipynb` to validate generated data:
+- Annual totals match input data
+- All required columns present
+- No null values in required fields
+- Geographic IDs match config
 
 ---
 

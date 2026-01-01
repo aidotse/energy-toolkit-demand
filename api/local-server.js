@@ -82,8 +82,13 @@ await api.init();
 
 const app = express();
 
+// CORS configuration - allow localhost in dev, configurable origins in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:5174'];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174']
+  origin: allowedOrigins
 }));
 
 app.use(express.json());
@@ -532,10 +537,38 @@ api.register('validationFail', (c, req, res) =>
     .json({ error: 'Bad request', details: c.validation.errors })
 );
 
-const port = 4010;
-app.listen(port, () => {
-  console.log(`✅ Local server running at http://localhost:${port}`);
+const port = process.env.PORT || 4010;
+const server = app.listen(port, () => {
+  console.log(`✅ API server running at http://localhost:${port}`);
   if (strategy2Config) {
     console.log(`📊 Strategy 2 enabled: ${strategy2Config.baseScenarios?.length || 0} base scenarios, ${Object.keys(strategy2Config.parameters || {}).length} parameters`);
   }
+  if (process.env.ALLOWED_ORIGINS) {
+    console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
+  }
 });
+
+// Graceful shutdown handler
+function shutdown(signal) {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+  server.close(() => {
+    console.log('HTTP server closed');
+    try {
+      conn.close();
+      db.close();
+      console.log('DuckDB connection closed');
+    } catch (e) {
+      // Ignore errors during shutdown
+    }
+    process.exit(0);
+  });
+
+  // Force exit after 10 seconds if graceful shutdown fails
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
