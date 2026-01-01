@@ -17,6 +17,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import type { TimeSeriesChartProps } from '$lib/types/ChartComponent.interface';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import {
 		getNormalizedScenarios,
 		assignScenarioColors,
@@ -79,10 +80,20 @@
 		selectedScenarioId = selectedScenarioId === scenarioId ? null : scenarioId;
 	}
 
-	// Reactive data fetching when parameters or scenarios change
+	// Get current parameter state for reactive fetching
+	const baseScenario = $derived(parameterStore.baseScenario);
+	const parameterValues = $derived(parameterStore.parameterValues);
+
+	// Use prop data if provided (hybrid pattern)
 	$effect(() => {
-		// Include all dependencies to trigger refetch
-		if (normalizedScenarios.length > 0 && geography && year && aggregation) {
+		if (hourDataProp && hourDataProp.length > 0) {
+			hourData = hourDataProp;
+			return;
+		}
+		// Only fetch if no prop data provided
+		// Include parameter dependencies for reactivity
+		if (normalizedScenarios.length > 0 && geography && year && aggregation && baseScenario) {
+			const _params = parameterValues;
 			fetchHistogramData();
 		}
 	});
@@ -98,7 +109,7 @@
 			error = null;
 
 			if (normalizedScenarios.length === 1) {
-				// Single scenario mode - use existing pattern
+				// Single scenario mode - use Strategy 2 parameters
 				const query = makeDemandQuery({
 					start: `${year}-01-01`,
 					end: `${year + 1}-01-01`,
@@ -106,7 +117,8 @@
 					aggregation,
 					geography,
 					segment: segment || 'housing',
-					scenarioId: normalizedScenarios[0].id || normalizedScenarios[0].scenario_id || 'default'
+					baseScenario: parameterStore.baseScenario,
+					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 				});
 
 				const data = await fetchDemandData(query);
@@ -122,7 +134,7 @@
 						aggregation,
 						geography,
 						segment: segment || 'housing',
-						scenarioId
+						baseScenario: scenarioId
 					});
 
 					const data = await fetchDemandData(query);

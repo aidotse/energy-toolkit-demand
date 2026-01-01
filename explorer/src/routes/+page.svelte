@@ -15,6 +15,9 @@
 	import Histogram from '$lib/components/Histogram.svelte';
 	import SegmentBars from '$lib/components/SegmentBars.svelte';
 	import Map from '$lib/components/map/Map.svelte';
+	import { fetchDemandData } from '$lib/dataService';
+	import { makeDemandQuery } from '$lib/utilities';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import type { PageData } from './$types';
 
 	// Get data from loader
@@ -23,17 +26,82 @@
 	// Extract key values for display
 	let geography = $state(data.geography);
 	let year = $state(data.year);
-	let scenarioId = $state(data.scenarioId);
+
+	// Reactive metrics that update with scenario changes
+	// Initialize with 0, will be populated by $effect on first load
+	let totalEnergy2050 = $state(0);
+	let totalEnergy2025 = $state(0);
+	let growthRate = $state(0);
+	let peakPower = $state(0);
+
+	// Get current parameter state for reactive fetching
+	const baseScenario = $derived(parameterStore.baseScenario);
+	const parameterValues = $derived(parameterStore.parameterValues);
+
+	// Fetch metrics when scenario or parameters change
+	$effect(() => {
+		if (!baseScenario) return;
+
+		// Access parameterValues to create dependency
+		const _params = parameterValues;
+
+		// Fetch time series data for energy metrics
+		const timeSeriesQuery = makeDemandQuery({
+			start: '2025',
+			end: '2051',
+			resolution: '1Y',
+			aggregation: 'sum',
+			geography: 'total',
+			segment: 'total',
+			baseScenario: parameterStore.baseScenario,
+			parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+		});
+
+		fetchDemandData(timeSeriesQuery).then(timeSeriesData => {
+			if (timeSeriesData.length > 0) {
+				const firstYear = timeSeriesData[0];
+				const lastYear = timeSeriesData[timeSeriesData.length - 1];
+				totalEnergy2050 = lastYear?.value || 0;
+				totalEnergy2025 = firstYear?.value || 0;
+				growthRate = totalEnergy2025 > 0
+					? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100
+					: 0;
+			}
+		});
+
+		// Fetch hourly data for peak power
+		const hourlyQuery = makeDemandQuery({
+			start: `${year}-01-01`,
+			end: `${year + 1}-01-01`,
+			resolution: '1h',
+			aggregation: 'sum',
+			geography: 'total',
+			segment: 'total',
+			baseScenario: parameterStore.baseScenario,
+			parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+		});
+
+		fetchDemandData(hourlyQuery).then(hourlyData => {
+			if (hourlyData.length > 0) {
+				peakPower = hourlyData.reduce((max, d) => Math.max(max, d.value || 0), 0);
+			}
+		});
+	});
 
 	// Format numbers for display
-	// API returns values in MWh, so we divide by 1 million to get TWh
+	// API returns values in GWh (yearly energy), so we divide by 1000 to get TWh
 	function formatEnergy(value: number): string {
-		return `${Math.round(value / 1_000_000)} TWh`;
+		return `${Math.round(value / 1_000)} TWh`;
 	}
 
-	// API returns power values in MW, so we divide by 1000 to get GW
+	// API returns power values in GW (hourly mean power)
 	function formatPower(value: number): string {
-		return `${Math.round(value / 1_000)} GW`;
+		if (value >= 1) {
+			return `${value.toFixed(1)} GW`;
+		} else if (value > 0) {
+			return `${Math.round(value * 1000)} MW`;
+		}
+		return '0 GW';
 	}
 </script>
 
@@ -49,7 +117,7 @@
 				<div class="flex justify-end mb-5">
 					<div class="flex flex-col items-start gap-2">
 						<p class="text-xs text-white">
-							Ett samarbete mellan
+							Utvecklat med stöd av
 						</p>
 						<div class="flex items-center gap-4">
 						<a href="https://www.energimyndigheten.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
@@ -59,13 +127,6 @@
 								class="h-6 w-auto"
 							/>
 						</a>
-						<a href="https://www.ai.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
-							<img
-								src="/89ee3687-148f-4f22-b1f7-ea34b387c7a9 (1).png"
-								alt="AI Sweden"
-								class="h-8 w-auto"
-							/>
-						</a>
 						</div>
 					</div>
 				</div>
@@ -73,7 +134,7 @@
 					Sveriges framtida elbehov
 				</h1>
 				<p class="text-xl md:text-2xl text-primary-100 dark:text-primary-200 mb-2">
-					Prognoser och scenarier 2025–2050
+					Scenarier 2025–2050
 				</p>
 			</div>
 
@@ -88,15 +149,15 @@
 				<!-- Key Metrics Grid -->
 				<div class="grid grid-cols-2 gap-4">
 					<MetricCard
-						value={formatEnergy(data.totalEnergy2050)}
+						value={formatEnergy(totalEnergy2050)}
 						label="Total energi"
 						sublabel="År 2050"
 						icon={Zap}
 						trend="up"
-						trendLabel={`+${Math.round(data.growthRate)}% sedan 2025`}
+						trendLabel={`+${Math.round(growthRate)}% sedan 2025`}
 					/>
 					<MetricCard
-						value={`+${Math.round(data.growthRate)}%`}
+						value={`+${Math.round(growthRate)}%`}
 						label="Tillväxt"
 						sublabel="Jämfört med 2025"
 						icon={TrendingUp}
@@ -104,7 +165,7 @@
 						trendLabel="Elektrifiering driver"
 					/>
 					<MetricCard
-						value={formatPower(data.peakPower)}
+						value={formatPower(peakPower)}
 						label="Maxeffekt"
 						sublabel={`År ${year}`}
 						icon={Activity}
@@ -152,10 +213,8 @@
 					<div class="space-y-4 pb-6">
 						<div class="h-[380px]">
 							<AreaChart
-								data={data.timeSeriesData}
 								geography={geography}
 								year={year}
-								scenario={scenarioId}
 								aggregationInit="sum"
 								class="h-full"
 							/>
@@ -170,10 +229,9 @@
 					<div class="space-y-4 pb-6">
 						<div class="h-[280px]">
 							<TimeLine
-								data={data.dailyData}
 								geography={geography}
 								year={year}
-								scenario={scenarioId}
+								segment="total"
 								resolution="1d"
 								aggregation="sum"
 								class="h-full"
@@ -232,10 +290,8 @@
 					<div class="space-y-4 pb-6">
 						<div class="h-[380px]">
 							<SegmentBars
-								data={data.segmentData}
 								geography={geography}
 								year={year}
-								scenario={scenarioId}
 								class="h-full"
 							/>
 						</div>
@@ -273,10 +329,8 @@
 					<div class="space-y-4 pb-6">
 						<div class="h-[330px]">
 							<Histogram
-								data={data.hourlyData}
 								geography={geography}
 								year={year}
-								scenario={scenarioId}
 								segment="total"
 								class="h-full"
 							/>
@@ -313,9 +367,9 @@
 							<ol class="space-y-3">
 								<li>
 									<strong>1. Kraftig ökning:</strong> Elbehov ökar med {Math.round(
-										data.growthRate
-									)}% till 2050, från {formatEnergy(data.totalEnergy2025)} till {formatEnergy(
-										data.totalEnergy2050
+										growthRate
+									)}% till 2050, från {formatEnergy(totalEnergy2025)} till {formatEnergy(
+										totalEnergy2050
 									)}.
 								</li>
 								<li>

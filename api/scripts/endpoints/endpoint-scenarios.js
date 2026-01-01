@@ -1,65 +1,118 @@
 // api/scripts/endpoints/endpoint-scenarios.js
 
+import fs from 'fs';
+import path from 'path';
+import { getDataDir } from '../../../paths.js';
+
 /**
- * Generates all possible combinations of scenario parameters from config.yaml
+ * Helper to convert scenario name to URL-safe slug
+ */
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Generates scenarios list for Strategy 2 (base scenarios only)
+ * Reads from scenario-mapping.json created by copy-generator-output.js
  *
  * @param {Object} config - The configuration object from config.yaml
- * @returns {Array} - Array of scenario objects with full parameter combinations
+ * @returns {Array} - Array of base scenario objects
  */
 export async function generateScenarios(config) {
   try {
-    // Validate inputs
-    if (!config || !config.scenario || !config.scenario.scenarios) {
-      throw new Error('Invalid config: missing scenario.scenarios section');
+    const dataDir = getDataDir();
+    const mappingPath = path.join(dataDir, 'scenario-mapping.json');
+
+    // Check if we have the new Strategy 2 structure
+    if (fs.existsSync(mappingPath)) {
+      // Strategy 2: Read base scenarios from mapping file
+      const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
+
+      // Get default base scenario from config
+      const defaultBaseScenario = config?.parameters?.baseScenario || 'Beslutad Policy';
+      const defaultSlug = slugify(defaultBaseScenario);
+
+      const scenarios = Object.entries(mapping).map(([slug, name]) => ({
+        id: slug,
+        scenario_id: slug,  // For backward compatibility
+        name: name,
+        default: slug === defaultSlug,
+        description: `Base scenario: ${name}`
+      }));
+
+      // Sort so default is first
+      scenarios.sort((a, b) => {
+        if (a.default) return -1;
+        if (b.default) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      console.log(`Generated ${scenarios.length} base scenarios (Strategy 2)`);
+      return scenarios;
     }
 
-    const scenarios = config.scenario.scenarios;
-    const useBaseAsDefault = config.scenario.useBaseAsDefaultScenario;
-
-    // Build parameter combinations from config.yaml scenarios
-    const parameterMap = {};
-    scenarios.forEach(scenario => {
-      if (scenario.items && Array.isArray(scenario.items)) {
-        parameterMap[scenario.name] = scenario.items.map(item => item.value);
-      }
-    });
-
-    // Generate all combinations
-    const combinations = generateParameterCombinations(parameterMap);
-
-    // Create scenario objects with metadata
-    const scenarioObjects = combinations.map((combo, index) => {
-      const scenarioId = createScenarioId(combo);
-      // Don't mark any generated combinations as default - only the dedicated "default" scenario
-      const isDefault = false;
-
-      return {
-        scenario_id: scenarioId,
-        name: createScenarioName(combo),
-        parameters: combo,
-        is_default: isDefault,
-        description: createScenarioDescription(combo, scenarios)
-      };
-    });
-
-    // Add default scenario if useBaseAsDefaultScenario is true
-    if (useBaseAsDefault) {
-      const defaultScenario = {
-        scenario_id: "default",
-        name: "Default Scenario",
-        parameters: createDefaultParameters(scenarios),
-        is_default: true,
-        description: "Base scenario with default parameter values"
-      };
-      scenarioObjects.unshift(defaultScenario);
-    }
-
-    console.log(`Generated ${scenarioObjects.length} scenario combinations`);
-    return scenarioObjects;
+    // Fallback: Legacy scenario generation (for backward compatibility)
+    console.log('No scenario-mapping.json found, using legacy scenario generation');
+    return generateLegacyScenarios(config);
   } catch (error) {
     console.error('Error generating scenarios:', error);
     throw error;
   }
+}
+
+/**
+ * Legacy scenario generation (kept for backward compatibility)
+ */
+function generateLegacyScenarios(config) {
+  if (!config || !config.scenario || !config.scenario.scenarios) {
+    throw new Error('Invalid config: missing scenario.scenarios section');
+  }
+
+  const scenarios = config.scenario.scenarios;
+  const useBaseAsDefault = config.scenario.useBaseAsDefaultScenario;
+
+  // Build parameter combinations from config.yaml scenarios
+  const parameterMap = {};
+  scenarios.forEach(scenario => {
+    if (scenario.items && Array.isArray(scenario.items)) {
+      parameterMap[scenario.name] = scenario.items.map(item => item.value);
+    }
+  });
+
+  // Generate all combinations
+  const combinations = generateParameterCombinations(parameterMap);
+
+  // Create scenario objects with metadata
+  const scenarioObjects = combinations.map((combo, index) => {
+    const scenarioId = createScenarioId(combo);
+    return {
+      scenario_id: scenarioId,
+      name: createScenarioName(combo),
+      parameters: combo,
+      is_default: false,
+      description: createScenarioDescription(combo, scenarios)
+    };
+  });
+
+  // Add default scenario if useBaseAsDefaultScenario is true
+  if (useBaseAsDefault) {
+    const defaultScenario = {
+      scenario_id: "default",
+      name: "Default Scenario",
+      parameters: createDefaultParameters(scenarios),
+      is_default: true,
+      description: "Base scenario with default parameter values"
+    };
+    scenarioObjects.unshift(defaultScenario);
+  }
+
+  console.log(`Generated ${scenarioObjects.length} scenario combinations (legacy)`);
+  return scenarioObjects;
 }
 
 function cartesianProduct(arrays) {
@@ -69,18 +122,6 @@ function cartesianProduct(arrays) {
   );
 }
 
-/**
- * Recursively generates all combinations of parameter values
- *
- * @param {Object} params - The parameters object with arrays of possible values
- * @param {Array} paramNames - Array of parameter names
- * @param {number} index - Current index in the paramNames array
- * @param {Object} current - Current combination being built
- * @param {Array} result - Array to store all combinations
- * @returns {Array} - Array of all possible combinations
- */
-
-// Generate all parameter combinations from the parameter map
 function generateParameterCombinations(parameterMap) {
   const keys = Object.keys(parameterMap);
   const valueLists = keys.map(key => parameterMap[key]);
@@ -90,21 +131,18 @@ function generateParameterCombinations(parameterMap) {
   );
 }
 
-// Create a unique scenario ID from parameters
 function createScenarioId(parameters) {
   return Object.entries(parameters)
     .map(([key, value]) => `${key}=${value}`)
     .join(',');
 }
 
-// Create a human-readable scenario name
 function createScenarioName(parameters) {
   const parts = Object.entries(parameters)
     .map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`);
   return `Scenario (${parts.join(', ')})`;
 }
 
-// Create scenario description based on parameters and config
 function createScenarioDescription(parameters, scenarios) {
   const descriptions = Object.entries(parameters).map(([paramName, value]) => {
     const scenarioConfig = scenarios.find(s => s.name === paramName);
@@ -114,12 +152,6 @@ function createScenarioDescription(parameters, scenarios) {
   return descriptions.join(', ');
 }
 
-// Check if this is a base scenario (all parameters at minimum values)
-function isBaseScenario(parameters) {
-  return Object.values(parameters).every(value => value === 0);
-}
-
-// Create default parameters (all set to 0)
 function createDefaultParameters(scenarios) {
   const defaultParams = {};
   scenarios.forEach(scenario => {

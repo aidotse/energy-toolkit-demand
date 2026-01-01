@@ -6,17 +6,26 @@
 	import GeoBarChart from '$lib/components/GeoBarChart.svelte';
 	import Map from '$lib/components/map/Map.svelte';
 	import ChartParameterPill from '$lib/components/controls/ChartParameterPill.svelte';
+	import ParameterPanel from '$lib/components/controls/ParameterPanel.svelte';
 	import LazyChart from '$lib/components/shared/LazyChart.svelte';
 	import SplitPageContainer from '$lib/components/layout/SplitPageContainer.svelte';
 	import ContentCard from '$lib/components/layout/ContentCard.svelte';
 	import { chartParametersStore } from '$lib/stores/chartParameters.svelte';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
+	import { getStrategy2Config } from '$lib/dataService';
 	import { BarChart3, Settings, Layers, MapPin, Calendar, Grid3X3 } from 'lucide-svelte';
 	import type { PageProps } from './$types';
 	import type { ChartParameters, AvailableParameters } from '$lib/types/controls';
 
 	let { data }: PageProps = $props();
 	const { parameters, scenarios, geographies, geojson, globals, geoData } = data;
+
+	// Initialize parameterStore with Strategy 2 config
+	$effect(() => {
+		const strategy2Config = getStrategy2Config(parameters);
+		parameterStore.initialize(strategy2Config);
+	});
 
 	// Global parameters (defaults for all charts)
 	let globalParameters = $state<ChartParameters>({
@@ -244,6 +253,11 @@
 		<!-- Controls and Info Panel -->
 		<div class="h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-6 overflow-y-auto">
 			<div class="max-w-xs space-y-6">
+				<!-- Strategy 2 Parameter Panel -->
+				<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
+					<ParameterPanel />
+				</div>
+
 				<!-- Available Charts -->
 				<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
 					<h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">

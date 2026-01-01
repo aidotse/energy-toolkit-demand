@@ -10,10 +10,78 @@ import type {
     Parameters,
     Globals,
     GeoJsonFeatureCollection,
-    ApiError
+    ApiError,
+    Strategy2Config,
+    ParameterValues
 } from '../types/api';
+import { unitsState } from './stores/units.svelte';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+/**
+ * Request cache for demand data
+ * Prevents duplicate requests and caches results with TTL
+ */
+interface CacheEntry {
+    data: any;
+    timestamp: number;
+    promise?: Promise<any>;
+}
+
+const requestCache = new Map<string, CacheEntry>();
+
+// TTL for different types of data (in milliseconds)
+const CACHE_TTL = {
+    demand: 5 * 60 * 1000,     // 5 minutes for demand data
+    static: 60 * 60 * 1000     // 1 hour for static config
+};
+
+/**
+ * Get cached data or in-flight promise
+ */
+function getCached(key: string, ttl: number): CacheEntry | null {
+    const entry = requestCache.get(key);
+    if (!entry) return null;
+
+    // If there's an in-flight promise, return it
+    if (entry.promise) return entry;
+
+    // Check if cached data is still valid
+    const age = Date.now() - entry.timestamp;
+    if (age < ttl) return entry;
+
+    // Cache expired
+    requestCache.delete(key);
+    return null;
+}
+
+/**
+ * Set cache entry
+ */
+function setCache(key: string, data: any): void {
+    requestCache.set(key, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+/**
+ * Set in-flight promise to dedup concurrent requests
+ */
+function setInflight(key: string, promise: Promise<any>): void {
+    requestCache.set(key, {
+        data: null,
+        timestamp: Date.now(),
+        promise
+    });
+}
+
+/**
+ * Clear in-flight status after request completes
+ */
+function clearInflight(key: string, data: any): void {
+    setCache(key, data);
+}
 
 /**
  * Create an API error with additional context
@@ -57,39 +125,81 @@ export const fetchJSON = async (url: string, customFetch?: typeof fetch): Promis
 /**
  * Fetch demand timeseries data from the /demand endpoint
  * Returns array of DemandRow objects with timestamp, value, geography, segment, scenario_id
+ * Uses caching to prevent duplicate requests
  * @param queryParams - Query parameters for the demand endpoint
  * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
 export const fetchDemandData = async (queryParams: URLSearchParams, customFetch?: typeof fetch): Promise<DemandRow[]> => {
-    const url = `${API_BASE_URL}/demand?${queryParams.toString()}`;
+    const queryString = queryParams.toString();
+    const cacheKey = `demand:${queryString}`;
+    const url = `${API_BASE_URL}/demand?${queryString}`;
 
-    try {
-        const data = await fetchJSON(url, customFetch);
-
-        // Validate and transform the data
-        return data
-            .filter((row: any) => (row.period || row.timestamp) && row.value !== undefined && row.geography && row.segment)
-            .map((row: any) => ({
-                timestamp: new Date(row.period || row.timestamp),
-                value: parseFloat(row.value),
-                geography: row.geography,
-                segment: row.segment,
-                scenario_id: row.scenario_id,
-                timestamp_year: row.timestamp_year || new Date(row.period || row.timestamp).getFullYear()
-            }));
-    } catch (error) {
-        console.warn('Failed to fetch demand data, returning empty array:', error);
-        return [];
+    // Check cache first (only for browser requests, not SSR)
+    if (!customFetch) {
+        const cached = getCached(cacheKey, CACHE_TTL.demand);
+        if (cached) {
+            // Return cached data or wait for in-flight request
+            if (cached.promise) {
+                return cached.promise;
+            }
+            return cached.data;
+        }
     }
+
+    // Create the fetch promise
+    const fetchPromise = (async () => {
+        try {
+            const data = await fetchJSON(url, customFetch);
+
+            // Validate and transform the data
+            const result = data
+                .filter((row: any) => (row.period || row.timestamp) && row.value !== undefined && row.geography && row.segment)
+                .map((row: any) => ({
+                    timestamp: new Date(row.period || row.timestamp),
+                    value: parseFloat(row.value),
+                    geography: row.geography,
+                    segment: row.segment,
+                    scenario_id: row.scenario_id,
+                    timestamp_year: row.timestamp_year || new Date(row.period || row.timestamp).getFullYear()
+                }));
+
+            // Cache the result (only for browser requests)
+            if (!customFetch) {
+                clearInflight(cacheKey, result);
+            }
+
+            return result;
+        } catch (error) {
+            // Clear in-flight on error
+            if (!customFetch) {
+                requestCache.delete(cacheKey);
+            }
+            console.warn('Failed to fetch demand data, returning empty array:', error);
+            return [];
+        }
+    })();
+
+    // Set in-flight promise to dedup concurrent requests
+    if (!customFetch) {
+        setInflight(cacheKey, fetchPromise);
+    }
+
+    return fetchPromise;
 };
 
 /**
  * Fetch configuration from /config endpoint
+ * Also initializes the units configuration store
  * @param customFetch - Optional fetch function (for SvelteKit SSR compatibility)
  */
 export const fetchConfig = async (customFetch?: typeof fetch): Promise<ApiConfig> => {
     try {
-        return await fetchJSON(`${API_BASE_URL}/config`, customFetch);
+        const config = await fetchJSON(`${API_BASE_URL}/config`, customFetch);
+        // Initialize units store with loaded configuration
+        if (config.units) {
+            unitsState.initialize(config.units);
+        }
+        return config;
     } catch (error) {
         console.warn('Failed to fetch config, using fallback:', error);
         return {
@@ -196,6 +306,114 @@ export const fetchAggregations = async (customFetch?: typeof fetch): Promise<any
     }
 };
 
+/**
+ * Extract Strategy 2 configuration from Parameters
+ * @param parameters - Parameters object from API
+ * @returns Strategy2Config or null if not available
+ */
+export const getStrategy2Config = (parameters: Parameters): Strategy2Config | null => {
+    return parameters.strategy2 || null;
+};
+
+/**
+ * Get default parameter values from Strategy 2 config
+ * @param config - Strategy2Config
+ * @returns ParameterValues with all defaults (index 0)
+ */
+export const getDefaultParameterValues = (config: Strategy2Config | null): ParameterValues => {
+    if (!config?.defaults) {
+        return {};
+    }
+    return { ...config.defaults };
+};
+
+/**
+ * Calculate total scenario count for Strategy 2
+ * Total = base scenarios + parameter combinations (applied to default base scenario only)
+ * @param parameters - Parameters object from API
+ * @param scenarios - Array of base scenarios
+ * @returns Total scenario count
+ */
+export const calculateScenarioCount = (parameters: Parameters, scenarios: Scenario[]): number => {
+    const baseScenarioCount = scenarios?.length || 0;
+    const strategy2Config = getStrategy2Config(parameters);
+
+    if (!strategy2Config?.parameters) {
+        return baseScenarioCount;
+    }
+
+    // Calculate parameter combinations (product of all parameter value counts)
+    let parameterCombinations = 1;
+    for (const paramDef of Object.values(strategy2Config.parameters)) {
+        const valueCount = paramDef.values?.length || 1;
+        parameterCombinations *= valueCount;
+    }
+
+    // Total = base scenarios + parameter combinations
+    // (parameters only apply to the default base scenario)
+    return baseScenarioCount + parameterCombinations;
+};
+
+/**
+ * Build URL search params for demand query with Strategy 2 parameters
+ * @param options - Query options including base scenario and parameter values
+ */
+export interface DemandQueryOptions {
+    start: string;
+    end: string;
+    resolution: string;
+    aggregation: string;
+    geography?: string;
+    segment?: string;
+    baseScenario?: string;
+    parameterValues?: ParameterValues;
+}
+
+export const buildDemandParams = (options: DemandQueryOptions): URLSearchParams => {
+    const params = new URLSearchParams();
+
+    params.set('period[start]', options.start);
+    params.set('period[end]', options.end);
+    params.set('period[resolution]', options.resolution);
+    params.set('period[aggregation]', options.aggregation);
+
+    if (options.geography) {
+        params.set('geography', options.geography);
+    }
+    if (options.segment) {
+        params.set('segment', options.segment);
+    }
+
+    // Strategy 2: base scenario
+    if (options.baseScenario) {
+        params.set('baseScenario', options.baseScenario);
+    }
+
+    // Strategy 2: parameter values
+    if (options.parameterValues) {
+        for (const [paramName, paramIndex] of Object.entries(options.parameterValues)) {
+            if (paramIndex > 0) {
+                // Only include non-baseline parameters
+                params.set(paramName, String(paramIndex));
+            }
+        }
+    }
+
+    return params;
+};
+
+/**
+ * Fetch demand data with Strategy 2 parameters
+ * @param options - Query options
+ * @param customFetch - Optional fetch function
+ */
+export const fetchDemandWithParams = async (
+    options: DemandQueryOptions,
+    customFetch?: typeof fetch
+): Promise<DemandRow[]> => {
+    const params = buildDemandParams(options);
+    return fetchDemandData(params, customFetch);
+};
 
 /**
  * Fetch timeseries data for visualization components
@@ -377,9 +595,11 @@ export const mergeGeoData = (geojson: any, demandData: DemandRow[], year: number
     const dataMap = new Map<string, Record<string, number>>();
 
     // Filter data to only the specified year before merging
+    // Handle both 'timestamp' (legacy) and 'period' (new API) field names
     demandData
         .filter(row => {
-            const rowYear = row.timestamp_year || new Date(row.timestamp).getFullYear();
+            const dateField = (row as any).period || row.timestamp;
+            const rowYear = row.timestamp_year || (dateField ? new Date(dateField).getFullYear() : null);
             return rowYear === year;
         })
         .forEach(row => {
@@ -414,4 +634,17 @@ export const mergeGeoData = (geojson: any, demandData: DemandRow[], year: number
 
 
 // Export types for use by other modules
-export type { DemandRow, ApiConfig, Scenario, Parameters, Globals, GeoJsonFeatureCollection, ApiError } from '../types/api';
+export type {
+    DemandRow,
+    ApiConfig,
+    Scenario,
+    Parameters,
+    Globals,
+    GeoJsonFeatureCollection,
+    ApiError,
+    Strategy2Config,
+    Strategy2Parameter,
+    Strategy2ParameterValue,
+    Strategy2BaseScenario,
+    ParameterValues
+} from '../types/api';

@@ -177,6 +177,42 @@ The main configuration file `/config.yaml` defines:
 2. **Scenario parameters**: Electrification rates, growth factors, transition speeds
 3. **Data sources**: Historical demand data, GeoJSON boundaries
 4. **API settings**: Endpoints, aggregations, access levels
+5. **Units configuration**: Base unit prefixes for energy and power values
+
+### Base Units
+
+The toolkit uses SI prefixes to display energy (Wh) and power (W) values. Configure the base unit prefix in `config.yaml`:
+
+```yaml
+units:
+  energy:
+    prefix: G      # SI prefix: '', k, M, G, T
+    unit: Wh       # Base unit (always Wh)
+  power:
+    prefix: G      # SI prefix: '', k, M, G, T
+    unit: W        # Base unit (always W)
+```
+
+**SI Prefix Scale**:
+| Prefix | Symbol | Multiplier | Example |
+|--------|--------|------------|---------|
+| (none) | -      | 1          | Wh, W   |
+| kilo   | k      | 1,000      | kWh, kW |
+| mega   | M      | 1,000,000  | MWh, MW |
+| giga   | G      | 1,000,000,000 | GWh, GW |
+| tera   | T      | 1,000,000,000,000 | TWh, TW |
+
+The prefix should match the scale of your source data. For example:
+- National/regional energy forecasts typically use **GWh** (prefix: `G`)
+- Building-level data might use **kWh** (prefix: `k`)
+- Grid-scale power data often uses **GW** or **MW**
+
+After changing the units configuration, regenerate the API:
+```bash
+cd api && node generate-api.js --defaults
+```
+
+The Explorer automatically reads the units configuration and formats all chart axes, tooltips, and labels accordingly.
 
 See `config.yaml` for the full schema and examples.
 

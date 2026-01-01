@@ -26,14 +26,19 @@
 	let scenarioId = $state(data.scenarioId);
 
 	// Format numbers for display
-	// API returns values in MWh, so we divide by 1 million to get TWh
+	// API returns values in GWh, so we divide by 1000 to get TWh
 	function formatEnergy(value: number): string {
-		return `${Math.round(value / 1_000_000)} TWh`;
+		return `${Math.round(value / 1_000)} TWh`;
 	}
 
-	// API returns power values in MW, so we divide by 1000 to get GW
+	// API returns power values in GW (hourly mean power)
 	function formatPower(value: number): string {
-		return `${Math.round(value / 1_000)} GW`;
+		if (value >= 1) {
+			return `${value.toFixed(1)} GW`;
+		} else if (value > 0) {
+			return `${Math.round(value * 1000)} MW`;
+		}
+		return '0 GW';
 	}
 </script>
 

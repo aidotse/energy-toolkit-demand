@@ -61,6 +61,29 @@ components:
       $ref: './parameters.yaml#/components/parameters/responseFormat'
     geoFormat:
       $ref: './parameters.yaml#/components/parameters/geoFormat'
+    # Strategy 2 Parameters
+    baseScenario:
+      $ref: './parameters.yaml#/components/parameters/baseScenario'
+    housing_growth:
+      $ref: './parameters.yaml#/components/parameters/housing_growth'
+    housing_flex:
+      $ref: './parameters.yaml#/components/parameters/housing_flex'
+    transport_growth:
+      $ref: './parameters.yaml#/components/parameters/transport_growth'
+    transport_flex:
+      $ref: './parameters.yaml#/components/parameters/transport_flex'
+    industry_growth:
+      $ref: './parameters.yaml#/components/parameters/industry_growth'
+    industry_flex:
+      $ref: './parameters.yaml#/components/parameters/industry_flex'
+    services_growth:
+      $ref: './parameters.yaml#/components/parameters/services_growth'
+    services_flex:
+      $ref: './parameters.yaml#/components/parameters/services_flex'
+    datacenters_growth:
+      $ref: './parameters.yaml#/components/parameters/datacenters_growth'
+    datacenters_flex:
+      $ref: './parameters.yaml#/components/parameters/datacenters_flex'
   schemas:
     GeoFeatureCollection:
       $ref: './schemas/common-schemas.yaml#/components/schemas/GeoFeatureCollection'
@@ -354,6 +377,18 @@ paths:
         - $ref: '#/components/parameters/segment'
         - $ref: '#/components/parameters/scenarioId'
         - $ref: '#/components/parameters/responseFormat'
+        # Strategy 2 Parameters
+        - $ref: '#/components/parameters/baseScenario'
+        - $ref: '#/components/parameters/housing_growth'
+        - $ref: '#/components/parameters/housing_flex'
+        - $ref: '#/components/parameters/transport_growth'
+        - $ref: '#/components/parameters/transport_flex'
+        - $ref: '#/components/parameters/industry_growth'
+        - $ref: '#/components/parameters/industry_flex'
+        - $ref: '#/components/parameters/services_growth'
+        - $ref: '#/components/parameters/services_flex'
+        - $ref: '#/components/parameters/datacenters_growth'
+        - $ref: '#/components/parameters/datacenters_flex'
       responses:
         '200':
           description: Time‐series response with aggregated demand data

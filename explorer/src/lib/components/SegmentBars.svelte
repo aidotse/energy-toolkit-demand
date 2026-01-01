@@ -9,6 +9,7 @@
 	 */
 	import { BarChart } from 'layerchart';
 	import { formatNumber, makeDemandQuery } from '$lib/utilities';
+	import { getEnergyPrefix } from '$lib/stores/units.svelte';
 	import { fetchDemandData, calculateSegmentData } from '$lib/dataService';
 	import LoadingSkeleton from '$lib/components/shared/LoadingSkeleton.svelte';
 	import ErrorState from '$lib/components/shared/ErrorState.svelte';
@@ -17,6 +18,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import type { SegmentChartProps } from '$lib/types/ChartComponent.interface';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import {
 		getNormalizedScenarios,
 		assignScenarioColors,
@@ -79,10 +81,15 @@
 	// Use fetched data if available, otherwise use prop data
 	const yearData = $derived(fetchedYearData.length > 0 ? fetchedYearData : yearDataProp);
 
-	// Reactive data fetching when scenarios change
+	// Get current parameter state for reactive fetching
+	const baseScenario = $derived(parameterStore.baseScenario);
+	const parameterValues = $derived(parameterStore.parameterValues);
+
+	// Reactive data fetching when scenarios or parameters change
 	$effect(() => {
 		// Include all dependencies to trigger refetch
-		if (normalizedScenarios.length > 0 && year) {
+		if (normalizedScenarios.length > 0 && year && baseScenario) {
+			const _params = parameterValues;
 			fetchSegmentData();
 		}
 	});
@@ -98,7 +105,7 @@
 			error = null;
 
 			if (normalizedScenarios.length === 1) {
-				// Single scenario mode - use existing pattern
+				// Single scenario mode - use Strategy 2 parameters
 				const query = makeDemandQuery({
 					start: String(year),
 					end: String(year + 1),
@@ -106,7 +113,8 @@
 					aggregation: 'sum',
 					geography: 'all', // Get all geographies for segment breakdown
 					segment: 'all', // Get all segments for segment breakdown
-					scenarioId: normalizedScenarios[0].id || normalizedScenarios[0].scenario_id || 'default'
+					baseScenario: parameterStore.baseScenario,
+					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 				});
 
 				const data = await fetchDemandData(query);
@@ -122,7 +130,7 @@
 						aggregation: 'sum',
 						geography: 'all',
 						segment: 'all',
-						scenarioId
+						baseScenario: scenarioId
 					});
 
 					const data = await fetchDemandData(query);
@@ -292,7 +300,7 @@
 			<p class="text-sm text-gray-600">
 				Total: {formatNumber(
 					segmentData.reduce((sum, item) => sum + item.value, 0),
-					'M',
+					getEnergyPrefix(),
 					'Wh'
 				)}
 			</p>

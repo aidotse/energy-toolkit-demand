@@ -15,19 +15,6 @@
 	import * as m from '$paraglide/messages';
 	import { languageTag, availableLanguageTags, setLanguageTag } from '$paraglide/runtime';
 
-	// Props
-	let {
-		currentScenario = 'Default Scenario',
-		scenarios = [],
-		baseScenarios = [],
-		parameters = {}
-	}: {
-		currentScenario?: string;
-		scenarios?: any[];
-		baseScenarios?: any[];
-		parameters?: any;
-	} = $props();
-
 	const navigation = [
 		{ name: m['explore_page'](), href: '/' },
 		{ name: m['graphs_page'](), href: '/charts' },
@@ -69,7 +56,7 @@
 		<!-- Right section: 2/5 width to match contextual panel -->
 		<div class="w-2/5 flex items-center justify-end gap-4 px-4 sm:px-6 lg:px-8">
 			<!-- Scenario Selector Pill -->
-			<ScenarioSelectorPill {currentScenario} />
+			<ScenarioSelectorPill />
 
 			<!-- Language Selector -->
 			<Menu placement="bottom-end">
@@ -95,10 +82,10 @@
 	</div>
 
 	<!-- Scenario Dropdown (Desktop) -->
-	<ScenarioDropdown {scenarios} {baseScenarios} {parameters} />
+	<ScenarioDropdown />
 
 	<!-- Scenario Bottom Sheet (Mobile) -->
-	<ScenarioBottomSheet {scenarios} {baseScenarios} {parameters} />
+	<ScenarioBottomSheet />
 </nav>
 
 <!-- Mobile/Tablet Top Bar -->
@@ -120,7 +107,7 @@
 		</button>
 
 		<!-- Center: Scenario Pill (Mobile) -->
-		<ScenarioSelectorPill {currentScenario} />
+		<ScenarioSelectorPill />
 
 		<!-- Right: Theme Switch -->
 		<div class="flex items-center">
@@ -129,7 +116,7 @@
 	</div>
 
 	<!-- Scenario Bottom Sheet (Mobile) -->
-	<ScenarioBottomSheet {scenarios} {baseScenarios} {parameters} />
+	<ScenarioBottomSheet />
 </nav>
 
 <!-- Mobile Menu Drawer -->

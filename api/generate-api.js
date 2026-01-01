@@ -151,6 +151,7 @@ async function computeGlobalStatistics(dataDir) {
         }
 
         // Single unified query to compute all bounds efficiently
+        // Uses subqueries instead of CROSS JOIN to avoid cartesian product
         const unifiedQuery = `
             WITH yearly_data AS (
                 SELECT
@@ -161,44 +162,56 @@ async function computeGlobalStatistics(dataDir) {
                 FROM ${dataSource}
                 WHERE value IS NOT NULL
             ),
-            geography_yearly AS (
-                SELECT geography, year, SUM(value) as geography_total
+            raw_stats AS (
+                SELECT
+                    MIN(value) as raw_min,
+                    MAX(value) as raw_max,
+                    COUNT(value) as total_records,
+                    AVG(value) as mean_value
                 FROM yearly_data
-                GROUP BY geography, year
             ),
-            sector_yearly AS (
-                SELECT segment, year, SUM(value) as sector_total
-                FROM yearly_data
-                GROUP BY segment, year
+            geography_stats AS (
+                SELECT
+                    MIN(geography_total) as map_min,
+                    MAX(geography_total) as map_max
+                FROM (
+                    SELECT geography, year, SUM(value) as geography_total
+                    FROM yearly_data
+                    GROUP BY geography, year
+                ) t
             ),
-            national_yearly AS (
-                SELECT year, SUM(value) as national_total
-                FROM yearly_data
-                GROUP BY year
+            sector_stats AS (
+                SELECT
+                    MIN(sector_total) as sector_min,
+                    MAX(sector_total) as sector_max
+                FROM (
+                    SELECT segment, year, SUM(value) as sector_total
+                    FROM yearly_data
+                    GROUP BY segment, year
+                ) t
+            ),
+            national_stats AS (
+                SELECT
+                    MIN(national_total) as national_min,
+                    MAX(national_total) as national_max
+                FROM (
+                    SELECT year, SUM(value) as national_total
+                    FROM yearly_data
+                    GROUP BY year
+                ) t
             )
             SELECT
-                -- Raw data bounds
-                MIN(yearly_data.value) as raw_min,
-                MAX(yearly_data.value) as raw_max,
-                COUNT(yearly_data.value) as total_records,
-                AVG(yearly_data.value) as mean_value,
-
-                -- Map bounds (geography yearly totals)
-                MIN(geography_yearly.geography_total) as map_min,
-                MAX(geography_yearly.geography_total) as map_max,
-
-                -- Sector bounds (segment yearly totals)
-                MIN(sector_yearly.sector_total) as sector_min,
-                MAX(sector_yearly.sector_total) as sector_max,
-
-                -- National bounds (yearly totals)
-                MIN(national_yearly.national_total) as national_min,
-                MAX(national_yearly.national_total) as national_max
-
-            FROM yearly_data
-            CROSS JOIN geography_yearly
-            CROSS JOIN sector_yearly
-            CROSS JOIN national_yearly
+                raw_stats.raw_min,
+                raw_stats.raw_max,
+                raw_stats.total_records,
+                raw_stats.mean_value,
+                geography_stats.map_min,
+                geography_stats.map_max,
+                sector_stats.sector_min,
+                sector_stats.sector_max,
+                national_stats.national_min,
+                national_stats.national_max
+            FROM raw_stats, geography_stats, sector_stats, national_stats
         `;
 
         // Execute unified query

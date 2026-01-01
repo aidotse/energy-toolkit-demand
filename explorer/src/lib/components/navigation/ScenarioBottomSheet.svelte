@@ -2,27 +2,27 @@
 	/**
 	 * ScenarioBottomSheet Component
 	 *
-	 * Mobile bottom sheet overlay for scenario parameter selection.
+	 * Mobile bottom sheet overlay for Strategy 2 parameter selection.
 	 * Slides up from bottom with drag-to-close functionality.
+	 * Uses ParameterControls for base scenario and parameter sliders.
 	 */
 	import { X } from 'lucide-svelte';
 	import { navigationState } from '$lib/stores/navigation.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
+	import ParameterControls from './ParameterControls.svelte';
 	import { browser } from '$app/environment';
+	import type { Strategy2Parameter } from '$lib/dataService';
+	import type { Snippet } from 'svelte';
 
 	// Props
 	let {
-		scenarios = [],
-		baseScenarios = [],
-		parameters = {}
+		sliderComponent
 	}: {
-		scenarios?: any[];
-		baseScenarios?: any[];
-		parameters?: any;
+		sliderComponent?: Snippet<[Strategy2Parameter, number, (value: number) => void]>;
 	} = $props();
 
 	// Local state
 	let sheetRef: HTMLDivElement | undefined;
-	let matchingCount = $derived(scenarios.length);
 	let startY = 0;
 	let currentY = 0;
 	let isDragging = false;
@@ -79,36 +79,14 @@
 		}
 	});
 
-	// Placeholder base scenarios
-	const defaultBaseScenarios = [
-		{ name: 'Baseline 2030', color: 'blue', growth: 0 },
-		{ name: 'High Growth 2040', color: 'green', growth: 2.5 },
-		{ name: 'Low Growth 2030', color: 'orange', growth: -1.0 }
-	];
-
-	const displayBaseScenarios = baseScenarios.length > 0 ? baseScenarios : defaultBaseScenarios;
-
-	function selectBaseScenario(scenario: any) {
-		navigationState.setScenario(scenario);
-		navigationState.applyScenario();
-	}
-
-	function handleApply() {
-		navigationState.applyScenario();
-	}
-
-	function handleReset() {
-		navigationState.tempParameters = {};
-	}
-
-	function handleAddComparison() {
-		// TODO: Add current scenario to comparison
-		navigationState.applyScenario();
-	}
-
 	function handleBackdropClick() {
 		navigationState.toggleScenarioModal();
 	}
+
+	// Get current scenario label for display
+	const currentBaseLabel = $derived(
+		parameterStore.baseScenarios.find(s => s.id === parameterStore.baseScenario)?.name || 'Välj scenario'
+	);
 </script>
 
 {#if navigationState.scenarioModalOpen}
@@ -116,7 +94,7 @@
 	<button
 		onclick={handleBackdropClick}
 		class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 cursor-default"
-		aria-label="Close modal"
+		aria-label="Stäng"
 	></button>
 
 	<!-- Bottom Sheet -->
@@ -136,80 +114,34 @@
 		<div
 			class="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700"
 		>
-			<h3 class="text-xl font-semibold text-gray-900 dark:text-white">Select Scenario</h3>
+			<div>
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">Scenarioinställningar</h3>
+				<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+					{currentBaseLabel}
+					{#if parameterStore.activeParameterCount > 0}
+						<span class="text-primary-600 dark:text-primary-400">
+							+{parameterStore.activeParameterCount} justeringar
+						</span>
+					{/if}
+				</p>
+			</div>
 			<button
 				onclick={() => navigationState.toggleScenarioModal()}
 				class="p-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-				aria-label="Close"
+				aria-label="Stäng"
 			>
 				<X class="w-6 h-6" />
 			</button>
 		</div>
 
 		<!-- Scrollable Content -->
-		<div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-			<!-- Quick Select Section -->
-			<div>
-				<h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Quick Select</h4>
-				<div class="space-y-3">
-					{#each displayBaseScenarios as scenario}
-						<button
-							onclick={() => selectBaseScenario(scenario)}
-							class="flex items-center justify-between w-full px-5 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-all duration-200 active:scale-98"
-						>
-							<span class="font-medium text-lg text-gray-900 dark:text-white">{scenario.name}</span>
-							<div
-								class="w-4 h-4 rounded-full"
-								style="background-color: var(--color-{scenario.color}-500)"
-							></div>
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Parameter Groups Section -->
-			<div>
-				<h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-					Customize Parameters
-				</h4>
-				<div class="text-sm text-gray-500 dark:text-gray-400">
-					Parameter controls coming soon...
-				</div>
-				<!-- TODO: Integrate ParameterChip and ParameterGroup components -->
-			</div>
-
-			<!-- Matching Indicator -->
-			<div class="flex items-center justify-center py-2">
-				<span class="text-base text-gray-600 dark:text-gray-400">
-					{matchingCount} scenario{matchingCount !== 1 ? 's' : ''} available
-				</span>
-			</div>
-		</div>
-
-		<!-- Footer Actions -->
-		<div
-			class="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-		>
-			<button
-				onclick={handleReset}
-				class="px-5 py-3 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-			>
-				Reset
-			</button>
-			<div class="flex items-center gap-3">
-				<button
-					onclick={handleAddComparison}
-					class="px-5 py-3 text-base font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-				>
-					Compare
-				</button>
-				<button
-					onclick={handleApply}
-					class="px-6 py-3 text-base font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
-				>
-					Apply
-				</button>
-			</div>
+		<div class="flex-1 overflow-y-auto px-6 py-4">
+			<ParameterControls
+				compact={false}
+				showReset={true}
+				showSummary={true}
+				{sliderComponent}
+			/>
 		</div>
 	</div>
 {/if}

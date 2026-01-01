@@ -1,30 +1,29 @@
 import {
 	fetchDemandData,
 	fetchConfig,
-	fetchScenarios,
-	fetchParameters,
 	fetchGlobals,
-	fetchGeographies
+	fetchGeographies,
+	calculateScenarioCount
 } from '$lib/dataService';
 import { makeDemandQuery } from '$lib/utilities';
-import { loadContent, type ContentFile } from '$lib/contentLoader';
+import { loadContent } from '$lib/contentLoader';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch, parent }) => {
 	// Report page configuration
 	const geography = 'total'; // National totals
 	const segment = 'total'; // All segments combined initially
-	const year = 2045; // Default year for report
-	const startYear = 2025;
-	const endYear = 2050;
+	const year = 2050; // Default year for report
 
 	try {
-		// 1) Fetch static configuration data and content
-		const [config, scenarios, parameters, globals, geographies, geojson, contentSections] =
+		// Get data already loaded by layout (scenarios, parameters, defaultScenario)
+		const parentData = await parent();
+		const { scenarios, parameters, defaultScenario } = parentData;
+
+		// Fetch only what we need that layout doesn't provide
+		const [config, globals, geographies, geojson, contentSections] =
 			await Promise.all([
 				fetchConfig(fetch),
-				fetchScenarios(fetch),
-				fetchParameters(fetch),
 				fetchGlobals(fetch),
 				fetchGeographies('json', fetch),
 				fetchGeographies('geojson', fetch),
@@ -38,60 +37,10 @@ export const load: PageLoad = async ({ fetch }) => {
 			]);
 
 		// Get default scenario
-		const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];
+		const scenario = defaultScenario || scenarios[0];
 		const scenarioId = scenario?.id || scenario?.scenario_id || 'default';
 
-		// 2) Fetch time series data for different visualizations
-
-		// Full time range annual data for AreaChart (2025-2050)
-		const timeSeriesQuery = makeDemandQuery({
-			start: String(startYear),
-			end: String(endYear + 1),
-			resolution: '1Y',
-			aggregation: 'sum',
-			geography,
-			segment,
-			scenarioId
-		});
-		const timeSeriesData = await fetchDemandData(timeSeriesQuery, fetch);
-
-		// Hourly data for selected year (for Histogram distribution)
-		const hourlyQuery = makeDemandQuery({
-			start: `${year}-01-01`,
-			end: `${year + 1}-01-01`,
-			resolution: '1h',
-			aggregation: 'mean',
-			geography,
-			segment,
-			scenarioId
-		});
-		const hourlyData = await fetchDemandData(hourlyQuery, fetch);
-
-		// Daily data for selected year (for TimeLine daily patterns)
-		const dailyQuery = makeDemandQuery({
-			start: `${year}-01-01`,
-			end: `${year + 1}-01-01`,
-			resolution: '1d',
-			aggregation: 'sum',
-			geography,
-			segment,
-			scenarioId
-		});
-		const dailyData = await fetchDemandData(dailyQuery, fetch);
-
-		// Segment breakdown for selected year (for segmentBars)
-		const segmentQuery = makeDemandQuery({
-			start: String(year),
-			end: String(year + 1),
-			resolution: '1Y',
-			aggregation: 'sum',
-			geography: 'total', // National total
-			segment: 'all', // All segments separately
-			scenarioId
-		});
-		const segmentData = await fetchDemandData(segmentQuery, fetch);
-
-		// Geographic distribution for selected year (for Map and GeoBarChart)
+		// Geographic distribution for selected year (for Map - needed for initial render)
 		const geoQuery = makeDemandQuery({
 			start: String(year),
 			end: String(year + 1),
@@ -102,19 +51,6 @@ export const load: PageLoad = async ({ fetch }) => {
 			scenarioId
 		});
 		const geoData = await fetchDemandData(geoQuery, fetch);
-
-		// Calculate key metrics from the data
-		const latestYearData = timeSeriesData[timeSeriesData.length - 1];
-		const firstYearData = timeSeriesData[0];
-
-		const totalEnergy2050 = latestYearData?.value || 0;
-		const totalEnergy2025 = firstYearData?.value || 0;
-		const growthRate = totalEnergy2025 > 0
-			? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100
-			: 0;
-
-		// Calculate peak power from hourly data
-		const peakPower = hourlyData.reduce((max, d) => Math.max(max, d.value || 0), 0);
 
 		// Use map-specific bounds from globals
 		const mapBounds = globals?.bounds?.map_yearly_geography || {
@@ -147,18 +83,10 @@ export const load: PageLoad = async ({ fetch }) => {
 			scenarioId,
 			geographies,
 			geojson,
-			// Chart data
-			timeSeriesData,
-			hourlyData,
-			dailyData,
-			segmentData,
+			// Map data (fetched in loader, needed for initial render)
 			geoData,
-			// Metrics
-			totalEnergy2050,
-			totalEnergy2025,
-			growthRate,
-			peakPower,
-			scenarioCount: scenarios.length,
+			// Scenario count for metrics
+			scenarioCount: calculateScenarioCount(parameters, scenarios),
 			// Content sections
 			content
 		};
@@ -169,22 +97,14 @@ export const load: PageLoad = async ({ fetch }) => {
 			scenarios: [],
 			parameters: {},
 			globals: {},
-			year: 2045,
+			year: 2050,
 			geography: 'total',
 			segment: 'total',
 			scenario: null,
 			scenarioId: 'default',
 			geographies: [],
 			geojson: { type: 'FeatureCollection', features: [] },
-			timeSeriesData: [],
-			hourlyData: [],
-			dailyData: [],
-			segmentData: [],
 			geoData: [],
-			totalEnergy2050: 0,
-			totalEnergy2025: 0,
-			growthRate: 0,
-			peakPower: 0,
 			scenarioCount: 0,
 			content: {
 				executiveSummary: null,

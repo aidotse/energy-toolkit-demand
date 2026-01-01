@@ -53,7 +53,13 @@ export function getGeos(geographies: any[]) {
 }  
   
 /**
+ * Parameter values type for Strategy 2
+ */
+export type ParameterValues = Record<string, number>;
+
+/**
  * Helper to build demand API query parameters for the new OpenAPI 3.1 compliant backend
+ * Supports Strategy 2 with baseScenario and independent parameter values
  * @param opts - Query options object
  * @returns URLSearchParams object ready for API calls
  */
@@ -65,10 +71,12 @@ export const makeDemandQuery = (opts: {
     geography: string;
     segment: string;
     scenarioId?: string;
+    baseScenario?: string;
+    parameterValues?: ParameterValues;
 }) => {
     const {
         start, end, resolution, aggregation,
-        geography, segment, scenarioId
+        geography, segment, scenarioId, baseScenario, parameterValues
     } = opts;
 
     const qp = new URLSearchParams();
@@ -85,9 +93,21 @@ export const makeDemandQuery = (opts: {
     // Segment parameter
     qp.set('segment', segment);
 
-    // Scenario parameter
-    if (scenarioId) {
-        qp.set('scenarioId', scenarioId);
+    // Strategy 2: Use baseScenario if provided, fall back to scenarioId for backwards compatibility
+    if (baseScenario) {
+        qp.set('baseScenario', baseScenario);
+    } else if (scenarioId) {
+        // Legacy: map scenarioId to baseScenario
+        qp.set('baseScenario', scenarioId);
+    }
+
+    // Strategy 2: Add non-zero parameter values
+    if (parameterValues) {
+        for (const [paramName, paramIndex] of Object.entries(parameterValues)) {
+            if (paramIndex > 0) {
+                qp.set(paramName, String(paramIndex));
+            }
+        }
     }
 
     // Response format

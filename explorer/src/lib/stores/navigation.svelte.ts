@@ -1,8 +1,8 @@
 /**
  * Navigation State Store (Svelte 5 Runes)
  *
- * Global state for page layout navigation and scenario panel.
- * Uses Svelte 5 runes for reactive state management with localStorage persistence.
+ * Global state for page layout navigation.
+ * Scenario/parameter state is managed by parameterStore (Strategy 2).
  */
 
 import { browser } from '$app/environment';
@@ -16,17 +16,15 @@ const getInitialPanelState = (): boolean => {
 
 /**
  * Navigation State Object
- * Simple reactive state object without effects in constructor
+ * Handles UI state for navigation, modals, and comparison mode.
  */
 class NavigationState {
 	panelExpanded = $state(getInitialPanelState());
-	currentScenario = $state<any | null>(null);
 	comparisonMode = $state(false);
 	comparisonScenarios = $state<any[]>([]);
 	mobileMenuOpen = $state(false);
 	scenarioModalOpen = $state(false);
 	scenarioDropdownOpen = $state(false);
-	tempParameters = $state<Record<string, any>>({});
 
 	togglePanel() {
 		this.panelExpanded = !this.panelExpanded;
@@ -52,19 +50,6 @@ class NavigationState {
 		if (this.scenarioDropdownOpen) {
 			this.scenarioModalOpen = false; // Close modal if dropdown opens
 		}
-	}
-
-	setScenario(scenario: any) {
-		this.currentScenario = scenario;
-		this.scenarioDropdownOpen = false;
-		this.scenarioModalOpen = false;
-	}
-
-	applyScenario() {
-		// Apply temp parameters to current scenario
-		// This will be implemented when we add parameter selection
-		this.scenarioDropdownOpen = false;
-		this.scenarioModalOpen = false;
 	}
 
 	toggleComparisonMode() {
