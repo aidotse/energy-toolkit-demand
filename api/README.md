@@ -19,11 +19,11 @@ The Demand Toolkit API provides endpoints for accessing demand forecasting data 
 
 ### Static Endpoints
 - `GET /geographies` - List of geographic boundaries (JSON or GeoJSON)
-- `GET /config` - Configuration metadata
+- `GET /config` - Configuration metadata including units configuration (SI prefixes for energy/power display)
 - `GET /scenarios` - Available forecasting scenarios
 - `GET /parameters` - Valid parameter combinations
 - `GET /aggregations` - Available aggregation methods
-- `GET /globals` - Pre-computed global statistics and bounds
+- `GET /globals` - Pre-computed global statistics and bounds for visualization scaling
 
 ### Dynamic Endpoints
 - `GET /demand` - Time-series demand data with flexible aggregation (uses DuckDB)
@@ -142,8 +142,8 @@ Static endpoints are generated from configuration files:
 2. `geographies.json` / `geographies.geojson` ← `/config.yaml`
 3. `scenarios.json` ← `/config.yaml` (scenario parameter combinations)
 4. `aggregations.json` ← `/config.yaml` (resolution-aggregation combinations)
-5. `config.json` ← `/config.yaml` (filtered for public access)
-6. `globals.json` ← DuckDB analysis of Parquet files
+5. `config.json` ← `/config.yaml` (filtered for public access, includes units configuration)
+6. `globals.json` ← DuckDB analysis of Parquet files (computed bounds for visualizations)
 
 ## Development
 

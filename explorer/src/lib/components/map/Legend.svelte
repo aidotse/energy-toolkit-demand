@@ -1,5 +1,6 @@
 <script lang="ts">
     import { formatNumber } from '$lib/utilities';
+    import { getEnergyPrefix } from '$lib/stores/units.svelte';
 
     let { lower_bound, upper_bound } = $props();
 
@@ -20,7 +21,7 @@
     <div class="flex flex-row justify-between w-full">
         {#each demandLevels as level}
             <div class="flex flex-col items-center text-[10px] lg:text-xs px-2">
-                <span>{formatNumber(level.value, 'M', 'Wh')}</span>
+                <span>{formatNumber(level.value, getEnergyPrefix(), 'Wh')}</span>
             </div>
         {/each}
     </div>

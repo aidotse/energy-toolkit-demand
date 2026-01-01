@@ -6,6 +6,7 @@
  */
 
 import { formatNumber } from '$lib/utilities';
+import { getEnergyPrefix, getPowerPrefix } from '$lib/stores/units.svelte';
 
 export interface StandardAxisConfig {
 	xAxis?: {
@@ -49,7 +50,7 @@ export function getTimeSeriesAxisConfig(
 			tweened: true
 		},
 		yAxis: {
-			format: (num) => formatNumber(num, 'M', aggregation === 'sum' ? 'Wh' : 'W'),
+			format: (num) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W'),
 			tweened: true
 		},
 		grid: {
@@ -132,7 +133,7 @@ export function getDistributionAxisConfig(
 
 	return {
 		xAxis: {
-			format: (value) => formatNumber(value, 'M', 'W'),
+			format: (value) => formatNumber(value, getPowerPrefix(), 'W'),
 			ticks: xTicks,
 			tweened: true
 		},
@@ -164,7 +165,7 @@ export function getGeographicAxisConfig(displayAxes: boolean = true): StandardAx
 			tweened: true
 		},
 		yAxis: {
-			format: (value) => formatNumber(value, 'M', 'Wh'),
+			format: (value) => formatNumber(value, getEnergyPrefix(), 'Wh'),
 			tweened: true
 		},
 		grid: {

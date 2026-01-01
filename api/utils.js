@@ -63,37 +63,33 @@ import {
  */
 export function normalizeBoundary(raw, which) {
   // Year only: 2025
+  // For 'end' boundaries, return start of year (half-open interval convention)
   if (/^\d{4}$/.test(raw)) {
     const year = Number(raw);
     const dt0 = new Date(year, 0, 1);
-    return which === 'start'
-      ? startOfYear(dt0)
-      : endOfYear(dt0);
+    return startOfYear(dt0);
   }
   // Month only: 2025-02
+  // For 'end' boundaries, return start of month (half-open interval convention)
   if (/^\d{4}-\d{2}$/.test(raw)) {
     const [y, m] = raw.split('-').map(Number);
     const dt0 = new Date(y, m - 1, 1);
-    return which === 'start'
-      ? startOfMonth(dt0)
-      : endOfMonth(dt0);
+    return startOfMonth(dt0);
   }
   // ISO week: 2025-W05
+  // For 'end' boundaries, return start of week (half-open interval convention)
   if (/^\d{4}-W\d{2}$/.test(raw)) {
     const [y, w] = raw.split('-W').map(Number);
     // get first week of Jan, then offset
     const dt = startOfWeek(addWeeks(new Date(y, 0, 4), w - 1), { weekStartsOn: 1 });
-    return which === 'start'
-      ? dt
-      : endOfWeek(dt, { weekStartsOn: 1 });
+    return dt;
   }
   // Date only: 2025-02-10
+  // For 'end' boundaries, return start of day (half-open interval convention)
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     const dt = parseISO(raw);
     if (!isValid(dt)) throw new Error(`Invalid date boundary: ${raw}`);
-    return which === 'start'
-      ? startOfDay(dt)
-      : endOfDay(dt);
+    return startOfDay(dt);
   }
   // Hour precision: 2025-02-10T03
   if (/^\d{4}-\d{2}-\d{2}T\d{2}$/.test(raw)) {

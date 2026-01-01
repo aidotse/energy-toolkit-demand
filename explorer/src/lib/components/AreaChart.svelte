@@ -9,6 +9,7 @@
 	 */
 	import { AreaChart, Tooltip } from 'layerchart';
 	import { formatNumber, makeDemandQuery } from '$lib/utilities';
+	import { getEnergyPrefix } from '$lib/stores/units.svelte';
 	import { fetchDemandData } from '$lib/dataService';
 	import LoadingSkeleton from '$lib/components/shared/LoadingSkeleton.svelte';
 	import ErrorState from '$lib/components/shared/ErrorState.svelte';
@@ -17,6 +18,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import type { TimeSeriesChartProps } from '$lib/types/ChartComponent.interface';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import {
 		getNormalizedScenarios,
 		assignScenarioColors,
@@ -125,10 +127,16 @@
 		normalizedScenarios.length > 1 ? createComparisonMetadata(normalizedScenarios, comparisonData) : null
 	);
 
+	// Get current parameter state for reactive fetching
+	const baseScenario = $derived(parameterStore.baseScenario);
+	const parameterValues = $derived(parameterStore.parameterValues);
+
 	$effect(() => {
-		// Trigger fetch when scenarios change
+		// Trigger fetch when scenarios or parameters change
 		// Include all dependencies to trigger refetch
-		if (normalizedScenarios.length > 0 && geography && aggregation) {
+		if (normalizedScenarios.length > 0 && geography && aggregation && baseScenario) {
+			// Access parameterValues to create dependency
+			const _params = parameterValues;
 			fetchChartData();
 		}
 	});
@@ -144,24 +152,25 @@
 			error = null;
 
 			const startYear = 2025;
-			const endYear = 2035;
+			const endYear = 2050;
 
 			if (normalizedScenarios.length === 1) {
-				// Single scenario mode - use existing pattern
+				// Single scenario mode - use Strategy 2 parameters
 				const query = makeDemandQuery({
 					start: String(startYear),
 					end: String(endYear + 1),
 					resolution: '1Y',
 					aggregation,
 					geography,
-					segment: 'housing',
-					scenarioId: normalizedScenarios[0].id || normalizedScenarios[0].scenario_id || 'default'
+					segment: 'total',
+					baseScenario: parameterStore.baseScenario,
+					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 				});
 
 				const data = await fetchDemandData(query);
 				allYearsData = data;
 			} else {
-				// Comparison mode - fetch data for each scenario
+				// Comparison mode - fetch data for each scenario (without parameters for now)
 				const fetchPromises = normalizedScenarios.map(async (scenario) => {
 					const scenarioId = scenario.id || scenario.scenario_id || 'default';
 					const query = makeDemandQuery({
@@ -170,8 +179,8 @@
 						resolution: '1Y',
 						aggregation,
 						geography,
-						segment: 'housing',
-						scenarioId
+						segment: 'total',
+						baseScenario: scenarioId
 					});
 
 					const data = await fetchDemandData(query);
@@ -303,7 +312,7 @@
                     class="text-[10px] font-semibold text-primary bg-gray-100 mt-[2px] px-1 py-[2px] border border-primary rounded whitespace-nowrap"
                     let:data
                 >
-                    {formatNumber(y(data ?? defaultTooltipData), 'M', 'Wh')}
+                    {formatNumber(y(data ?? defaultTooltipData), getEnergyPrefix(), 'Wh')}
                 </Tooltip.Root>
                 <Tooltip.Root
                     x="data"
@@ -382,7 +391,7 @@
 							class="text-[10px] font-semibold bg-gray-100 mt-[2px] px-1 py-[2px] border rounded whitespace-nowrap"
 							style="color: {scenario.color}; border-color: {scenario.color};"
 						>
-							{scenario.name}: {formatNumber(value, 'M', 'Wh')}
+							{scenario.name}: {formatNumber(value, getEnergyPrefix(), 'Wh')}
 						</Tooltip.Root>
 					{/if}
 				{/each}

@@ -13,7 +13,7 @@ export const load: PageLoad = async ({ fetch }) => {
 	// Report page configuration
 	const geography = 'total'; // National totals
 	const segment = 'total'; // All segments combined initially
-	const year = 2045; // Default year for report
+	const year = 2050; // Default year for report
 	const startYear = 2025;
 	const endYear = 2050;
 

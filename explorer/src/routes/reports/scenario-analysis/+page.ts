@@ -4,7 +4,8 @@ import {
 	fetchScenarios,
 	fetchParameters,
 	fetchGlobals,
-	fetchGeographies
+	fetchGeographies,
+	calculateScenarioCount
 } from '$lib/dataService';
 import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
@@ -13,7 +14,7 @@ export const load: PageLoad = async ({ fetch }) => {
 	// Report page configuration
 	const geography = 'total'; // National totals
 	const segment = 'total'; // All segments combined initially
-	const year = 2045; // Default year for report
+	const year = 2050; // Default year for report
 	const startYear = 2025;
 	const endYear = 2050;
 
@@ -46,12 +47,13 @@ export const load: PageLoad = async ({ fetch }) => {
 		});
 		const timeSeriesData = await fetchDemandData(timeSeriesQuery, fetch);
 
-		// Hourly data for selected year (for Histogram distribution)
+		// Hourly data for selected year (for Histogram and peak power)
+		// Use 'sum' to get total power across all geographies/segments
 		const hourlyQuery = makeDemandQuery({
 			start: `${year}-01-01`,
 			end: `${year + 1}-01-01`,
 			resolution: '1h',
-			aggregation: 'mean',
+			aggregation: 'sum',
 			geography,
 			segment,
 			scenarioId
@@ -140,7 +142,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			totalEnergy2025,
 			growthRate,
 			peakPower,
-			scenarioCount: scenarios.length
+			scenarioCount: calculateScenarioCount(parameters, scenarios)
 		};
 	} catch (error: any) {
 		console.error('Error loading report data:', error?.message || error);

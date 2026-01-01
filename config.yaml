@@ -8,6 +8,15 @@ start: '2025-01-01T00:00:00Z'
 end: '2050-12-31T23:00:00Z'
 baseResolution: 1h
 baseAggregation: mean
+
+# Unit configuration for data values
+units:
+  energy:
+    prefix: G      # SI prefix: '', k, M, G, T (base unit is Wh)
+    unit: Wh       # Base unit
+  power:
+    prefix: G      # SI prefix: '', k, M, G, T (base unit is W)
+    unit: W        # Base unit
 segment:
   description: Segments
   values:
@@ -147,6 +156,7 @@ api:
   aggregations:
     - sum
     - mean
+    - max
 
 # Independent parameter system (Strategy 2)
 # Each parameter generates segment-only parquet files
@@ -157,6 +167,8 @@ parameters:
 
   definitions:
     # Pattern: {segment}_{type} where type is 'growth' or 'flex'
+    # Growth parameters: 0% (baseline), -10%, +10%, +20%
+    # The index values map to curve data, value is for UI sorting
     housing_growth:
       type: independent
       description: "Housing demand growth rate"
@@ -165,24 +177,29 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "Baseline"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "-10%"
+          value: -10
           curve:
             file: generator/input/scenarios/housing_growth/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "Medium"
+          label: "+10%"
+          value: 10
           curve:
             file: generator/input/scenarios/housing_growth/curves.parquet
             filter: "index == 2"
         - index: 3
-          label: "High"
+          label: "+20%"
+          value: 20
           curve:
             file: generator/input/scenarios/housing_growth/curves.parquet
             filter: "index == 3"
 
+    # Flex parameters: 0% (none), 5%, 15%
     housing_flex:
       type: independent
       description: "Housing demand flexibility"
@@ -191,15 +208,18 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "None"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "5%"
+          value: 5
           curve:
             file: generator/input/scenarios/housing_flex/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "High"
+          label: "15%"
+          value: 15
           curve:
             file: generator/input/scenarios/housing_flex/curves.parquet
             filter: "index == 2"
@@ -212,20 +232,24 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "Baseline"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "-10%"
+          value: -10
           curve:
             file: generator/input/scenarios/transport_growth/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "Medium"
+          label: "+10%"
+          value: 10
           curve:
             file: generator/input/scenarios/transport_growth/curves.parquet
             filter: "index == 2"
         - index: 3
-          label: "High"
+          label: "+20%"
+          value: 20
           curve:
             file: generator/input/scenarios/transport_growth/curves.parquet
             filter: "index == 3"
@@ -238,15 +262,18 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "None"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "5%"
+          value: 5
           curve:
             file: generator/input/scenarios/transport_flex/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "High"
+          label: "15%"
+          value: 15
           curve:
             file: generator/input/scenarios/transport_flex/curves.parquet
             filter: "index == 2"
@@ -259,20 +286,24 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "Baseline"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "-10%"
+          value: -10
           curve:
             file: generator/input/scenarios/industry_growth/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "Medium"
+          label: "+10%"
+          value: 10
           curve:
             file: generator/input/scenarios/industry_growth/curves.parquet
             filter: "index == 2"
         - index: 3
-          label: "High"
+          label: "+20%"
+          value: 20
           curve:
             file: generator/input/scenarios/industry_growth/curves.parquet
             filter: "index == 3"
@@ -285,15 +316,18 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "None"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "5%"
+          value: 5
           curve:
             file: generator/input/scenarios/industry_flex/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "High"
+          label: "15%"
+          value: 15
           curve:
             file: generator/input/scenarios/industry_flex/curves.parquet
             filter: "index == 2"
@@ -306,20 +340,24 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "Baseline"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "-10%"
+          value: -10
           curve:
             file: generator/input/scenarios/services_growth/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "Medium"
+          label: "+10%"
+          value: 10
           curve:
             file: generator/input/scenarios/services_growth/curves.parquet
             filter: "index == 2"
         - index: 3
-          label: "High"
+          label: "+20%"
+          value: 20
           curve:
             file: generator/input/scenarios/services_growth/curves.parquet
             filter: "index == 3"
@@ -332,15 +370,18 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "None"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "5%"
+          value: 5
           curve:
             file: generator/input/scenarios/services_flex/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "High"
+          label: "15%"
+          value: 15
           curve:
             file: generator/input/scenarios/services_flex/curves.parquet
             filter: "index == 2"
@@ -353,20 +394,24 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "Baseline"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "-10%"
+          value: -10
           curve:
             file: generator/input/scenarios/datacenters_growth/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "Medium"
+          label: "+10%"
+          value: 10
           curve:
             file: generator/input/scenarios/datacenters_growth/curves.parquet
             filter: "index == 2"
         - index: 3
-          label: "High"
+          label: "+20%"
+          value: 20
           curve:
             file: generator/input/scenarios/datacenters_growth/curves.parquet
             filter: "index == 3"
@@ -379,15 +424,18 @@ parameters:
       how: multiply
       values:
         - index: 0
-          label: "None"
+          label: "0%"
+          value: 0
           curve: null
         - index: 1
-          label: "Low"
+          label: "5%"
+          value: 5
           curve:
             file: generator/input/scenarios/datacenters_flex/curves.parquet
             filter: "index == 1"
         - index: 2
-          label: "High"
+          label: "15%"
+          value: 15
           curve:
             file: generator/input/scenarios/datacenters_flex/curves.parquet
             filter: "index == 2"

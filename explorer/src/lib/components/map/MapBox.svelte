@@ -6,6 +6,7 @@
     import { mount } from 'svelte';
     import Popup from '$lib/components/map/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
+    import { getEnergyPrefix } from '$lib/stores/units.svelte';
     import { fetchYearly, mergeGeoData } from '$lib/dataService';
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { getSettings } from 'svelte-ux';
@@ -36,8 +37,20 @@
     let popup: mapboxgl.Popup;
     let stickyPopup: boolean = false;
 
-    // Use fetched data if available, otherwise use prop data
-    const yearData = $derived(fetchedYearData.length > 0 ? fetchedYearData : yearDataProp);
+    // Track the year that prop data corresponds to
+    let propDataYear = $state<number | null>(null);
+
+    // Initialize propDataYear when yearDataProp is first received
+    $effect(() => {
+        if (yearDataProp && yearDataProp.length > 0 && propDataYear === null) {
+            propDataYear = year;
+        }
+    });
+
+    // Use fetched data if we've changed years, otherwise use prop data
+    const yearData = $derived(
+        fetchedYearData.length > 0 ? fetchedYearData : yearDataProp
+    );
 
     const handleMapClick = (e) => {
             if (stickyPopup) {
@@ -53,34 +66,43 @@
             }
         };
 
-    // Only fetch data if no prop data is provided
-    $effect(async () => {
-        if (yearDataProp && yearDataProp.length > 0) {
-            // Use prop data, don't fetch
+    // Fetch data when year changes from the initial prop data year
+    $effect(() => {
+        // If we have prop data and year matches (or propDataYear not yet set), use prop data
+        if (yearDataProp && yearDataProp.length > 0 && (propDataYear === null || year === propDataYear)) {
+            fetchedYearData = []; // Clear fetched data to use prop data
             return;
         }
 
-        try {
-            // Use new OpenAPI format for demand data
-            const queryParams = new URLSearchParams({
-                'period[start]': String(year),
-                'period[end]': String(year + 1),
-                'period[resolution]': '1Y',
-                'period[aggregation]': 'sum',
-                'geography': 'all',
-                'segment': 'total',
-                'scenarioId': currentScenario?.id || currentScenario?.scenario_id || 'default',
-                'format': 'json'
-            });
+        // Capture current year for the fetch (to avoid stale closures)
+        const fetchYear = year;
+        const scenarioId = currentScenario?.id || currentScenario?.scenario_id || 'default';
 
-            const response = await fetch(`${API_BASE_URL}/demand?${queryParams.toString()}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            fetchedYearData = await response.json();
-        } catch (error) {
-            console.error('Error updating data:', error.message);
-        }
+        // Year has changed - fetch new data
+        const queryParams = new URLSearchParams({
+            'period[start]': String(fetchYear),
+            'period[end]': String(fetchYear + 1),
+            'period[resolution]': '1Y',
+            'period[aggregation]': 'sum',
+            'geography': 'all',
+            'segment': 'total',
+            'scenarioId': scenarioId,
+            'format': 'json'
+        });
+
+        fetch(`${API_BASE_URL}/demand?${queryParams.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                fetchedYearData = data;
+            })
+            .catch(error => {
+                console.error('Error updating data:', error.message);
+            });
     });
 
     let mergedData = $derived(mergeGeoData(geojsonData, yearData, year));
@@ -90,7 +112,7 @@
         const geoName = properties.geo_name;
         const geoID = properties.geo_id;
         const year = properties.year;
-        const demand = formatNumber(properties.total, 'M', 'Wh');
+        const demand = formatNumber(properties.total, getEnergyPrefix(), 'Wh');
 
         const popupDiv = document.createElement('div');
         mount(Popup, {
@@ -258,12 +280,14 @@
     
     $effect(() => {
         if (mapLoaded && mergedData) {
-            map?.getSource('counties').setData(mergedData);
+            const source = map?.getSource('counties') as mapboxgl.GeoJSONSource;
+            if (source) {
+                source.setData(mergedData);
+            }
 
             if (stickyPopup) {
                 const feature = mergedData.features.find(f => f.properties.geo_id === geography);
                 if (feature) {
-                    const coords = popup.getLngLat();
                     popup.setDOMContent(createPopupContent(feature.properties, true));
                 }
             }

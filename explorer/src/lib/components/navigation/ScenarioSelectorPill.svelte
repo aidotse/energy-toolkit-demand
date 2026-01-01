@@ -3,14 +3,13 @@
 	 * ScenarioSelectorPill Component
 	 *
 	 * Compact pill-based scenario selector that lives in the top navigation bar.
-	 * Shows current scenario(s) in collapsed state, opens dropdown/bottom-sheet for selection.
+	 * Shows current base scenario + active parameter count.
+	 * Opens dropdown (desktop) or bottom-sheet (mobile) for selection.
 	 */
 	import { ChevronDown } from 'lucide-svelte';
 	import { navigationState } from '$lib/stores/navigation.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { browser } from '$app/environment';
-
-	// Props
-	let { currentScenario = 'Default Scenario' }: { currentScenario?: string } = $props();
 
 	// Toggle dropdown or bottom sheet based on screen size
 	function handleClick() {
@@ -24,10 +23,25 @@
 		}
 	}
 
-	// Truncate scenario name if too long
-	const displayName = $derived(
-		currentScenario.length > 30 ? currentScenario.substring(0, 27) + '...' : currentScenario
-	);
+	// Get display name from parameterStore
+	const displayName = $derived.by(() => {
+		if (!parameterStore.isInitialized) {
+			return 'Laddar...';
+		}
+
+		const baseScenario = parameterStore.baseScenarios.find(
+			s => s.id === parameterStore.baseScenario
+		);
+		const baseName = baseScenario?.name || 'Välj scenario';
+
+		// Truncate if too long
+		const truncatedName = baseName.length > 25 ? baseName.substring(0, 22) + '...' : baseName;
+
+		return truncatedName;
+	});
+
+	// Get active parameter count
+	const activeCount = $derived(parameterStore.activeParameterCount);
 </script>
 
 <button
@@ -48,5 +62,10 @@
 	aria-expanded={navigationState.scenarioDropdownOpen || navigationState.scenarioModalOpen}
 >
 	<span class="truncate">{displayName}</span>
-	<ChevronDown class="w-4 h-4 flex-shrink-0" />
+	{#if activeCount > 0}
+		<span class="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded text-xs font-medium">
+			+{activeCount}
+		</span>
+	{/if}
+	<ChevronDown class="w-4 h-4 flex-shrink-0 text-gray-400" />
 </button>

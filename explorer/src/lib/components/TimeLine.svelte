@@ -17,6 +17,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import type { TimeSeriesChartProps } from '$lib/types/ChartComponent.interface';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import {
 		getNormalizedScenarios,
 		assignScenarioColors,
@@ -27,7 +28,7 @@
 	import type { Snippet } from 'svelte';
 
 	let {
-		data: dayData = [],
+		data: dayDataProp = [],
 		geography,
 		resolution = '1d',
 		segment,
@@ -38,6 +39,9 @@
 		headerControls,
 		class: className = ''
 	}: TimeSeriesChartProps & { segment?: string; headerControls?: Snippet; class?: string } = $props();
+
+	// Separate state for fetched data
+	let dayData = $state<any[]>([]);
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -74,26 +78,31 @@
 	}
 
 	// For single scenario mode (backwards compatibility)
+	// Handle both 'timestamp' (legacy) and 'period' (new API) field names
 	let chartData = $derived(
 		normalizedScenarios.length === 1
 			? (dayData || []).map((d) => ({
-					timestamp: d.timestamp,
+					timestamp: d.period || d.timestamp,
 					total: d.value || d.total || 0
 				}))
 			: []
 	);
 
 	// For comparison mode - merge data from multiple scenarios
+	// Handle both 'timestamp' (legacy) and 'period' (new API) field names
 	let comparisonData = $derived(
 		normalizedScenarios.length > 1
 			? mergeScenarioData(
 					Object.fromEntries(
 						Object.entries(dataByScenario).map(([scenarioId, data]) => [
 							scenarioId,
-							data.map((d) => ({
-								timestamp: d.timestamp instanceof Date ? d.timestamp : new Date(d.timestamp),
-								value: d.value || d.total || 0
-							}))
+							data.map((d) => {
+								const dateField = d.period || d.timestamp;
+								return {
+									timestamp: dateField instanceof Date ? dateField : new Date(dateField),
+									value: d.value || d.total || 0
+								};
+							})
 						])
 					),
 					normalizedScenarios
@@ -106,10 +115,20 @@
 		normalizedScenarios.length > 1 ? createComparisonMetadata(normalizedScenarios, comparisonData) : null
 	);
 
-	// Reactive data fetching when scenarios change
+	// Get current parameter state for reactive fetching
+	const baseScenario = $derived(parameterStore.baseScenario);
+	const parameterValues = $derived(parameterStore.parameterValues);
+
+	// Use prop data if provided (hybrid pattern)
 	$effect(() => {
-		// Include all dependencies to trigger refetch
-		if (normalizedScenarios.length > 0 && geography && year && resolution && segment) {
+		if (dayDataProp && dayDataProp.length > 0) {
+			dayData = dayDataProp;
+			return;
+		}
+		// Only fetch if no prop data provided
+		// Include parameter dependencies for reactivity
+		if (normalizedScenarios.length > 0 && geography && year && resolution && segment && baseScenario) {
+			const _params = parameterValues;
 			fetchTimelineData();
 		}
 	});
@@ -125,7 +144,7 @@
 			error = null;
 
 			if (normalizedScenarios.length === 1) {
-				// Single scenario mode - use existing pattern
+				// Single scenario mode - use Strategy 2 parameters
 				const query = makeDemandQuery({
 					start: `${year}-01-01`,
 					end: `${year + 1}-01-01`,
@@ -133,7 +152,8 @@
 					aggregation,
 					geography,
 					segment: segment || 'housing',
-					scenarioId: normalizedScenarios[0].id || normalizedScenarios[0].scenario_id || 'default'
+					baseScenario: parameterStore.baseScenario,
+					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 				});
 
 				const data = await fetchDemandData(query);
@@ -149,7 +169,7 @@
 						aggregation,
 						geography,
 						segment: segment || 'housing',
-						scenarioId
+						baseScenario: scenarioId
 					});
 
 					const data = await fetchDemandData(query);

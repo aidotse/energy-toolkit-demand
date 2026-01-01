@@ -84,3 +84,111 @@ components:
           - json
           - geojson
         default: json
+    baseScenario:
+      name: baseScenario
+      in: query
+      required: false
+      description: Base scenario identifier for Strategy 2
+      schema:
+        type: string
+        example: beslutad-policy
+    housing_growth:
+      name: housing_growth
+      in: query
+      required: false
+      description: Housing growth parameter index (0=baseline)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 3
+        default: 0
+    housing_flex:
+      name: housing_flex
+      in: query
+      required: false
+      description: Housing flexibility parameter index (0=none)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2
+        default: 0
+    transport_growth:
+      name: transport_growth
+      in: query
+      required: false
+      description: Transport growth parameter index (0=baseline)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 3
+        default: 0
+    transport_flex:
+      name: transport_flex
+      in: query
+      required: false
+      description: Transport flexibility parameter index (0=none)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2
+        default: 0
+    industry_growth:
+      name: industry_growth
+      in: query
+      required: false
+      description: Industry growth parameter index (0=baseline)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 3
+        default: 0
+    industry_flex:
+      name: industry_flex
+      in: query
+      required: false
+      description: Industry flexibility parameter index (0=none)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2
+        default: 0
+    services_growth:
+      name: services_growth
+      in: query
+      required: false
+      description: Services growth parameter index (0=baseline)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 3
+        default: 0
+    services_flex:
+      name: services_flex
+      in: query
+      required: false
+      description: Services flexibility parameter index (0=none)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2
+        default: 0
+    datacenters_growth:
+      name: datacenters_growth
+      in: query
+      required: false
+      description: Datacenters growth parameter index (0=baseline)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 3
+        default: 0
+    datacenters_flex:
+      name: datacenters_flex
+      in: query
+      required: false
+      description: Datacenters flexibility parameter index (0=none)
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2
+        default: 0
