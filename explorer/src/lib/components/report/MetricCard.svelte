@@ -35,45 +35,46 @@
 		return value;
 	});
 
-	// Trend color classes
+	// Trend color classes for dark teal background
 	const trendColors = {
-		up: 'text-green-600 dark:text-green-400',
-		down: 'text-red-600 dark:text-red-400',
-		neutral: 'text-gray-600 dark:text-gray-400'
+		up: 'text-emerald-300',
+		down: 'text-red-300',
+		neutral: 'text-white/60'
 	};
 </script>
 
 <div
-	class="metric-card bg-white dark:bg-gray-800 rounded shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 {className}"
+	class="metric-card rounded-lg p-4 {className}"
+	style="background-color: #004d66;"
 >
 	<!-- Icon (optional) -->
 	{#if Icon}
-		<div class="flex justify-end mb-2 opacity-30">
-			<Icon size={24} />
+		<div class="flex justify-end mb-1 text-white/30">
+			<Icon size={18} />
 		</div>
 	{/if}
 
 	<!-- Main value -->
-	<div class="metric-value text-4xl font-bold text-gray-900 dark:text-gray-50 mb-1">
+	<div class="metric-value text-3xl font-bold text-white mb-0.5">
 		{formattedValue()}
 	</div>
 
 	<!-- Label -->
-	<div class="metric-label text-sm text-gray-600 dark:text-gray-400 font-medium mb-0.5">
+	<div class="metric-label text-xs text-white/80 font-medium mb-0.5">
 		{label}
 	</div>
 
 	<!-- Sublabel (optional) -->
 	{#if sublabel}
-		<div class="metric-sublabel text-xs text-gray-500 dark:text-gray-500">
+		<div class="metric-sublabel text-[10px] text-white/60">
 			{sublabel}
 		</div>
 	{/if}
 
 	<!-- Trend indicator (optional) -->
 	{#if trend && trendLabel}
-		<div class="metric-trend mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-			<span class="text-xs font-medium {trendColors[trend]}">
+		<div class="metric-trend mt-2 pt-2 border-t border-white/20">
+			<span class="text-[10px] font-medium {trendColors[trend]}">
 				{#if trend === 'up'}↑{:else if trend === 'down'}↓{:else}→{/if}
 				{trendLabel}
 			</span>
@@ -84,7 +85,7 @@
 <style>
 	.metric-card {
 		@apply relative;
-		min-height: 140px;
+		min-height: 105px;
 	}
 
 	.metric-value {
@@ -100,7 +101,7 @@
 	/* Responsive font sizing */
 	@media (max-width: 640px) {
 		.metric-value {
-			@apply text-3xl;
+			@apply text-2xl;
 		}
 	}
 </style>

@@ -8,7 +8,7 @@
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
 	import type { Strategy2Parameter } from '$lib/dataService';
 	import ParameterSlider from './ParameterSlider.svelte';
-	import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-svelte';
+	import { RotateCcw } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
 	// Segment display names
@@ -31,19 +31,6 @@
 		showSummary?: boolean;
 		sliderComponent?: Snippet<[Strategy2Parameter, number, (value: number) => void]>;
 	} = $props();
-
-	// Track which segments are expanded (default: all expanded)
-	let expandedSegments = $state<Record<string, boolean>>({
-		housing: true,
-		transport: true,
-		industry: true,
-		services: true,
-		datacenters: true
-	});
-
-	function toggleSegment(segment: string) {
-		expandedSegments[segment] = !expandedSegments[segment];
-	}
 
 	function handleBaseScenarioChange(scenarioId: string) {
 		parameterStore.setBaseScenario(scenarioId);
@@ -77,7 +64,7 @@
 						onclick={() => handleBaseScenarioChange(scenario.id)}
 						class="w-full px-3 py-2 text-left text-sm rounded-md transition-colors
 							{parameterStore.baseScenario === scenario.id
-							? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-medium'
+							? 'bg-chart-100 dark:bg-chart-900 text-chart-900 dark:text-chart-100 font-medium'
 							: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-750'}"
 					>
 						{scenario.name}
@@ -100,7 +87,7 @@
 					<label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
 						Parametrar
 						{#if parameterStore.activeParameterCount > 0}
-							<span class="ml-1 px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded text-xs">
+							<span class="ml-1 px-1.5 py-0.5 bg-chart-100 dark:bg-chart-900 text-chart-900 dark:text-chart-100 rounded text-xs">
 								{parameterStore.activeParameterCount}
 							</span>
 						{/if}
@@ -117,59 +104,47 @@
 					{/if}
 				</div>
 
-				<div class="space-y-1">
+				<div class="space-y-3">
 					{#each Object.entries(parameterStore.parametersBySegment) as [segment, params]}
-						<div class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-							<!-- Segment Header -->
-							<button
-								onclick={() => toggleSegment(segment)}
-								class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
-							>
-								<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+						<div class="space-y-2">
+							<!-- Segment Label -->
+							<div class="flex items-center gap-2">
+								<span class="text-xs font-medium text-gray-500 dark:text-gray-400">
 									{SEGMENT_LABELS[segment] || segment}
 								</span>
-								<div class="flex items-center gap-2">
-									{#if params.some(p => parameterStore.getParameterValue(p.name) > 0)}
-										<span class="w-2 h-2 bg-primary-500 rounded-full"></span>
-									{/if}
-									{#if expandedSegments[segment]}
-										<ChevronUp class="w-4 h-4 text-gray-400" />
-									{:else}
-										<ChevronDown class="w-4 h-4 text-gray-400" />
-									{/if}
-								</div>
-							</button>
+								{#if params.some(p => parameterStore.getParameterValue(p.name) > 0)}
+									<span class="w-1.5 h-1.5 bg-chart-700 rounded-full"></span>
+								{/if}
+							</div>
 
 							<!-- Parameter Sliders -->
-							{#if expandedSegments[segment]}
-								<div class="px-3 py-2 space-y-3 bg-white dark:bg-gray-800">
-									{#each params as param}
-										{@const currentValue = parameterStore.getParameterValue(param.name)}
-										{#if sliderComponent}
-											<!-- Use custom slider component via snippet -->
-											{@render sliderComponent(param, currentValue, (v) => handleParameterChange(param.name, v))}
-										{:else}
-											<!-- Default slider component -->
-											<div class="space-y-1">
-												<div class="flex items-center justify-between text-xs">
-													<span class="text-gray-600 dark:text-gray-400">
-														{getParamTypeLabel(param.name)}
-													</span>
-													<span class="font-medium text-gray-900 dark:text-gray-100">
-														{getParameterLabel(param, currentValue)}
-													</span>
-												</div>
-												<ParameterSlider
-													parameter={param}
-													value={currentValue}
-													onchange={(v) => handleParameterChange(param.name, v)}
-													compact={true}
-												/>
+							<div class="space-y-2">
+								{#each params as param}
+									{@const currentValue = parameterStore.getParameterValue(param.name)}
+									{#if sliderComponent}
+										<!-- Use custom slider component via snippet -->
+										{@render sliderComponent(param, currentValue, (v) => handleParameterChange(param.name, v))}
+									{:else}
+										<!-- Default slider component -->
+										<div class="space-y-1">
+											<div class="flex items-center justify-between text-xs">
+												<span class="text-gray-600 dark:text-gray-400">
+													{getParamTypeLabel(param.name)}
+												</span>
+												<span class="font-medium text-gray-900 dark:text-gray-100">
+													{getParameterLabel(param, currentValue)}
+												</span>
 											</div>
-										{/if}
-									{/each}
-								</div>
-							{/if}
+											<ParameterSlider
+												parameter={param}
+												value={currentValue}
+												onchange={(v) => handleParameterChange(param.name, v)}
+												compact={true}
+											/>
+										</div>
+									{/if}
+								{/each}
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -177,8 +152,8 @@
 
 			<!-- Active Parameters Summary -->
 			{#if showSummary && parameterStore.hasActiveParameters}
-				<div class="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-md">
-					<p class="text-xs text-primary-700 dark:text-primary-300">
+				<div class="p-2 bg-chart-100/50 dark:bg-chart-900/30 rounded-md">
+					<p class="text-xs text-chart-900 dark:text-chart-100">
 						<strong>Aktiva:</strong>
 						{#each Object.entries(parameterStore.parameterValues).filter(([_, v]) => v > 0) as [name, index], i}
 							{@const param = parameterStore.getParameter(name)}

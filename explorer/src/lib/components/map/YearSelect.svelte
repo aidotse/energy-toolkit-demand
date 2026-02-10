@@ -3,7 +3,15 @@
     import { onMount } from 'svelte';
     import * as m from '$paraglide/messages';
 
-    let {parameterData, year = $bindable()} = $props();
+    let {
+        parameterData,
+        year,
+        onYearChange
+    }: {
+        parameterData: any;
+        year: number;
+        onYearChange?: (year: number) => void;
+    } = $props();
 
     const minYear:number = parameterData?.years?.length > 0 ? Math.min(...parameterData.years) : 2025;
     const maxYear:number = parameterData?.years?.length > 0 ? Math.max(...parameterData.years) : 2050;
@@ -13,6 +21,11 @@
     let tempYear = $state(year); // Local state for immediate slider updates
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Sync tempYear when parent year changes
+    $effect(() => {
+        tempYear = year;
+    });
+
     function handleRangeChange(value: number) {
         tempYear = value; // Update slider position immediately
 
@@ -21,9 +34,9 @@
             clearTimeout(debounceTimer);
         }
 
-        // Set new timer to update bound year value after 300ms
+        // Set new timer to notify parent after 300ms
         debounceTimer = setTimeout(() => {
-            year = value;
+            onYearChange?.(value);
         }, 300);
     }
 
@@ -48,7 +61,7 @@
 
 </script>
 
-<div class="flex flex-col w-32 2xl:w-64 pt-1">
+<div class="flex flex-col w-40 2xl:w-72 pt-1 px-3 pb-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-sm">
     <div class="relative h-7">
         <input
             bind:this={sliderRef}
@@ -63,7 +76,7 @@
         />
         {#if isInitialized}
             <span
-                class="bubble-label absolute -top-[24px] text-[0.625rem] whitespace-nowrap bg-white text-gray-800 px-[4px] py-0.5 border rounded-sm transform -translate-x-1/2 transition-all z-10"
+                class="bubble-label absolute -top-[24px] text-[0.625rem] font-semibold whitespace-nowrap bg-chart-900 text-white px-[6px] py-0.5 border border-chart-900 rounded-sm transform -translate-x-1/2 transition-all z-10"
                 style="left: {getLabelPosition()}"
             >
                 {tempYear}
@@ -86,8 +99,8 @@
 		transform: translateX(-50%) rotate(45deg);
 		width: 6px;
 		height: 6px;
-		background: white;
-		border: 1px solid rgb(203, 203, 203);
+		background: #004d66;
+		border: 1px solid #004d66;
 		border-top: none;
 		border-left: none;
 	}
@@ -120,19 +133,27 @@
 		-webkit-appearance: none;
 		appearance: none;
 		margin-top: -4px;
-		background-color: #3b82f6;
+		background-color: #1f2937;
 		height: 12px;
 		width: 12px;
 		border-radius: 50%;
 		border: none;
 	}
 
+	:global(.dark) .range-input::-webkit-slider-thumb {
+		background-color: #e5e7eb;
+	}
+
 	.range-input::-moz-range-thumb {
-		background-color: #3b82f6;
+		background-color: #1f2937;
 		height: 12px;
 		width: 12px;
 		border-radius: 50%;
 		border: none;
+	}
+
+	:global(.dark) .range-input::-moz-range-thumb {
+		background-color: #e5e7eb;
 	}
 
 	.range-input:focus {

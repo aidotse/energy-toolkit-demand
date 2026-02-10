@@ -33,9 +33,11 @@
 		year,
 		scenarios: scenariosProp,
 		comparisonMode = false,
+		exportable = true,
+		description = '',
 		headerControls,
 		class: className = ''
-	}: SegmentChartProps & { headerControls?: Snippet; class?: string } = $props();
+	}: SegmentChartProps & { exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -272,10 +274,12 @@
 
 <ChartContainer
 	title="Sektoruppdelning"
+	{description}
 	sizeVariant="standard"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
+	{exportable}
 	{headerControls}
 	class={className}
 >

@@ -32,8 +32,9 @@ const requestCache = new Map<string, CacheEntry>();
 
 // TTL for different types of data (in milliseconds)
 const CACHE_TTL = {
-    demand: 5 * 60 * 1000,     // 5 minutes for demand data
-    static: 60 * 60 * 1000     // 1 hour for static config
+    demand: 5 * 60 * 1000,           // 5 minutes for demand data
+    demand_yearly: 15 * 60 * 1000,   // 15 minutes for yearly resolution data
+    static: 60 * 60 * 1000           // 1 hour for static config
 };
 
 /**
@@ -134,9 +135,13 @@ export const fetchDemandData = async (queryParams: URLSearchParams, customFetch?
     const cacheKey = `demand:${queryString}`;
     const url = `${API_BASE_URL}/demand?${queryString}`;
 
+    // Use longer TTL for yearly resolution data (changes less frequently)
+    const resolution = queryParams.get('period[resolution]');
+    const ttl = resolution === '1Y' ? CACHE_TTL.demand_yearly : CACHE_TTL.demand;
+
     // Check cache first (only for browser requests, not SSR)
     if (!customFetch) {
-        const cached = getCached(cacheKey, CACHE_TTL.demand);
+        const cached = getCached(cacheKey, ttl);
         if (cached) {
             // Return cached data or wait for in-flight request
             if (cached.promise) {

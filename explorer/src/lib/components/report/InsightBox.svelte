@@ -27,10 +27,10 @@
 	const variantConfig = {
 		insight: {
 			icon: Lightbulb,
-			bgClass: 'bg-primary-50 dark:bg-primary-900/20',
-			borderClass: 'border-primary-200 dark:border-primary-800',
-			iconClass: 'text-primary-600 dark:text-primary-400',
-			titleClass: 'text-primary-900 dark:text-primary-100'
+			bgClass: 'bg-[#ededed] dark:bg-gray-800',
+			borderClass: 'border-gray-300 dark:border-gray-700',
+			iconClass: 'text-gray-900 dark:text-gray-100',
+			titleClass: 'text-gray-900 dark:text-gray-100'
 		},
 		warning: {
 			icon: AlertTriangle,
@@ -69,7 +69,7 @@
 				</h3>
 			{/if}
 
-			<div class="insight-content text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+			<div class="insight-content text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
 				{@render children()}
 			</div>
 		</div>

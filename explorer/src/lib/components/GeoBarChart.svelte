@@ -31,9 +31,10 @@
 		year,
 		scenarios: scenariosProp,
 		comparisonMode = false,
+		exportable = true,
 		headerControls,
 		class: className = ''
-	}: GeographicChartProps & { parameterData?: any; headerControls?: Snippet; class?: string } = $props();
+	}: GeographicChartProps & { parameterData?: any; exportable?: boolean; headerControls?: Snippet; class?: string } = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -296,6 +297,7 @@
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
+	{exportable}
 	{headerControls}
 	class={className}
 >

@@ -38,6 +38,25 @@ export default {
       scale: {
         '98': '0.98',     // For active button states
       },
+      colors: {
+        // Monochrome chart scale (dark to light)
+        'chart': {
+          '900': '#004d66',  // Darkest - tooltip bg
+          '700': '#007399',
+          '500': '#46a0c4',
+          '300': '#61bbd9',
+          '100': '#90d2e8',  // Lightest
+        },
+        // Map gradient colors (for future use)
+        'map': {
+          'light': '#61bbd9',
+          'mid': '#007399',
+          'dark': '#002a66',
+          'accent': '#660042',
+        },
+        // Accent yellow for highlights
+        'highlight': '#f9ca2d',
+      },
     },
   },
 

@@ -6,10 +6,10 @@
 
     // Specify demand levels and corresponding colors
     let demandLevels = [
-        { value: lower_bound, color: '#0000FF' }, // Blue
-        { value: lower_bound + (upper_bound - lower_bound) * 0.025, color: '#00FF7F' }, // Green
-        { value: lower_bound + (upper_bound - lower_bound) * 0.75, color: '#FFA500' }, // Orange
-        { value: upper_bound, color: '#df4217' }, // Red
+        { value: lower_bound, color: '#61bbd9' }, // Light blue
+        { value: lower_bound + (upper_bound - lower_bound) * 0.33, color: '#007399' }, // Teal
+        { value: lower_bound + (upper_bound - lower_bound) * 0.66, color: '#002a66' }, // Dark navy
+        { value: upper_bound, color: '#660042' }, // Burgundy
     ];
 </script>
 
@@ -29,6 +29,6 @@
 
 <style>
     .legend-gradient {
-        background: linear-gradient(to right, #0000FF, #00FF7F, #FFFF00, #FFA500, #df4217);
+        background: linear-gradient(to right, #61bbd9, #007399, #002a66, #660042);
     }
 </style>

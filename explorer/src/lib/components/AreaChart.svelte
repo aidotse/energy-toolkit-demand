@@ -37,12 +37,18 @@
 		scenarios: scenariosProp,
 		comparisonMode = false,
 		displayAxes = true,
+		exportable = true,
+		description = '',
 		headerControls,
-		class: className = ''
+		class: className = '',
+		contentClass = ''
 	}: TimeSeriesChartProps & {
 		displayAxes?: boolean;
+		exportable?: boolean;
+		description?: string;
 		headerControls?: Snippet;
 		class?: string;
+		contentClass?: string;
 	} = $props();
 
 	// Subscribe to global scenario state
@@ -206,49 +212,33 @@
 		}
 	}
 
-	// Domain calculations for single scenario mode
+	// Domain calculations for single scenario mode - always show full range 2025-2045
 	let xMin = $derived(
 		chartData.length > 0
-			? Math.min(...chartData.filter((d) => d.timestamp <= (year || 2045)).map((d) => d.timestamp))
+			? Math.min(...chartData.map((d) => d.timestamp))
 			: comparisonData.length > 0
-				? Math.min(
-						...comparisonData
-							.filter((d) => d.timestamp.getFullYear() <= (year || 2045))
-							.map((d) => d.timestamp.getFullYear())
-					)
-				: year || 2025
+				? Math.min(...comparisonData.map((d) => d.timestamp.getFullYear()))
+				: 2025
 	);
 	let xMax = $derived(
 		chartData.length > 0
-			? Math.max(...chartData.filter((d) => d.timestamp <= (year || 2045)).map((d) => d.timestamp))
+			? Math.max(...chartData.map((d) => d.timestamp))
 			: comparisonData.length > 0
-				? Math.max(
-						...comparisonData
-							.filter((d) => d.timestamp.getFullYear() <= (year || 2045))
-							.map((d) => d.timestamp.getFullYear())
-					)
-				: year || 2045
+				? Math.max(...comparisonData.map((d) => d.timestamp.getFullYear()))
+				: 2045
 	);
 	let yMin = $derived(
 		chartData.length > 0
-			? Math.min(...chartData.filter((d) => d.timestamp <= (year || 2045)).map((d) => d.total))
+			? Math.min(...chartData.map((d) => d.total))
 			: comparisonData.length > 0
-				? Math.min(
-						...comparisonData
-							.filter((d) => d.timestamp.getFullYear() <= (year || 2045))
-							.flatMap((d) => Object.values(d.values))
-					)
+				? Math.min(...comparisonData.flatMap((d) => Object.values(d.values)))
 				: 0
 	);
 	let yMax = $derived(
 		chartData.length > 0
-			? Math.max(...chartData.filter((d) => d.timestamp <= (year || 2045)).map((d) => d.total))
+			? Math.max(...chartData.map((d) => d.total))
 			: comparisonData.length > 0
-				? Math.max(
-						...comparisonData
-							.filter((d) => d.timestamp.getFullYear() <= (year || 2045))
-							.flatMap((d) => Object.values(d.values))
-					)
+				? Math.max(...comparisonData.flatMap((d) => Object.values(d.values)))
 				: 1000
 	);
 
@@ -276,12 +266,15 @@
 
 <ChartContainer
 	title="Årlig {titleMeasure} 2025-2045"
+	{description}
 	sizeVariant="standard"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
+	{exportable}
 	{headerControls}
 	class={className}
+	{contentClass}
 >
 	{#if loading}
 		<LoadingSkeleton variant="chart" message="Laddar tidsseriedata..." />
@@ -292,14 +285,22 @@
 	{:else if normalizedScenarios.length === 1}
 		<!-- Single scenario mode -->
         <AreaChart
-            data={chartData.filter(d => d.timestamp <= year)}
+            data={chartData}
             x="timestamp"
             y="total"
             xDomain={xMin === xMax ? [xMin,xMax+1] : [xMin,xMax]}
             yDomain={xMin === xMax ? [yMin,yMax*1.1] : [yMin,yMax]}
+            grid={false}
             props={{
 				...getTimeSeriesAxisConfig(displayAxes, aggregation),
-				line: { fill: 'none', stroke: '#47B3FF', strokeWidth: 2 }
+				line: { fill: 'none', stroke: '#004d66', strokeWidth: 2 },
+				area: { fill: '#46a0c4', fillOpacity: 0.3 },
+				highlight: {
+					lines: { class: 'stroke-black [stroke-width:1.5px] [stroke-dasharray:6_4]' },
+					axis: 'both',
+					points: { class: '!fill-transparent !stroke-black ![stroke-width:1.5px]' }
+				},
+				rule: { class: 'stroke-black [stroke-width:1.5px]' }
 			}}
             {...(xMin === xMax ? { points: true } : {})}
         >
@@ -309,7 +310,7 @@
                     y="data"
                     anchor="right"
                     contained={false}
-                    class="text-[10px] font-semibold text-primary bg-gray-100 mt-[2px] px-1 py-[2px] border border-primary rounded whitespace-nowrap"
+                    class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"
                     let:data
                 >
                     {formatNumber(y(data ?? defaultTooltipData), getEnergyPrefix(), 'Wh')}
@@ -318,7 +319,7 @@
                     x="data"
                     y={height}
                     anchor="top"
-                    class="text-[10px] font-semibold text-primary bg-gray-100 mt-[2px] px-2 py-[2px] border border-primary rounded whitespace-nowrap"
+                    class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-2 py-[2px] border border-chart-900 rounded whitespace-nowrap"
                     contained={false}
                     let:data
                 >
@@ -335,9 +336,7 @@
 				return sid && comparisonData.every(d => d.values && typeof d.values[sid] !== 'undefined');
 			})}
 		{#if hasRequiredFields}
-		{@const transformedData = comparisonData
-			.filter((d) => d.timestamp.getFullYear() <= (year || 2045))
-			.map((d) => ({
+		{@const transformedData = comparisonData.map((d) => ({
 				timestamp: d.timestamp.getFullYear(),
 				...d.values
 			}))}
@@ -363,7 +362,16 @@
 			{series}
 			xDomain={xMin === xMax ? [xMin, xMax + 1] : [xMin, xMax]}
 			yDomain={xMin === xMax ? [yMin, yMax * 1.1] : [yMin, yMax]}
-			props={getTimeSeriesAxisConfig(displayAxes, aggregation)}
+			grid={false}
+			props={{
+				...getTimeSeriesAxisConfig(displayAxes, aggregation),
+				highlight: {
+					lines: { class: 'stroke-black [stroke-width:1.5px] [stroke-dasharray:6_4]' },
+					axis: 'both',
+					points: { class: '!fill-transparent !stroke-black ![stroke-width:1.5px]' }
+				},
+				rule: { class: 'stroke-black [stroke-width:1.5px]' }
+			}}
 			{...(xMin === xMax ? { points: true } : {})}
 		>
 
@@ -373,7 +381,7 @@
 					x="data"
 					y={height}
 					anchor="top"
-					class="text-[10px] font-semibold text-primary bg-gray-100 mt-[2px] px-2 py-[2px] border border-primary rounded whitespace-nowrap"
+					class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-2 py-[2px] border border-chart-900 rounded whitespace-nowrap"
 					contained={false}
 				>
 					{x(data)}
@@ -388,8 +396,7 @@
 							y={() => y({ [scenarioId]: value })}
 							anchor="right"
 							contained={false}
-							class="text-[10px] font-semibold bg-gray-100 mt-[2px] px-1 py-[2px] border rounded whitespace-nowrap"
-							style="color: {scenario.color}; border-color: {scenario.color};"
+							class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"
 						>
 							{scenario.name}: {formatNumber(value, getEnergyPrefix(), 'Wh')}
 						</Tooltip.Root>

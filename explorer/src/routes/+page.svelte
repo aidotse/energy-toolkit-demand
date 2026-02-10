@@ -6,14 +6,13 @@
 	 * - Left: Scrollable card-based content
 	 * - Right: Fixed background map
 	 */
-	import { Zap, TrendingUp, Activity, Database } from 'lucide-svelte';
+	import { Zap, TrendingUp, Activity } from 'lucide-svelte';
 	import MetricCard from '$lib/components/report/MetricCard.svelte';
-	import HighlightCard from '$lib/components/report/HighlightCard.svelte';
 	import InsightBox from '$lib/components/report/InsightBox.svelte';
 	import AreaChart from '$lib/components/AreaChart.svelte';
-	import TimeLine from '$lib/components/TimeLine.svelte';
-	import Histogram from '$lib/components/Histogram.svelte';
-	import SegmentBars from '$lib/components/SegmentBars.svelte';
+	import SectorPieChart from '$lib/components/SectorPieChart.svelte';
+	import GeoSegmentChart from '$lib/components/GeoSegmentChart.svelte';
+	import PeriodHeatmap from '$lib/components/PeriodHeatmap.svelte';
 	import Map from '$lib/components/map/Map.svelte';
 	import { fetchDemandData } from '$lib/dataService';
 	import { makeDemandQuery } from '$lib/utilities';
@@ -27,23 +26,30 @@
 	let geography = $state(data.geography);
 	let year = $state(data.year);
 
-	// Reactive metrics that update with scenario changes
-	// Initialize with 0, will be populated by $effect on first load
-	let totalEnergy2050 = $state(0);
-	let totalEnergy2025 = $state(0);
-	let growthRate = $state(0);
+	// Reactive metrics that update with scenario and year changes
+	let timeSeriesData = $state<Array<{timestamp: Date, value: number}>>([]);
 	let peakPower = $state(0);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Calculate metrics from time series data based on selected year
+	let totalEnergy2025 = $derived(
+		timeSeriesData.find(d => d.timestamp.getFullYear() === 2025)?.value || 0
+	);
 
-	// Fetch metrics when scenario or parameters change
+	let totalEnergySelectedYear = $derived(
+		timeSeriesData.find(d => d.timestamp.getFullYear() === year)?.value || 0
+	);
+
+	let growthRate = $derived(
+		totalEnergy2025 > 0 ? ((totalEnergySelectedYear - totalEnergy2025) / totalEnergy2025) * 100 : 0
+	);
+
+	// Fetch time series data when scenario or parameters change
 	$effect(() => {
-		if (!baseScenario) return;
+		// Access store values to create reactive dependencies
+		const baseScenario = parameterStore.baseScenario;
+		const _params = parameterStore.parameterValues;
 
-		// Access parameterValues to create dependency
-		const _params = parameterValues;
+		if (!baseScenario) return;
 
 		// Fetch time series data for energy metrics
 		const timeSeriesQuery = makeDemandQuery({
@@ -53,31 +59,34 @@
 			aggregation: 'sum',
 			geography: 'total',
 			segment: 'total',
-			baseScenario: parameterStore.baseScenario,
+			baseScenario: baseScenario,
 			parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 		});
 
-		fetchDemandData(timeSeriesQuery).then(timeSeriesData => {
-			if (timeSeriesData.length > 0) {
-				const firstYear = timeSeriesData[0];
-				const lastYear = timeSeriesData[timeSeriesData.length - 1];
-				totalEnergy2050 = lastYear?.value || 0;
-				totalEnergy2025 = firstYear?.value || 0;
-				growthRate = totalEnergy2025 > 0
-					? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100
-					: 0;
+		fetchDemandData(timeSeriesQuery).then(data => {
+			if (data.length > 0) {
+				timeSeriesData = data;
 			}
 		});
+	});
 
-		// Fetch hourly data for peak power
+	// Fetch hourly data for peak power when year changes
+	$effect(() => {
+		// Access store values and year to create reactive dependencies
+		const baseScenario = parameterStore.baseScenario;
+		const _params = parameterStore.parameterValues;
+		const currentYear = year;
+
+		if (!baseScenario || !currentYear) return;
+
 		const hourlyQuery = makeDemandQuery({
-			start: `${year}-01-01`,
-			end: `${year + 1}-01-01`,
+			start: `${currentYear}-01-01`,
+			end: `${currentYear + 1}-01-01`,
 			resolution: '1h',
 			aggregation: 'sum',
 			geography: 'total',
 			segment: 'total',
-			baseScenario: parameterStore.baseScenario,
+			baseScenario: baseScenario,
 			parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
 		});
 
@@ -105,63 +114,58 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<div class="min-h-screen dark:bg-gray-900" style="background-color: #ededed;">
 	<!-- Main content container -->
 	<div class="flex flex-col lg:flex-row">
 		<!-- Left Column: Scrollable Card Content (3/5 width) -->
 		<main class="flex-1 lg:w-3/5 overflow-y-auto p-4 sm:p-6 lg:p-8">
-			<div class="max-w-4xl mx-auto space-y-6">
-			<!-- Title Card / Hero Section -->
-			<div class="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-950 text-white rounded shadow-sm p-6 sm:p-8">
+			<div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-3xl shadow-sm px-10 py-6 sm:px-14 sm:py-8">
+			<!-- Title Section -->
+			<div class="mb-12">
 				<!-- Partner logos - right-aligned, at top -->
-				<div class="flex justify-end mb-5">
+				<div class="flex justify-end mb-6">
 					<div class="flex flex-col items-start gap-2">
-						<p class="text-xs text-white">
+						<p class="text-sm text-gray-900 dark:text-gray-100">
 							Utvecklat med stöd av
 						</p>
-						<div class="flex items-center gap-4">
 						<a href="https://www.energimyndigheten.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
 							<img
-								src="/energimyndigheten_logotyp_rgb_neg.png"
+								src="/SV Primär Energimyndigheten logo EM-SVART png (RGB).png"
 								alt="Energimyndigheten"
-								class="h-6 w-auto"
+								class="h-8 w-auto"
 							/>
 						</a>
-						</div>
 					</div>
 				</div>
-				<h1 class="text-4xl md:text-5xl font-bold mb-4">
+				<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50 mt-10 mb-6">
 					Sveriges framtida elbehov
 				</h1>
-				<p class="text-xl md:text-2xl text-primary-100 dark:text-primary-200 mb-2">
-					Scenarier 2025–2050
+				<p class="text-base text-gray-600 dark:text-gray-400">
+					Det här verktyget ger en samlad bild av Sveriges förväntade elbehov fram till år 2050.
+					Det omfattar bostäder, transport, industri och andra samhällssektorer som tillsammans
+					formar framtidens elförbrukning. Genom att utforska olika scenarier kan du se hur
+					olika antaganden om elektrifiering, teknikutveckling och samhällsförändringar påverkar
+					det totala elbehovet. Verktyget visar både hur mycket el som kommer att behövas och
+					när den behövs som mest under året.
 				</p>
 			</div>
 
-			<!-- Executive Summary Card -->
-			<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-6 sm:p-8">
-				{#if data.content.executiveSummary?.default}
-					<div class="prose dark:prose-invert max-w-none mb-6">
-					<svelte:component this={data.content.executiveSummary.default} />
-					</div>
-				{/if}
-
-				<!-- Key Metrics Grid -->
-				<div class="grid grid-cols-2 gap-4">
+			<!-- Key Metrics Grid -->
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
 					<MetricCard
-						value={formatEnergy(totalEnergy2050)}
+						value={formatEnergy(totalEnergySelectedYear)}
 						label="Total energi"
-						sublabel="År 2050"
+						sublabel={`År ${year}`}
 						icon={Zap}
-						trend="up"
-						trendLabel={`+${Math.round(growthRate)}% sedan 2025`}
+						trend={growthRate >= 0 ? "up" : "down"}
+						trendLabel={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}% sedan 2025`}
 					/>
 					<MetricCard
-						value={`+${Math.round(growthRate)}%`}
+						value={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}%`}
 						label="Tillväxt"
-						sublabel="Jämfört med 2025"
+						sublabel={`${year} jämfört med 2025`}
 						icon={TrendingUp}
-						trend="up"
+						trend={growthRate >= 0 ? "up" : "down"}
 						trendLabel="Elektrifiering driver"
 					/>
 					<MetricCard
@@ -172,262 +176,144 @@
 						trend="up"
 						trendLabel="Baserat på timdata"
 					/>
-					<MetricCard
-						value={data.scenarioCount}
-						label="Scenarier"
-						sublabel="Tillgängliga"
-						icon={Database}
+				</div>
+
+			<!-- Current State / Time Evolution Section -->
+			<div class="pt-12 mt-12">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+					Växande elbehov
+				</h2>
+				<p class="text-base text-gray-600 dark:text-gray-400 mb-8">
+					Sveriges elbehov förväntas öka betydligt under de kommande decennierna. Denna utveckling
+					drivs av en bred elektrifiering av samhället där fossila bränslen successivt fasas ut
+					och ersätts med el. Transportsektorn ställer om till eldrift, industrin elektrifierar
+					sina processer och nya användningsområden för el tillkommer. Förändringen accelererar
+					efter 2030 när elektrifieringen når allt fler sektorer och tekniker mognar.
+				</p>
+
+				<div class="space-y-8">
+					<!-- AreaChart -->
+					<div class="pb-6">
+						<AreaChart
+							geography={geography}
+							year={year}
+							aggregationInit="sum"
+							exportable={false}
+							description="Årligt elbehov för Sverige 2025–2050. Kurvan visar en tydlig uppåtgående trend med en acceleration efter 2030."
+							contentClass="mx-4 sm:mx-8"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sectoral Drivers Section -->
+			<div class="pt-12 mt-12">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+					Vad driver förändringen?
+				</h2>
+				<p class="text-base text-gray-600 dark:text-gray-400 mb-8">
+					Förändringen av Sveriges elbehov drivs av flera samverkande faktorer. Transportsektorn
+					genomgår en omfattande elektrifiering där personbilar, lastbilar och bussar övergår
+					till eldrift. Industrin ställer om från fossila bränslen till el för att nå klimatmål,
+					vilket inkluderar både befintliga processer och helt nya industriella satsningar.
+					Bostäder och lokaler behåller en stabil bas men påverkas av värmepumpar och ökad
+					digitalisering. Sammantaget bidrar alla sektorer till den växande efterfrågan på el.
+				</p>
+
+				<div class="space-y-6">
+
+					<!-- Sector Pie Chart -->
+					<div class="pb-6">
+						<SectorPieChart
+							geography={geography}
+							year={year}
+							exportable={false}
+							description={`Sektorsfördelning av elbehov år ${year}.`}
+						/>
+					</div>
+
+					<p class="text-base text-gray-600 dark:text-gray-400">
+						Fördelningen mellan sektorer varierar kraftigt mellan olika län. I storstadsregioner
+						dominerar bostäder och service, medan industritäta län som Norrbotten och Västernorrland
+						har en betydligt högre andel industriell elanvändning. Denna geografiska ojämnhet innebär
+						att olika delar av landet har olika utmaningar när elbehovet växer. Använd kartan för
+						att utforska hur sektorernas fördelning skiljer sig åt mellan länen.
+					</p>
+
+					<!-- Geo Segment Chart -->
+					<div class="pb-6">
+						<GeoSegmentChart
+							{year}
+							parameterData={data.parameters}
+							exportable={false}
+							description={`Sektorernas andel av elbehovet per län, år ${year}.`}
+						/>
+					</div>
+
+				</div>
+			</div>
+
+			<!-- Temporal Patterns Section -->
+			<div class="pt-12 mt-12">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+					När behövs elen?
+				</h2>
+				<p class="text-base text-gray-600 dark:text-gray-400 mb-8">
+					Elbehovet varierar kraftigt över dygnet och året. Under vintermånaderna är efterfrågan
+					som störst, drivet av uppvärmning och belysning. Vardagar har tydliga toppar på morgonen
+					och kvällen när hushåll och arbetsplatser är som mest aktiva. Att förstå dessa mönster
+					är avgörande för att planera elnätet och säkerställa att produktionen möter behovet
+					även under de mest krävande timmarna.
+				</p>
+
+				<p class="text-base text-gray-600 dark:text-gray-400 mb-8">
+					Flexibilitet spelar en viktig roll för att hantera variationen i elbehovet. Genom att
+					flytta förbrukning från höglasttimmar till perioder med lägre efterfrågan kan topparna
+					jämnas ut. Exempel på flexibla laster är laddning av elbilar, uppvärmning av byggnader
+					med värmepumpar och industriella processer som kan schemaläggas. Med ökad flexibilitet
+					minskar behovet av dyr reservkapacitet och elnätet kan utnyttjas mer effektivt.
+				</p>
+
+				<div class="space-y-6">
+					<PeriodHeatmap
+						geography={geography}
+						year={year}
+						exportable={false}
+						description={`Elbehov fördelat på månad och tid på dygnet, år ${year}. Mörkare färg visar högre genomsnittligt elbehov.`}
 					/>
 				</div>
 			</div>
 
-			<!-- Project Background Card -->
-			<HighlightCard
-				title="Om detta verktyg"
-				variant="primary"
-				linkHref="/about"
-				linkText="Läs mer"
-			>
-				{#snippet children()}
-					<p>
-						Detta verktyg visualiserar framtidsprognoser för Sveriges elbehov baserat på
-						olika scenarier. Prognoserna bygger på historisk data och olika antaganden om
-						elektrifiering, ekonomisk tillväxt och teknologisk utveckling.
-					</p>
-				{/snippet}
-			</HighlightCard>
-
-			<!-- Current State / Time Evolution Card -->
-			<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
-					{data.content.currentState?.metadata?.title || 'Hur utvecklas elbehovet över tid?'}
+			<!-- Flexibility Section -->
+			<div class="pt-12 mt-12">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+					Flexibilitet i behovet
 				</h2>
-				{#if data.content.currentState?.metadata?.description}
-					<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
-						{data.content.currentState.metadata.description}
-					</p>
-				{/if}
-
-				<div class="space-y-8">
-					<!-- AreaChart -->
-					<div class="space-y-4 pb-6">
-						<div class="h-[380px]">
-							<AreaChart
-								geography={geography}
-								year={year}
-								aggregationInit="sum"
-								class="h-full"
-							/>
-						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
-							<strong>Figur 1:</strong> Årligt elbehov för Sverige 2025–2050. Kurvan visar en
-							tydlig uppåtgående trend med en acceleration efter 2030.
-						</p>
-					</div>
-
-					<!-- TimeLine -->
-					<div class="space-y-4 pb-6">
-						<div class="h-[280px]">
-							<TimeLine
-								geography={geography}
-								year={year}
-								segment="total"
-								resolution="1d"
-								aggregation="sum"
-								class="h-full"
-							/>
-						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
-							<strong>Figur 2:</strong> Dagligt mönster för ett typiskt år visar variationer i
-							elbehov över dygnet och mellan säsonger.
-						</p>
-					</div>
-
-					<!-- Insight -->
-					<InsightBox title="Nyckelinsikt: Elektrifiering driver tillväxten">
-						{#snippet children()}
-							<p>
-								Den största ökningen av elbehov kommer från <strong
-									>elektrifiering av transporter</strong
-								>
-								(personbilar och tung trafik) samt
-								<strong>industriell omställning</strong> mot fossilfria processer. Detta sker främst
-								efter 2030.
-							</p>
-						{/snippet}
-					</InsightBox>
-				</div>
+				<p class="text-base text-gray-600 dark:text-gray-400 mb-8">
+					En del av elbehovet kan flyttas i tid utan att påverka slutanvändaren. Laddning av
+					elbilar, uppvärmning med värmepumpar och vissa industriprocesser kan schemaläggas till
+					timmar med lägre efterfrågan. Denna flexibilitet minskar belastningen under topptimmar
+					och gör det möjligt att bättre utnyttja förnybara energikällor när de producerar som mest.
+				</p>
 			</div>
 
-			<!-- Sectoral Drivers Card -->
-			<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
-					Vad driver förändringen?
-				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
-					Olika sektorer bidrar olika mycket till den ökade elefterfrågan.
-				</p>
-
-				<div class="space-y-6">
-					<!-- Text content -->
-					<div class="space-y-3">
-						<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-							Elektrifieringen av Sverige sker i olika takt inom olika sektorer. <strong
-								>Bostäder och service</strong
+			<!-- Insight -->
+			<div class="pt-12 mt-12">
+				<InsightBox title="Nyckelinsikt: Elektrifiering driver tillväxten">
+					{#snippet children()}
+						<p>
+							Den största ökningen av elbehov kommer från <strong
+								>elektrifiering av transporter</strong
 							>
-							utgör basen för elförbrukningen, men det är
-							<strong>transport</strong> och <strong>industri</strong> som driver de största förändringarna
-							framåt.
+							(personbilar och tung trafik) samt
+							<strong>industriell omställning</strong> mot fossilfria processer. Detta sker främst
+							efter 2030.
 						</p>
-						<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-							Transport elektrifieras snabbast, med elbilar som blir dominant efter 2035. Industrin
-							omställer gradvis till elektrifierade processer, särskilt stålproduktion och
-							petrokemi.
-						</p>
-					</div>
+					{/snippet}
+				</InsightBox>
+			</div>
 
-					<!-- SegmentBars Chart -->
-					<div class="space-y-4 pb-6">
-						<div class="h-[380px]">
-							<SegmentBars
-								geography={geography}
-								year={year}
-								class="h-full"
-							/>
-						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
-							<strong>Figur 3:</strong> Sektorsfördelning av elbehov år {year}.
-						</p>
-					</div>
-
-					<!-- Insight -->
-					<InsightBox variant="info" title="Sektorsfördelning 2050">
-						{#snippet children()}
-							<ul class="space-y-1">
-								<li><strong>Bostäder & Service:</strong> 40% av total energi</li>
-								<li><strong>Transport:</strong> 30% (upp från 2% idag)</li>
-								<li><strong>Industri:</strong> 25% (inkl. ny fossilfri produktion)</li>
-								<li><strong>Övrigt:</strong> 5%</li>
-							</ul>
-						{/snippet}
-					</InsightBox>
 				</div>
-			</div>
-
-			<!-- Flexibility & Power Card -->
-			<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
-					När behövs elen?
-				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
-					Effektbehov varierar kraftigt över dygnet och året, vilket kräver flexibilitet i
-					elsystemet.
-				</p>
-
-				<div class="space-y-8">
-					<!-- Histogram -->
-					<div class="space-y-4 pb-6">
-						<div class="h-[330px]">
-							<Histogram
-								geography={geography}
-								year={year}
-								segment="total"
-								class="h-full"
-							/>
-						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
-							<strong>Figur 4:</strong> Fördelning av timeffekt under året. Visar hur ofta olika
-							effektnivåer förekommer.
-						</p>
-					</div>
-
-					<!-- Insight -->
-					<InsightBox variant="warning" title="Flexibilitetsbehov växer">
-						{#snippet children()}
-							<p>
-								Skillnaden mellan lågast och högst effekt ökar från dagens 25 GW till över 40 GW
-								år 2050. Detta kräver:<br />
-							</p>
-							<ul class="mt-2 space-y-1">
-								<li>• Flexibel produktion (vattenkraft, batterier)</li>
-								<li>• Efterfrågestyrning (smart laddning av elbilar)</li>
-								<li>• Förstärkt överföringskapacitet</li>
-							</ul>
-						{/snippet}
-					</InsightBox>
-				</div>
-			</div>
-
-			<!-- Key Insights / Conclusions Card -->
-			<div class="bg-white dark:bg-gray-800 rounded shadow-sm p-6 sm:p-8">
-
-				<div class="space-y-6">
-					<InsightBox title="Sammanfattning: Fyra nyckelinsikter">
-						{#snippet children()}
-							<ol class="space-y-3">
-								<li>
-									<strong>1. Kraftig ökning:</strong> Elbehov ökar med {Math.round(
-										growthRate
-									)}% till 2050, från {formatEnergy(totalEnergy2025)} till {formatEnergy(
-										totalEnergy2050
-									)}.
-								</li>
-								<li>
-									<strong>2. Elektrifiering driver:</strong> Transport och industri står för majoriteten
-									av ökningen.
-								</li>
-								<li>
-									<strong>3. Regional koncentration:</strong> Storstäder och industriregioner växer
-									snabbast.
-								</li>
-								<li>
-									<strong>4. Flexibilitet krävs:</strong> Effektsvängningar ökar från 25 GW till
-									över 40 GW.
-								</li>
-							</ol>
-						{/snippet}
-					</InsightBox>
-
-					<div class="space-y-4">
-						<div>
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-								Implikationer för elnätet
-							</h3>
-							<p class="text-gray-700 dark:text-gray-300">
-								Denna utveckling innebär stora investeringsbehov i både produktionskapacitet och
-								överföringsnät. Särskilt viktigt är att bygga ut flexibla resurser som kan hantera
-								de stora variationerna i effektbehov.
-							</p>
-						</div>
-
-						<div>
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-								Nästa steg
-							</h3>
-							<p class="text-gray-700 dark:text-gray-300 mb-4">
-								Utforska olika scenarier i verktyget för att se hur olika antaganden påverkar
-								resultaten. Jämför scenarier för att förstå osäkerhetsspannet.
-							</p>
-
-							<div class="flex gap-4">
-								<a
-									href="/charts"
-									class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-								>
-									Utforska scenarier
-								</a>
-								<a
-									href="/about"
-									class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-primary-600 dark:hover:border-primary-400 rounded-lg font-medium transition-colors"
-								>
-									Läs mer om metoden
-								</a>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			</div>
 		</main>
 
 		<!-- Right Column: Fixed Background Map (2/5 width) -->
@@ -438,6 +324,7 @@
 			<Map
 				geojsonData={data.geojson}
 				year={year}
+				onYearChange={(newYear: number) => year = newYear}
 				bind:geography
 				yearData={data.geoData}
 				parameterData={data.parameters}
