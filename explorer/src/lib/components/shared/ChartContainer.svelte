@@ -29,7 +29,8 @@
 		metadata,
 		headerControls,
 		children,
-		class: className = ''
+		class: className = '',
+		contentClass = ''
 	}: {
 		title?: string;
 		description?: string;
@@ -41,6 +42,7 @@
 		headerControls?: Snippet;
 		children?: Snippet;
 		class?: string;
+		contentClass?: string;
 	} = $props();
 
 	let containerRef = $state<HTMLDivElement | null>(null);
@@ -164,7 +166,7 @@
 					</h3>
 				{/if}
 				{#if description}
-					<p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+					<p class="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-prose">
 						{description}
 					</p>
 				{/if}
@@ -229,13 +231,15 @@
 	<!-- Chart content with responsive sizing -->
 	<div
 		bind:this={chartContentRef}
-		class="chart-content w-full {aspectRatio !== 'auto'
-			? aspectRatioClasses[aspectRatio]
-			: sizeVariantClasses[sizeVariant]}"
+		class="chart-content {contentClass}"
 	>
-		{#if children}
-			{@render children()}
-		{/if}
+		<div class="{aspectRatio !== 'auto'
+			? aspectRatioClasses[aspectRatio]
+			: sizeVariantClasses[sizeVariant]}">
+			{#if children}
+				{@render children()}
+			{/if}
+		</div>
 	</div>
 </div>
 

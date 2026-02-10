@@ -2,6 +2,22 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Text selection highlight color - washed out yellow */
+::selection {
+    background-color: rgba(249, 202, 45, 0.35);
+    color: inherit;
+}
+
+::-moz-selection {
+    background-color: rgba(249, 202, 45, 0.35);
+    color: inherit;
+}
+
+/* ThemeSwitch sun icon color - targets the sun icon (second icon in the grid) */
+.grid.grid-cols-1.grid-rows-1 svg:last-child {
+    color: #f9ca2d !important;
+}
+
 /* This is a fix to the ThemeSwitch component*/
 input[type="checkbox"].peer {
     appearance: none; /* Ensure appearance is reset */

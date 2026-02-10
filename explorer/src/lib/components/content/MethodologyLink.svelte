@@ -7,7 +7,6 @@
 	 *
 	 * @component
 	 */
-	import { Accordion } from 'svelte-ux';
 	import { ChevronDown } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
@@ -25,26 +24,24 @@
 </script>
 
 <div class="methodology-link {className}">
-	<Accordion bind:open={isOpen}>
-		<button
-			class="methodology-trigger"
-			onclick={() => (isOpen = !isOpen)}
-			aria-expanded={isOpen}
-		>
-			<span class="methodology-title">{title}</span>
-			<ChevronDown
-				size={16}
-				class="methodology-icon"
-				style="transform: rotate({isOpen ? 180 : 0}deg)"
-			/>
-		</button>
+	<button
+		class="methodology-trigger"
+		onclick={() => (isOpen = !isOpen)}
+		aria-expanded={isOpen}
+	>
+		<span class="methodology-title">{title}</span>
+		<ChevronDown
+			size={16}
+			class="methodology-icon"
+			style="transform: rotate({isOpen ? 180 : 0}deg)"
+		/>
+	</button>
 
-		{#if isOpen}
-			<div class="methodology-content">
-				{@render children()}
-			</div>
-		{/if}
-	</Accordion>
+	{#if isOpen}
+		<div class="methodology-content">
+			{@render children()}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -74,7 +71,17 @@
 
 	.methodology-content :global(ul),
 	.methodology-content :global(ol) {
-		@apply mb-3 space-y-1 pl-5;
+		@apply mb-3 pl-5;
+	}
+
+	.methodology-content :global(ul li),
+	.methodology-content :global(ol li) {
+		@apply mt-1;
+	}
+
+	.methodology-content :global(ul li:first-child),
+	.methodology-content :global(ol li:first-child) {
+		@apply mt-0;
 	}
 
 	.methodology-content :global(code) {

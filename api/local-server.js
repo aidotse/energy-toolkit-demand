@@ -33,6 +33,44 @@ import fs from 'fs';
 import { parsePeriod, formatPeriod } from './utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Simple LRU cache for query results (no TTL - data is static)
+ * Cache is cleared on server restart. Max 500 entries with LRU eviction.
+ * @type {Map<string, any>}
+ */
+const queryCache = new Map();
+const QUERY_CACHE_MAX = 500;
+
+/**
+ * Get cached query result
+ * @param {string} key - Cache key
+ * @returns {any|null} Cached data or null
+ */
+function getCachedQuery(key) {
+  const data = queryCache.get(key);
+  if (data !== undefined) {
+    // Move to end (most recently used) by re-inserting
+    queryCache.delete(key);
+    queryCache.set(key, data);
+    return data;
+  }
+  return null;
+}
+
+/**
+ * Set query result in cache
+ * @param {string} key - Cache key
+ * @param {any} data - Data to cache
+ */
+function setCachedQuery(key, data) {
+  // LRU eviction: if at max capacity, delete oldest (first) entry
+  if (queryCache.size >= QUERY_CACHE_MAX) {
+    const oldestKey = queryCache.keys().next().value;
+    queryCache.delete(oldestKey);
+  }
+  queryCache.set(key, data);
+}
 const api = new OpenAPIBackend({ definition: './openapi.yaml' });
 
 /**
@@ -394,6 +432,22 @@ api.register('getDemand', async (c, req, res) => {
       }
     }
 
+    // Build cache key from all query parameters
+    const cacheKey = JSON.stringify({
+      baseScenario, start, end, resolution, aggregation,
+      geoFilter, segFilter, parameterValues, fmt
+    });
+
+    // Check cache first
+    const cachedResult = getCachedQuery(cacheKey);
+    if (cachedResult) {
+      console.log('📊 Cache hit for demand query');
+      if (fmt === 'csv') {
+        return res.type('text/csv').send(cachedResult);
+      }
+      return res.json(cachedResult);
+    }
+
     console.log('📊 Demand query:', {
       baseScenario,
       start,
@@ -507,7 +561,7 @@ api.register('getDemand', async (c, req, res) => {
       ))
     );
 
-    // Send response
+    // Send response and cache result
     if (fmt === 'csv') {
       const header = 'period,geography,segment,scenario_id,value';
       const lines = rows.map(r => [
@@ -517,8 +571,11 @@ api.register('getDemand', async (c, req, res) => {
         r.scenario_id,
         r.value
       ].join(','));
-      res.type('text/csv').send([header, ...lines].join('\n'));
+      const csvResult = [header, ...lines].join('\n');
+      setCachedQuery(cacheKey, csvResult);
+      res.type('text/csv').send(csvResult);
     } else {
+      setCachedQuery(cacheKey, rows);
       res.json(rows);
     }
   } catch (err) {
@@ -537,6 +594,147 @@ api.register('validationFail', (c, req, res) =>
     .json({ error: 'Bad request', details: c.validation.errors })
 );
 
+/**
+ * Pre-warm cache with common queries for faster initial page loads
+ */
+async function warmupCache() {
+  const baseScenarios = strategy2Config?.baseScenarios?.map(s => s.id) || ['beslutad-policy'];
+  const years = Array.from({ length: 26 }, (_, i) => 2025 + i); // 2025-2050
+
+  console.log('🔥 Warming up cache...');
+  let cached = 0;
+
+  for (const baseScenario of baseScenarios) {
+    // 1. National yearly totals (most common query)
+    try {
+      const nationalKey = JSON.stringify({
+        baseScenario, start: '2025-01-01', end: '2051-01-01',
+        resolution: '1Y', aggregation: 'sum',
+        geoFilter: 'total', segFilter: 'total', parameterValues: {}, fmt: 'json'
+      });
+
+      if (!getCachedQuery(nationalKey)) {
+        const segments = getSegments();
+        const sql = buildStrategy2Query({
+          baseScenario, segments, geoFilter: 'total', segFilter: 'total',
+          start: '2025-01-01', end: '2051-01-01', resolution: '1Y', aggregation: 'sum',
+          parameterValues: {}
+        });
+        const rows = await new Promise((resolve, reject) =>
+          conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
+        );
+        const cleaned = rows.map(r =>
+          Object.fromEntries(Object.entries(r).map(([k, v]) =>
+            typeof v === 'bigint' ? [k, Number(v)] : [k, v]
+          ))
+        );
+        setCachedQuery(nationalKey, cleaned);
+        cached++;
+      }
+    } catch (e) {
+      console.warn(`  Warning: Could not warm national totals for ${baseScenario}`);
+    }
+
+    // 2. Geographic yearly data (for map)
+    for (const year of years) {
+      try {
+        const geoKey = JSON.stringify({
+          baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
+          resolution: '1Y', aggregation: 'sum',
+          geoFilter: 'all', segFilter: 'total', parameterValues: {}, fmt: 'json'
+        });
+
+        if (!getCachedQuery(geoKey)) {
+          const segments = getSegments();
+          const sql = buildStrategy2Query({
+            baseScenario, segments, geoFilter: 'all', segFilter: 'total',
+            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
+            parameterValues: {}
+          });
+          const rows = await new Promise((resolve, reject) =>
+            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
+          );
+          const cleaned = rows.map(r =>
+            Object.fromEntries(Object.entries(r).map(([k, v]) =>
+              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
+            ))
+          );
+          setCachedQuery(geoKey, cleaned);
+          cached++;
+        }
+      } catch (e) {
+        // Skip failed queries silently
+      }
+    }
+
+    // 3. Segment yearly data (for pie chart)
+    for (const year of years) {
+      try {
+        const segKey = JSON.stringify({
+          baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
+          resolution: '1Y', aggregation: 'sum',
+          geoFilter: 'total', segFilter: 'all', parameterValues: {}, fmt: 'json'
+        });
+
+        if (!getCachedQuery(segKey)) {
+          const segments = getSegments();
+          const sql = buildStrategy2Query({
+            baseScenario, segments, geoFilter: 'total', segFilter: 'all',
+            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
+            parameterValues: {}
+          });
+          const rows = await new Promise((resolve, reject) =>
+            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
+          );
+          const cleaned = rows.map(r =>
+            Object.fromEntries(Object.entries(r).map(([k, v]) =>
+              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
+            ))
+          );
+          setCachedQuery(segKey, cleaned);
+          cached++;
+        }
+      } catch (e) {
+        // Skip failed queries silently
+      }
+    }
+
+    // 4. All geographies with all segments (for SectorPieChart & GeoSegmentChart)
+    for (const year of years) {
+      try {
+        const allAllKey = JSON.stringify({
+          baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
+          resolution: '1Y', aggregation: 'sum',
+          geoFilter: 'all', segFilter: 'all', parameterValues: {}, fmt: 'json'
+        });
+
+        if (!getCachedQuery(allAllKey)) {
+          const segments = getSegments();
+          const sql = buildStrategy2Query({
+            baseScenario, segments, geoFilter: 'all', segFilter: 'all',
+            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
+            parameterValues: {}
+          });
+          const rows = await new Promise((resolve, reject) =>
+            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
+          );
+          const cleaned = rows.map(r =>
+            Object.fromEntries(Object.entries(r).map(([k, v]) =>
+              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
+            ))
+          );
+          setCachedQuery(allAllKey, cleaned);
+          cached++;
+        }
+      } catch (e) {
+        // Skip failed queries silently
+      }
+    }
+  }
+
+  console.log(`🔥 Cache warmed: ${cached} queries pre-cached`);
+}
+
 const port = process.env.PORT || 4010;
 const server = app.listen(port, () => {
   console.log(`✅ API server running at http://localhost:${port}`);
@@ -546,6 +744,9 @@ const server = app.listen(port, () => {
   if (process.env.ALLOWED_ORIGINS) {
     console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
   }
+
+  // Warm up cache after server starts
+  warmupCache().catch(err => console.error('Cache warmup failed:', err));
 });
 
 // Graceful shutdown handler

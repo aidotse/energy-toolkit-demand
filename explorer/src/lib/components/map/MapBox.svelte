@@ -7,11 +7,9 @@
     import Popup from '$lib/components/map/Popup.svelte';
     import { formatNumber } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
-    import { fetchYearly, mergeGeoData } from '$lib/dataService';
+    import { fetchDemandData, mergeGeoData } from '$lib/dataService';
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { getSettings } from 'svelte-ux';
-
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     // Get svelte-ux theme store
     const { currentTheme } = getSettings();
@@ -22,7 +20,7 @@
         dark: 'mapbox://styles/mapbox/dark-v11' // Mapbox default dark style (you can replace with your custom dark style)
     };
 
-    let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound } = $props();
+    let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'] } = $props();
 
     // Subscribe to global scenario state - use this instead of prop when available
     const currentScenario = $derived(scenarioState.currentScenario || scenario);
@@ -61,51 +59,120 @@
 
                 if (!features.length) {
                     closePopup(); // Close the popup if no features were clicked
-                    geography = '00';
+                    geography = 'total';
                 }
             }
         };
 
-    // Fetch data when year changes from the initial prop data year
+    // Determine segment query parameter based on selection
+    const segmentParam = $derived(
+        segments.includes('total') ? 'total' : 'all'
+    );
+
+    // Track the last fetched parameters to detect changes
+    let lastFetchParams = $state<{ year: number; segment: string } | null>(null);
+
+    // Fetch data when year or segment selection changes
     $effect(() => {
-        // If we have prop data and year matches (or propDataYear not yet set), use prop data
-        if (yearDataProp && yearDataProp.length > 0 && (propDataYear === null || year === propDataYear)) {
+        // Determine if we should use prop data:
+        // - Only if segments is 'total' (prop data is total-only)
+        // - And year matches the prop data year
+        const canUsePropData = segments.includes('total') &&
+            yearDataProp && yearDataProp.length > 0 &&
+            (propDataYear === null || year === propDataYear);
+
+        if (canUsePropData) {
             fetchedYearData = []; // Clear fetched data to use prop data
+            lastFetchParams = null;
             return;
         }
 
-        // Capture current year for the fetch (to avoid stale closures)
+        // Check if we need to fetch (year or segment changed)
+        const currentParams = { year, segment: segmentParam };
+        if (lastFetchParams &&
+            lastFetchParams.year === currentParams.year &&
+            lastFetchParams.segment === currentParams.segment) {
+            return; // No change, skip fetch
+        }
+
+        // Capture current values for the fetch (to avoid stale closures)
         const fetchYear = year;
+        const fetchSegment = segmentParam;
         const scenarioId = currentScenario?.id || currentScenario?.scenario_id || 'default';
 
-        // Year has changed - fetch new data
+        // Fetch new data using cached dataService
         const queryParams = new URLSearchParams({
             'period[start]': String(fetchYear),
             'period[end]': String(fetchYear + 1),
             'period[resolution]': '1Y',
             'period[aggregation]': 'sum',
             'geography': 'all',
-            'segment': 'total',
-            'scenarioId': scenarioId,
-            'format': 'json'
+            'segment': fetchSegment,
+            'scenarioId': scenarioId
         });
 
-        fetch(`${API_BASE_URL}/demand?${queryParams.toString()}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+        fetchDemandData(queryParams)
             .then(data => {
                 fetchedYearData = data;
+                lastFetchParams = currentParams;
             })
             .catch(error => {
                 console.error('Error updating data:', error.message);
             });
     });
 
-    let mergedData = $derived(mergeGeoData(geojsonData, yearData, year));
+    // Merge geo data with segment filtering
+    let mergedData = $derived.by(() => {
+        if (!geojsonData || !geojsonData.features || !yearData) {
+            return geojsonData || { type: 'FeatureCollection', features: [] };
+        }
+
+        // If 'total' is selected, use standard mergeGeoData
+        if (segments.includes('total')) {
+            return mergeGeoData(geojsonData, yearData, year);
+        }
+
+        // For specific segments, filter data and aggregate only selected segments
+        const dataMap = new Map<string, Record<string, number>>();
+
+        yearData
+            .filter((row: any) => {
+                const dateField = row.period || row.timestamp;
+                const rowYear = row.timestamp_year || (dateField ? new Date(dateField).getFullYear() : null);
+                return rowYear === year;
+            })
+            .filter((row: any) => segments.includes(row.segment)) // Only include selected segments
+            .forEach((row: any) => {
+                if (!dataMap.has(row.geography)) {
+                    dataMap.set(row.geography, {});
+                }
+                const geoData = dataMap.get(row.geography)!;
+                geoData[row.segment] = (geoData[row.segment] || 0) + row.value;
+                geoData['total'] = (geoData['total'] || 0) + row.value; // Sum selected segments into total
+            });
+
+        const updatedFeatures = geojsonData.features.map((feature: any) => {
+            const geoID = feature.properties?.geo_id;
+            const newFeature = { ...feature, properties: { ...feature.properties } };
+
+            if (geoID) {
+                newFeature.id = geoID;
+
+                if (dataMap.has(geoID)) {
+                    newFeature.properties = {
+                        ...newFeature.properties,
+                        ...dataMap.get(geoID),
+                        geography: geoID,
+                        year: year,
+                    };
+                }
+            }
+
+            return newFeature;
+        });
+
+        return { ...geojsonData, features: updatedFeatures };
+    });
 
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
@@ -125,7 +192,7 @@
                 sticky, 
                 onClose: () => {
                     popup.remove();
-                    geography = '00';
+                    geography = 'total';
                     stickyPopup = false;
                 },
             },
@@ -192,11 +259,10 @@
                             'interpolate',
                             ['linear'],
                             ['get', 'total'],
-                            lower_bound, '#0000FF',
-                            lower_bound + (upper_bound - lower_bound) * 0.025, '#00FF7F',
-                            lower_bound + (upper_bound - lower_bound) * 0.25, '#FFFF00',
-                            lower_bound + (upper_bound - lower_bound) * 0.75, '#FFA500',
-                            upper_bound, '#df4217',
+                            lower_bound, '#61bbd9',
+                            lower_bound + (upper_bound - lower_bound) * 0.33, '#007399',
+                            lower_bound + (upper_bound - lower_bound) * 0.66, '#002a66',
+                            upper_bound, '#660042',
                         ],
                         'fill-opacity': 0.7,
                     },
@@ -320,11 +386,10 @@
                                 'interpolate',
                                 ['linear'],
                                 ['get', 'total'],
-                                lower_bound, '#0000FF',
-                                lower_bound + (upper_bound - lower_bound) * 0.025, '#00FF7F',
-                                lower_bound + (upper_bound - lower_bound) * 0.25, '#FFFF00',
-                                lower_bound + (upper_bound - lower_bound) * 0.75, '#FFA500',
-                                upper_bound, '#df4217',
+                                lower_bound, '#61bbd9',
+                                lower_bound + (upper_bound - lower_bound) * 0.33, '#007399',
+                                lower_bound + (upper_bound - lower_bound) * 0.66, '#002a66',
+                                upper_bound, '#660042',
                             ],
                             'fill-opacity': 0.7,
                         },
@@ -412,7 +477,7 @@
             [24.2, 69.1]  // Northeast coordinates [lng, lat]
         ];
 
-        if (geography === '00') {
+        if (geography === 'total') {
             // Reset to Sweden view instead of fixed center/zoom
             map.fitBounds(swedenBounds, {
                 padding: { top: 20, bottom: 20, left: 20, right: 20 },

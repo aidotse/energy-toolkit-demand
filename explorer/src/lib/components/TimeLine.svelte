@@ -36,9 +36,11 @@
 		year,
 		scenarios: scenariosProp,
 		comparisonMode = false,
+		exportable = true,
+		description = '',
 		headerControls,
 		class: className = ''
-	}: TimeSeriesChartProps & { segment?: string; headerControls?: Snippet; class?: string } = $props();
+	}: TimeSeriesChartProps & { segment?: string; exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
 
 	// Separate state for fetched data
 	let dayData = $state<any[]>([]);
@@ -216,10 +218,12 @@
 
 <ChartContainer
 	title="Tidslinje"
+	{description}
 	sizeVariant="standard"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
+	{exportable}
 	{headerControls}
 	class={className}
 >

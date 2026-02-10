@@ -50,7 +50,17 @@
 
 	.content-block :global(ul),
 	.content-block :global(ol) {
-		@apply mb-4 space-y-2;
+		@apply mb-4;
+	}
+
+	.content-block :global(ul li),
+	.content-block :global(ol li) {
+		@apply mt-2;
+	}
+
+	.content-block :global(ul li:first-child),
+	.content-block :global(ol li:first-child) {
+		@apply mt-0;
 	}
 
 	.content-block :global(li) {

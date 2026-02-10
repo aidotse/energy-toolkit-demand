@@ -72,7 +72,7 @@
 		max={sortedValues.length - 1}
 		value={sliderPosition}
 		oninput={handleInput}
-		class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
+		class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer parameter-slider"
 	/>
 
 	{#if !compact}
@@ -80,8 +80,8 @@
 			{#each sortedValues as val}
 				<span
 					class:font-medium={val.index === value}
-					class:text-primary-600={val.index === value}
-					class:dark:text-primary-400={val.index === value}
+					class:text-chart-700={val.index === value}
+					class:dark:text-chart-300={val.index === value}
 				>
 					{val.label}
 				</span>
@@ -89,3 +89,32 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.parameter-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		background-color: #1f2937;
+		border-radius: 50%;
+		cursor: pointer;
+	}
+
+	:global(.dark) .parameter-slider::-webkit-slider-thumb {
+		background-color: #e5e7eb;
+	}
+
+	.parameter-slider::-moz-range-thumb {
+		width: 16px;
+		height: 16px;
+		background-color: #1f2937;
+		border-radius: 50%;
+		border: none;
+		cursor: pointer;
+	}
+
+	:global(.dark) .parameter-slider::-moz-range-thumb {
+		background-color: #e5e7eb;
+	}
+</style>

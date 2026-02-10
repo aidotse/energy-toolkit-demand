@@ -6,6 +6,45 @@
  */
 
 import { formatNumber } from '$lib/utilities';
+
+/**
+ * Segment display name mapping (API name → Swedish display name)
+ */
+export const SEGMENT_LABELS: Record<string, string> = {
+	'industry': 'Industri',
+	'housing': 'Bostäder',
+	'services': 'Service',
+	'transport': 'Transport',
+	'datacenters': 'Datacenter',
+} as const;
+
+/**
+ * Segment color mapping for pie/sector charts
+ * Colors assigned from darkest to lightest based on segment importance
+ * Uses API segment names (lowercase)
+ */
+export const SEGMENT_COLORS: Record<string, { bg: string; text: string }> = {
+	'industry': { bg: '#004d66', text: 'white' },
+	'housing': { bg: '#007399', text: 'white' },
+	'services': { bg: '#46a0c4', text: 'white' },
+	'transport': { bg: '#61bbd9', text: 'black' },
+	'datacenters': { bg: '#90d2e8', text: 'black' },
+} as const;
+
+/**
+ * Get display label for a segment
+ */
+export function getSegmentLabel(segment: string): string {
+	return SEGMENT_LABELS[segment] || segment;
+}
+
+/**
+ * Get color configuration for a segment
+ * Returns default gray if segment not found
+ */
+export function getSegmentColor(segment: string): { bg: string; text: string } {
+	return SEGMENT_COLORS[segment] || { bg: '#9ca3af', text: 'white' };
+}
 import { getEnergyPrefix, getPowerPrefix } from '$lib/stores/units.svelte';
 
 export interface StandardAxisConfig {
@@ -13,15 +52,15 @@ export interface StandardAxisConfig {
 		format?: (value: any) => string;
 		ticks?: any;
 		labels?: boolean;
-		line?: boolean;
-		tweened?: boolean;
+		rule?: boolean | { class?: string };
+		tweened?: boolean | { duration: number };
 	};
 	yAxis?: {
 		format?: (value: any) => string;
 		ticks?: any;
 		labels?: boolean;
-		line?: boolean;
-		tweened?: boolean;
+		rule?: boolean | { class?: string };
+		tweened?: boolean | { duration: number };
 	};
 	grid?: {
 		x?: boolean;
@@ -38,8 +77,8 @@ export function getTimeSeriesAxisConfig(
 ): StandardAxisConfig {
 	if (!displayAxes) {
 		return {
-			xAxis: { ticks: [], labels: false, line: false },
-			yAxis: { ticks: [], labels: false, line: false },
+			xAxis: { ticks: [], labels: false, rule: false },
+			yAxis: { ticks: [], labels: false, rule: false },
 			grid: { x: false, y: false }
 		};
 	}
@@ -47,15 +86,17 @@ export function getTimeSeriesAxisConfig(
 	return {
 		xAxis: {
 			format: (value) => String(value),
-			tweened: true
+			tweened: false,
+			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},
 		yAxis: {
 			format: (num) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W'),
-			tweened: true
+			tweened: false,
+			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},
 		grid: {
 			x: false,
-			y: true
+			y: false
 		}
 	};
 }
@@ -66,19 +107,19 @@ export function getTimeSeriesAxisConfig(
 export function getTimelineAxisConfig(displayAxes: boolean = true): StandardAxisConfig {
 	if (!displayAxes) {
 		return {
-			xAxis: { ticks: [], labels: false, line: false },
-			yAxis: { ticks: [], labels: false, line: false },
+			xAxis: { ticks: [], labels: false, rule: false },
+			yAxis: { ticks: [], labels: false, rule: false },
 			grid: { x: false, y: false }
 		};
 	}
 
 	return {
 		xAxis: {
-			tweened: true
+			tweened: false
 		},
 		yAxis: {
 			format: 'metric',
-			tweened: true
+			tweened: false
 		},
 		grid: {
 			x: false,
@@ -99,8 +140,8 @@ export function getDistributionAxisConfig(
 ): StandardAxisConfig {
 	if (!displayAxes) {
 		return {
-			xAxis: { ticks: [], labels: false, line: false },
-			yAxis: { ticks: [], labels: false, line: false },
+			xAxis: { ticks: [], labels: false, rule: false },
+			yAxis: { ticks: [], labels: false, rule: false },
 			grid: { x: false, y: false }
 		};
 	}
@@ -135,11 +176,11 @@ export function getDistributionAxisConfig(
 		xAxis: {
 			format: (value) => formatNumber(value, getPowerPrefix(), 'W'),
 			ticks: xTicks,
-			tweened: true
+			tweened: false
 		},
 		yAxis: {
 			format: (value) => `${Math.round(value)}h`,
-			tweened: true
+			tweened: false
 		},
 		grid: {
 			x: false,
@@ -154,19 +195,19 @@ export function getDistributionAxisConfig(
 export function getGeographicAxisConfig(displayAxes: boolean = true): StandardAxisConfig {
 	if (!displayAxes) {
 		return {
-			xAxis: { ticks: [], labels: false, line: false },
-			yAxis: { ticks: [], labels: false, line: false },
+			xAxis: { ticks: [], labels: false, rule: false },
+			yAxis: { ticks: [], labels: false, rule: false },
 			grid: { x: false, y: false }
 		};
 	}
 
 	return {
 		xAxis: {
-			tweened: true
+			tweened: false
 		},
 		yAxis: {
 			format: (value) => formatNumber(value, getEnergyPrefix(), 'Wh'),
-			tweened: true
+			tweened: false
 		},
 		grid: {
 			x: false,
@@ -185,8 +226,8 @@ export function getBarChartProps(config?: {
 	const { displayAxes = true, resolution = '1d' } = config || {};
 
 	return {
-		xAxis: displayAxes ? { tweened: true } : { ticks: [], labels: false, line: false },
-		yAxis: displayAxes ? { format: 'metric', tweened: true } : { ticks: [], labels: false, line: false },
-		bars: { tweened: true, radius: 2, stroke: 'none' }
+		xAxis: displayAxes ? { tweened: false } : { ticks: [], labels: false, rule: false },
+		yAxis: displayAxes ? { format: 'metric', tweened: false } : { ticks: [], labels: false, rule: false },
+		bars: { tweened: false, radius: 2, stroke: 'none' }
 	};
 }

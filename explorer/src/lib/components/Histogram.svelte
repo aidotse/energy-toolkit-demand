@@ -36,9 +36,11 @@
 		year,
 		scenarios: scenariosProp,
 		comparisonMode = false,
+		exportable = true,
+		description = '',
 		headerControls,
 		class: className = ''
-	}: TimeSeriesChartProps & { segment?: string; headerControls?: Snippet; class?: string } = $props();
+	}: TimeSeriesChartProps & { segment?: string; exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -282,10 +284,12 @@
 
 <ChartContainer
 	title="Histogram över elbehovet"
+	{description}
 	sizeVariant="standard"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
+	{exportable}
 	{headerControls}
 	class={className}
 >

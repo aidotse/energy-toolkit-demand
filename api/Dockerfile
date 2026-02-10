@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+# Note: Using npm install instead of npm ci because api is part of a monorepo
+# and doesn't have its own package-lock.json
+RUN npm install --omit=dev
 
 # Copy application source files
 COPY local-server.js utils.js config.js ./
