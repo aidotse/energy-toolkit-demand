@@ -53,36 +53,42 @@ echo ""
 
 # 2. Create S3 Bucket for Explorer
 echo "2. Creating S3 bucket: ${S3_BUCKET}"
-aws s3 mb s3://${S3_BUCKET} --region ${AWS_REGION} 2>/dev/null \
-    && echo "   ✅ Created" || echo "   ℹ️  Already exists"
-
-# Configure bucket for static website
-echo "   Configuring static website hosting..."
-aws s3 website s3://${S3_BUCKET} \
-    --index-document index.html \
-    --error-document index.html
-
-# Set bucket policy for public read (CloudFront will handle access)
-echo "   Setting bucket policy..."
-cat > /tmp/bucket-policy.json << EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "PublicReadGetObject",
-            "Effect": "Allow",
-            "Principal": "*",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::${S3_BUCKET}/*"
-        }
-    ]
-}
-EOF
-aws s3api put-bucket-policy --bucket ${S3_BUCKET} --policy file:///tmp/bucket-policy.json
+if aws s3api head-bucket --bucket ${S3_BUCKET} 2>/dev/null; then
+    echo "   ℹ️  Already exists"
+else
+    # For eu-north-1 and other non-us-east-1 regions, must specify LocationConstraint
+    if [ "${AWS_REGION}" = "us-east-1" ]; then
+        aws s3api create-bucket --bucket ${S3_BUCKET} --region ${AWS_REGION}
+    else
+        aws s3api create-bucket --bucket ${S3_BUCKET} --region ${AWS_REGION} \
+            --create-bucket-configuration LocationConstraint=${AWS_REGION}
+    fi
+    echo "   ✅ Created"
+fi
+echo "   S3 bucket is private (CloudFront will access via OAC)"
 echo ""
 
-# 3. Create CloudFront Distribution
+# 3. Create CloudFront Origin Access Control and Distribution
 echo "3. Creating CloudFront distribution for Explorer..."
+
+# Create Origin Access Control (OAC) for secure S3 access
+OAC_NAME="${PROJECT_NAME}-oac-${ENVIRONMENT}"
+EXISTING_OAC=$(aws cloudfront list-origin-access-controls --query "OriginAccessControlList.Items[?Name=='${OAC_NAME}'].Id" --output text 2>/dev/null || true)
+
+if [ -n "$EXISTING_OAC" ] && [ "$EXISTING_OAC" != "None" ]; then
+    echo "   ℹ️  OAC already exists: ${EXISTING_OAC}"
+    OAC_ID=$EXISTING_OAC
+else
+    OAC_ID=$(aws cloudfront create-origin-access-control \
+        --origin-access-control-config "{
+            \"Name\": \"${OAC_NAME}\",
+            \"SigningProtocol\": \"sigv4\",
+            \"SigningBehavior\": \"always\",
+            \"OriginAccessControlOriginType\": \"s3\"
+        }" \
+        --query 'OriginAccessControl.Id' --output text)
+    echo "   ✅ Created OAC: ${OAC_ID}"
+fi
 
 # Check if distribution already exists
 EXISTING_DIST=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com'].Id" --output text 2>/dev/null || true)
@@ -103,6 +109,7 @@ else
             {
                 "Id": "S3-${S3_BUCKET}",
                 "DomainName": "${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com",
+                "OriginAccessControlId": "${OAC_ID}",
                 "S3OriginConfig": {
                     "OriginAccessIdentity": ""
                 }
@@ -120,13 +127,7 @@ else
                 "Items": ["GET", "HEAD"]
             }
         },
-        "ForwardedValues": {
-            "QueryString": false,
-            "Cookies": { "Forward": "none" }
-        },
-        "MinTTL": 0,
-        "DefaultTTL": 86400,
-        "MaxTTL": 31536000,
+        "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
         "Compress": true
     },
     "CustomErrorResponses": {
@@ -146,11 +147,37 @@ EOF
     CLOUDFRONT_ID=$(aws cloudfront create-distribution \
         --distribution-config file:///tmp/cloudfront-config.json \
         --query 'Distribution.Id' --output text)
-    echo "   ✅ Created: ${CLOUDFRONT_ID}"
+    echo "   ✅ Created distribution: ${CLOUDFRONT_ID}"
 fi
 
 CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution --id ${CLOUDFRONT_ID} --query 'Distribution.DomainName' --output text)
 echo "   CloudFront Domain: ${CLOUDFRONT_DOMAIN}"
+
+# Add bucket policy to allow CloudFront OAC access
+echo "   Setting S3 bucket policy for CloudFront access..."
+cat > /tmp/bucket-policy.json << EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowCloudFrontServicePrincipal",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "cloudfront.amazonaws.com"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::${S3_BUCKET}/*",
+            "Condition": {
+                "StringEquals": {
+                    "AWS:SourceArn": "arn:aws:cloudfront::${AWS_ACCOUNT_ID}:distribution/${CLOUDFRONT_ID}"
+                }
+            }
+        }
+    ]
+}
+EOF
+aws s3api put-bucket-policy --bucket ${S3_BUCKET} --policy file:///tmp/bucket-policy.json
+echo "   ✅ Bucket policy configured"
 echo ""
 
 # 4. Create App Runner Service
