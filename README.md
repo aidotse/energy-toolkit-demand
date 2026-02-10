@@ -107,7 +107,6 @@ Visit http://localhost:5173/charts to see the chart library with all visualizati
 ├── config.yaml                   # Main configuration file
 ├── CLAUDE.md                     # Detailed project documentation
 ├── README.md                     # This file
-├── PLANS.md                      # Roadmap and future work
 │
 ├── generator/                    # Python forecasting engine
 │   ├── generator_notebook-county.py   # Main generation script
@@ -222,7 +221,6 @@ See `config.yaml` for the full schema and examples.
 - **[API README](./api/README.md)** - API server documentation, endpoints, DuckDB queries
 - **[Explorer README](./explorer/README.md)** - Frontend application documentation, components, development guide
 - **[OpenAPI Spec](./api/openapi.yaml)** - Complete API specification
-- **[PLANS.md](./PLANS.md)** - Roadmap and future development plans
 
 ## Technology Stack
 
