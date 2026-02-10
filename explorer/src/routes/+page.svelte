@@ -227,6 +227,8 @@
 						<SectorPieChart
 							geography={geography}
 							year={year}
+							enableComparison={true}
+							comparisonYear={2025}
 							exportable={false}
 							description={`Sektorsfördelning av elbehov år ${year}.`}
 						/>
