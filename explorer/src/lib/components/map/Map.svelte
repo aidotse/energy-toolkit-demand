@@ -15,6 +15,8 @@
 		lower_bound,
 		upper_bound,
 		parameterData,
+		controlsPosition = 'left',
+		fadeLeft = false,
 		class: className = 'h-full'
 	}: {
 		geojsonData: any;
@@ -26,6 +28,8 @@
 		lower_bound: number;
 		upper_bound: number;
 		parameterData: any;
+		controlsPosition?: 'left' | 'right';
+		fadeLeft?: boolean;
 		class?: string;
 	} = $props();
 
@@ -47,14 +51,23 @@
 </script>
 
 <div class="relative w-full {className}">
-	<div class="absolute z-10 top-20 lg:top-10 left-6 flex flex-col gap-2">
-		<YearSelect {parameterData} year={localYear} {onYearChange} />
-		<SegmentSelect bind:segments />
-	</div>
+	{#if controlsPosition === 'right'}
+		<!-- All controls stacked on the right -->
+		<div class="absolute z-10 top-20 lg:top-10 right-6 flex flex-col gap-2 items-end">
+			<ScenarioSelectorPill />
+			<YearSelect {parameterData} year={localYear} {onYearChange} />
+			<SegmentSelect bind:segments />
+		</div>
+	{:else}
+		<div class="absolute z-10 top-20 lg:top-10 left-6 flex flex-col gap-2">
+			<YearSelect {parameterData} year={localYear} {onYearChange} />
+			<SegmentSelect bind:segments />
+		</div>
 
-	<div class="absolute top-20 lg:top-10 right-6 z-10">
-		<ScenarioSelectorPill />
-	</div>
+		<div class="absolute top-20 lg:top-10 right-6 z-10">
+			<ScenarioSelectorPill />
+		</div>
+	{/if}
 
 	<MapBox
 		{geojsonData}
@@ -65,6 +78,7 @@
 		{lower_bound}
 		{upper_bound}
 		{segments}
+		{fadeLeft}
 	/>
 
 	<div class="absolute z-10 bottom-6 right-6 legend-overlay">

@@ -27,11 +27,11 @@
 	} = $props();
 
 	const hoverClasses = hover ? 'hover:shadow-md hover:-translate-y-0.5' : '';
-	const paddingClasses = noPadding ? '' : 'p-6 md:p-8';
+	const paddingClasses = noPadding ? '' : 'py-6 md:py-8';
 </script>
 
 <div
-	class="bg-white dark:bg-gray-800 rounded shadow-sm border border-gray-200 dark:border-gray-700 {paddingClasses} transition-all duration-200 {hoverClasses} {className}"
+	class="border-b border-gray-200 dark:border-gray-700 last:border-b-0 {paddingClasses} transition-all duration-200 {hoverClasses} {className}"
 >
 	{#if title}
 		<div class="mb-6">

@@ -8,7 +8,7 @@
 	import type { Snippet } from 'svelte';
 
 	let {
-		maxWidth = 'max-w-7xl',
+		maxWidth = 'max-w-6xl',
 		class: className = '',
 		children
 	}: {
@@ -18,8 +18,10 @@
 	} = $props();
 </script>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<div class="min-h-screen dark:bg-gray-900" style="background-color: #ededed;">
 	<div class="{maxWidth} mx-auto px-4 sm:px-6 lg:px-8 py-12 {className}">
-		{@render children()}
+		<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-8 sm:p-10 lg:p-12">
+			{@render children()}
+		</div>
 	</div>
 </div>

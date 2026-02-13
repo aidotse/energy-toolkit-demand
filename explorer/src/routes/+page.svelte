@@ -1,10 +1,9 @@
 <script lang="ts">
 	/**
-	 * Report Page with Card Layout
+	 * Report Page with Map Background Layout
 	 *
-	 * Two-column layout inspired by main page:
-	 * - Left: Scrollable card-based content
-	 * - Right: Fixed background map
+	 * Map fills the viewport as a fixed background.
+	 * Card content floats on top, scrollable, positioned left.
 	 */
 	import { Zap, TrendingUp, Activity } from 'lucide-svelte';
 	import MetricCard from '$lib/components/report/MetricCard.svelte';
@@ -114,12 +113,28 @@
 	}
 </script>
 
-<div class="min-h-screen dark:bg-gray-900" style="background-color: #ededed;">
-	<!-- Main content container -->
-	<div class="flex flex-col lg:flex-row">
-		<!-- Left Column: Scrollable Card Content (3/5 width) -->
-		<main class="flex-1 lg:w-3/5 overflow-y-auto p-4 sm:p-6 lg:p-8">
-			<div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-3xl shadow-sm px-10 py-6 sm:px-14 sm:py-8">
+<div class="relative min-h-screen dark:bg-gray-900" style="background-color: #ededed;">
+	<!-- Map: fixed right-half background (hidden on mobile) -->
+	<div class="hidden lg:block fixed top-14 right-0 bottom-0 w-2/3 z-0">
+		<Map
+			fadeLeft={true}
+			geojsonData={data.geojson}
+			year={year}
+			onYearChange={(newYear: number) => year = newYear}
+			bind:geography
+			yearData={data.geoData}
+			parameterData={data.parameters}
+			scenario={data.scenario}
+			lower_bound={data.globals?.lower_bound || 0}
+			upper_bound={data.globals?.upper_bound || 30000000}
+			controlsPosition="right"
+		/>
+	</div>
+
+	<!-- Card: scrollable overlay, positioned left -->
+	<main class="relative z-10 pointer-events-none">
+		<div class="max-w-5xl lg:w-3/5 ml-0 lg:ml-[6%] p-4 sm:p-6 lg:py-8 pointer-events-auto">
+			<div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-lg px-8 py-6 sm:px-14 sm:py-8 xl:px-20">
 			<!-- Title Section -->
 			<div class="mb-12">
 				<!-- Partner logos - right-aligned, at top -->
@@ -316,24 +331,6 @@
 			</div>
 
 				</div>
-		</main>
-
-		<!-- Right Column: Fixed Background Map (2/5 width) -->
-		<aside
-			class="lg:w-2/5 lg:sticky lg:top-14"
-			style="height: calc(100vh - 3.5rem);"
-		>
-			<Map
-				geojsonData={data.geojson}
-				year={year}
-				onYearChange={(newYear: number) => year = newYear}
-				bind:geography
-				yearData={data.geoData}
-				parameterData={data.parameters}
-				scenario={data.scenario}
-				lower_bound={data.globals?.lower_bound || 0}
-				upper_bound={data.globals?.upper_bound || 30000000}
-			/>
-		</aside>
-	</div>
+		</div>
+	</main>
 </div>

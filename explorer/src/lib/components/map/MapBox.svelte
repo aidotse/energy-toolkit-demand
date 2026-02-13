@@ -8,6 +8,7 @@
     import { formatNumber } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
     import { fetchDemandData, mergeGeoData } from '$lib/dataService';
+    import { SWEDEN_BOUNDS, FIT_BOUNDS_OPTIONS } from '$lib/mapConfig';
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { getSettings } from 'svelte-ux';
 
@@ -20,7 +21,7 @@
         dark: 'mapbox://styles/mapbox/dark-v11' // Mapbox default dark style (you can replace with your custom dark style)
     };
 
-    let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'] } = $props();
+    let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'], fadeLeft = false } = $props();
 
     // Subscribe to global scenario state - use this instead of prop when available
     const currentScenario = $derived(scenarioState.currentScenario || scenario);
@@ -217,21 +218,12 @@
     };
 
     onMount(() => {
-        // Define Sweden's bounding box coordinates
-        const swedenBounds = [
-            [10.5, 55.2], // Southwest coordinates [lng, lat]
-            [24.2, 69.1]  // Northeast coordinates [lng, lat]
-        ];
-
         map = new mapboxgl.Map({
             container: mapContainer,
             accessToken: 'pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA',
             style: MAPBOX_STYLES[$currentTheme.dark ? 'dark' : 'light'],
-            bounds: swedenBounds,
-            fitBoundsOptions: {
-                padding: { top: 20, bottom: 20, left: 20, right: 20 },
-                maxZoom: 7 // Prevent zooming in too far when fitting bounds
-            },
+            bounds: SWEDEN_BOUNDS,
+            fitBoundsOptions: FIT_BOUNDS_OPTIONS,
             attributionControl: false // Hide Mapbox logo and info button
         });
 
@@ -472,17 +464,11 @@
     $effect(() => {
         if (!mapLoaded || !map || !mergedData) return;
 
-        const swedenBounds = [
-            [10.5, 55.2], // Southwest coordinates [lng, lat]
-            [24.2, 69.1]  // Northeast coordinates [lng, lat]
-        ];
-
         if (geography === 'total') {
             // Reset to Sweden view instead of fixed center/zoom
-            map.fitBounds(swedenBounds, {
-                padding: { top: 20, bottom: 20, left: 20, right: 20 },
-                duration: 1000,
-                maxZoom: 7
+            map.fitBounds(SWEDEN_BOUNDS, {
+                ...FIT_BOUNDS_OPTIONS,
+                duration: 1000
             });
             closePopup();
             return;
@@ -513,4 +499,8 @@
     
 </script>
 
-<div bind:this={mapContainer} class="size-full"></div>
+<div bind:this={mapContainer} class="size-full"
+  style={fadeLeft
+    ? 'mask-image: linear-gradient(to right, transparent, black 50%); -webkit-mask-image: linear-gradient(to right, transparent, black 50%);'
+    : ''}
+></div>

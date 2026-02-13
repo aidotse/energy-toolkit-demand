@@ -6,6 +6,7 @@
 	 * This is a prototype showing the new layout before migrating +page.svelte.
 	 */
 	import { Zap, TrendingUp, Activity, Database } from 'lucide-svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import ReportSection from '$lib/components/report/ReportSection.svelte';
 	import MetricCard from '$lib/components/report/MetricCard.svelte';
 	import HighlightCard from '$lib/components/report/HighlightCard.svelte';
@@ -43,21 +44,12 @@
 	}
 </script>
 
-<div class="report-page bg-gray-50 dark:bg-gray-900 min-h-screen">
-	<!-- Hero Section -->
-	<div class="hero-section bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-950 text-white py-12 md:py-16">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-			<h1 class="text-4xl md:text-5xl font-bold mb-3">
-				Sveriges framtida elbehov
-			</h1>
-			<p class="text-xl md:text-2xl text-primary-100 dark:text-primary-200">
-				Prognoser och scenarier 2025–2050
-			</p>
-		</div>
-	</div>
+<PageContainer>
+	<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">Sveriges framtida elbehov</h1>
+	<p class="text-base text-gray-600 dark:text-gray-400 mb-8">Prognoser och scenarier 2025–2050</p>
 
 	<!-- Executive Summary -->
-	<ReportSection class="bg-white dark:bg-gray-800 -mt-12 relative z-10">
+	<ReportSection>
 		<div class="mb-8 max-w-3xl">
 			<p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
 				Det råder idag en bred konsensus om att vårt elbehov kommer öka markant i framtiden.
@@ -188,7 +180,6 @@
 		id="segmental-drivers"
 		title="Vad driver förändringen?"
 		subtitle="Olika sektorer bidrar olika mycket till den ökade elefterfrågan."
-		class="bg-gray-100 dark:bg-gray-900"
 	>
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			<!-- Text content -->
@@ -294,7 +285,6 @@
 		id="flexibility"
 		title="När behövs elen?"
 		subtitle="Effektbehov varierar kraftigt över dygnet och året, vilket kräver flexibilitet i elsystemet."
-		class="bg-gray-100 dark:bg-gray-900"
 	>
 		<div class="space-y-8">
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -411,7 +401,7 @@
 			</div>
 		</div>
 	</ReportSection>
-</div>
+</PageContainer>
 
 <style>
 	/* No custom CSS needed - all styling via Tailwind utility classes */
