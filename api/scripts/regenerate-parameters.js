@@ -12,6 +12,7 @@ const projectRoot = findProjectRoot();
 const dataDir = getDataDir();
 const baseDir = path.join(dataDir, 'base');
 const parametersDir = path.join(dataDir, 'parameters');
+const aggregatedDir = path.join(dataDir, 'aggregated');
 
 // S-curve generation parameters (matches generator/library/curves.py)
 const SCURVE_CONFIG = {
@@ -190,6 +191,195 @@ async function generateParameterParquets(conn, config) {
   return totalGenerated;
 }
 
+/**
+ * Load scenario slug-to-name mapping for aggregated tables.
+ */
+function loadScenarioMapping() {
+  const mappingPath = path.join(dataDir, 'scenario-mapping.json');
+  if (fs.existsSync(mappingPath)) {
+    return JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
+  }
+  return {};
+}
+
+/**
+ * Generate geo_segment_yearly.parquet - yearly totals broken down by geography AND segment.
+ * Covers the geoFilter='all' + segFilter='all' query shape that previously had no aggregated table.
+ * Schema: scenario_id (VARCHAR), geography (VARCHAR), segment (VARCHAR), year (VARCHAR), total_value (DOUBLE)
+ */
+async function generateGeoSegmentYearly(conn) {
+  const scenarioMapping = loadScenarioMapping();
+  const scenarios = Object.keys(scenarioMapping);
+  const segments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
+
+  fs.mkdirSync(aggregatedDir, { recursive: true });
+  const outFile = path.join(aggregatedDir, 'geo_segment_yearly.parquet');
+
+  const unionParts = [];
+
+  for (const scenarioSlug of scenarios) {
+    const scenarioName = scenarioMapping[scenarioSlug];
+    for (const segment of segments) {
+      const basePath = path.join(baseDir, scenarioSlug, segment, 'data.parquet');
+      if (!fs.existsSync(basePath)) {
+        console.warn(`  SKIP ${scenarioSlug}/${segment}: base file not found`);
+        continue;
+      }
+      unionParts.push(`
+        SELECT
+          '${scenarioName}' AS scenario_id,
+          b.geography,
+          '${segment}' AS segment,
+          CAST(EXTRACT(YEAR FROM b.timestamp) AS VARCHAR) AS year,
+          SUM(b.value) AS total_value
+        FROM read_parquet('${basePath}') b
+        GROUP BY b.geography, EXTRACT(YEAR FROM b.timestamp)
+      `);
+    }
+  }
+
+  if (unionParts.length === 0) {
+    console.warn('  No data found for geo_segment_yearly');
+    return;
+  }
+
+  const sql = `
+    COPY (
+      ${unionParts.join('\n      UNION ALL\n      ')}
+    )
+    TO '${outFile}'
+    (FORMAT PARQUET, COMPRESSION ZSTD)
+  `;
+
+  await runQuery(conn, sql);
+
+  // Verify
+  const stats = await allQuery(conn,
+    `SELECT COUNT(*) as cnt, COUNT(DISTINCT scenario_id) as scenarios, COUNT(DISTINCT geography) as geos, COUNT(DISTINCT segment) as segs
+     FROM read_parquet('${outFile}')`
+  );
+  const s = stats[0];
+  console.log(`  Generated: ${s.cnt} rows (${s.scenarios} scenarios × ${s.geos} geos × ${s.segs} segments)`);
+}
+
+/**
+ * Generate param_yearly.parquet - yearly totals for every parameter combination.
+ * Pre-computes base × growth_curve × flex_curve for all (growth_index, flex_index) combos.
+ * Schema: scenario_id, geography, segment, year, growth_index, flex_index, total_value
+ *
+ * Processes each parameter combination individually to avoid expensive CROSS JOINs.
+ */
+async function generateParamYearly(conn, config) {
+  const scenarioMapping = loadScenarioMapping();
+  const scenarios = Object.keys(scenarioMapping);
+  const segments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
+  const definitions = config.parameters.definitions;
+
+  fs.mkdirSync(aggregatedDir, { recursive: true });
+  const outFile = path.join(aggregatedDir, 'param_yearly.parquet');
+
+  // Create a temporary table to accumulate results
+  await runQuery(conn, `
+    CREATE OR REPLACE TABLE param_yearly_tmp (
+      scenario_id VARCHAR,
+      geography VARCHAR,
+      segment VARCHAR,
+      year VARCHAR,
+      growth_index INTEGER,
+      flex_index INTEGER,
+      total_value DOUBLE
+    )
+  `);
+
+  let comboCount = 0;
+
+  for (const scenarioSlug of scenarios) {
+    const scenarioName = scenarioMapping[scenarioSlug];
+
+    for (const segment of segments) {
+      const basePath = path.join(baseDir, scenarioSlug, segment, 'data.parquet');
+      if (!fs.existsSync(basePath)) {
+        console.warn(`  SKIP ${scenarioSlug}/${segment}: base file not found`);
+        continue;
+      }
+
+      const growthParam = `${segment}_growth`;
+      const flexParam = `${segment}_flex`;
+      const growthDef = definitions[growthParam];
+      const flexDef = definitions[flexParam];
+
+      const maxGrowth = growthDef ? Math.max(...growthDef.values.map(v => v.index)) : 0;
+      const maxFlex = flexDef ? Math.max(...flexDef.values.map(v => v.index)) : 0;
+
+      const growthCurvesPath = path.join(projectRoot, `generator/input/scenarios/${growthParam}/curves.parquet`);
+      const flexCurvesPath = path.join(projectRoot, `generator/input/scenarios/${flexParam}/curves.parquet`);
+      const hasGrowthCurves = fs.existsSync(growthCurvesPath);
+      const hasFlexCurves = fs.existsSync(flexCurvesPath);
+
+      const combos = (maxGrowth + 1) * (maxFlex + 1);
+      console.log(`  ${scenarioSlug}/${segment}: ${combos} combos (growth 0-${maxGrowth} × flex 0-${maxFlex})`);
+
+      // Process each (growth_index, flex_index) combination individually
+      for (let gi = 0; gi <= maxGrowth; gi++) {
+        for (let fi = 0; fi <= maxFlex; fi++) {
+          let selectValue = 'b.value';
+          let fromClause = `read_parquet('${basePath}') b`;
+          const joins = [];
+
+          if (gi > 0 && hasGrowthCurves) {
+            joins.push(`LEFT JOIN (SELECT timestamp, value FROM read_parquet('${growthCurvesPath}') WHERE CAST(index AS INTEGER) = ${gi}) g ON b.timestamp = g.timestamp`);
+            selectValue = `${selectValue} * COALESCE(g.value, 1.0)`;
+          }
+
+          if (fi > 0 && hasFlexCurves) {
+            joins.push(`LEFT JOIN (SELECT timestamp, value FROM read_parquet('${flexCurvesPath}') WHERE CAST(index AS INTEGER) = ${fi}) f ON b.timestamp = f.timestamp`);
+            selectValue = `${selectValue} * COALESCE(f.value, 1.0)`;
+          }
+
+          const sql = `
+            INSERT INTO param_yearly_tmp
+            SELECT
+              '${scenarioName}' AS scenario_id,
+              b.geography,
+              '${segment}' AS segment,
+              CAST(EXTRACT(YEAR FROM b.timestamp) AS VARCHAR) AS year,
+              ${gi} AS growth_index,
+              ${fi} AS flex_index,
+              SUM(${selectValue}) AS total_value
+            FROM ${fromClause}
+            ${joins.join('\n            ')}
+            GROUP BY b.geography, EXTRACT(YEAR FROM b.timestamp)
+          `;
+
+          await runQuery(conn, sql);
+          comboCount++;
+        }
+      }
+    }
+  }
+
+  // Write to parquet
+  await runQuery(conn, `
+    COPY (SELECT * FROM param_yearly_tmp ORDER BY scenario_id, segment, geography, year, growth_index, flex_index)
+    TO '${outFile}'
+    (FORMAT PARQUET, COMPRESSION ZSTD)
+  `);
+
+  // Verify
+  const stats = await allQuery(conn,
+    `SELECT COUNT(*) as cnt, COUNT(DISTINCT scenario_id) as scenarios,
+            COUNT(DISTINCT segment) as segs, COUNT(DISTINCT geography) as geos
+     FROM read_parquet('${outFile}')`
+  );
+  const s = stats[0];
+  console.log(`  Generated: ${s.cnt} rows (${s.scenarios} scenarios × ${s.geos} geos × ${s.segs} segments, ${comboCount} combos)`);
+
+  // Cleanup
+  await runQuery(conn, 'DROP TABLE IF EXISTS param_yearly_tmp');
+
+  return comboCount;
+}
+
 async function main() {
   console.log('='.repeat(60));
   console.log('Regenerating parameter parquet files');
@@ -217,8 +407,18 @@ async function main() {
     const count = await generateParameterParquets(conn, config);
     console.log('');
 
+    // Step 3: Generate geo_segment_yearly aggregated table
+    console.log('Step 3: Generate geo_segment_yearly aggregated table');
+    await generateGeoSegmentYearly(conn);
+    console.log('');
+
+    // Step 4: Generate param_yearly aggregated table (all parameter combos)
+    console.log('Step 4: Generate param_yearly aggregated table');
+    await generateParamYearly(conn, config);
+    console.log('');
+
     console.log('='.repeat(60));
-    console.log(`Done! Generated ${count} parameter parquet files.`);
+    console.log(`Done! Generated ${count} parameter parquet files + aggregated tables.`);
     console.log('='.repeat(60));
   } finally {
     conn.close();

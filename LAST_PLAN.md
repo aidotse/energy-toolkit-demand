@@ -1,6 +1,6 @@
 # The Last Plan
 
-**Progress: 3 / 31**
+**Progress: 5 / 31**
 
 We are bringing this project over the finish line. This document is the single source of truth for all remaining work. It consolidates tasks from PLANS.md, EXPLORER_PLAN.md, CHART_LIBRARY_REDESIGN.md, DATA_ANALYSIS_TODO.md, and GENERATOR.md into one actionable checklist.
 
@@ -8,13 +8,13 @@ We are bringing this project over the finish line. This document is the single s
 
 | Category | Items | Priority | Status |
 |----------|-------|----------|--------|
-| A. Bug Fixes & Critical Issues | 2 | Highest | Pending |
+| A. Bug Fixes & Critical Issues | 2 | Highest | Done |
 | B. Explorer - Main Page (/) | 6 | High | Partial |
 | C. Explorer - New Pages | 3 | High | Pending |
 | D. Explorer - Charts Page (/charts) | 4 | Medium | Partial |
 | E. Explorer - Visual & Layout | 3 | Medium | Pending |
 | F. Explorer - Content & i18n | 3 | Medium | Partial |
-| G. API | 2 | High | Pending |
+| G. API | 2 | High | Partial |
 | H. Generator | 2 | Low | Pending |
 | I. Data Research | 3 | High | In Discovery |
 | J. Infrastructure & DevOps | 3 | Medium | Partial |
@@ -29,8 +29,8 @@ These block other work and should be addressed first.
 - [x] **A1. Map widget not updating on scenario change** ✓ Done
   Fixed by expanding all 5 growth parameters from 4 values to 7 (0%, -15%, -10%, -5%, +5%, +10%, +15%), matching the actual 6 S-curve indices in the curve notebooks. Regenerated housing_growth curves.parquet, all parameter parquets, and updated OpenAPI schema.
 
-- [ ] **A2. API performance optimization**
-  Page load feels slow. Investigate caching strategy (in-memory or HTTP cache headers), query speed in DuckDB, and whether endpoints can be pre-aggregated. This affects the perceived quality of every other feature.
+- [x] **A2. API performance optimization** ✓ Done
+  Added two new pre-aggregated tables: `geo_segment_yearly.parquet` (8,190 rows) for the previously uncovered geoFilter=all + segFilter=all query shape, and `param_yearly.parquet` (171,990 rows) pre-computing yearly totals for all parameter combinations. All yearly queries now use aggregated tables regardless of parameter state (~50-100x faster). Added HTTP cache headers (ETag + Cache-Control) to /demand responses with 304 Not Modified support.
 
 ---
 
@@ -121,11 +121,8 @@ Content infrastructure (ContentBlock, GlossaryTerm, MethodologyLink, MarkdownLay
 
 ## G. API
 
-- [ ] **G1. Performance optimization**
-  - Add HTTP cache headers for static/slow-changing endpoints
-  - Investigate DuckDB query performance for demand data
-  - Consider pre-aggregating common queries
-  - Profile and fix any slow endpoints
+- [x] **G1. Performance optimization** ✓ Done (covered by A2)
+  HTTP cache headers added, aggregated tables cover all yearly query shapes including parameterized queries.
 
 - [ ] **G2. Endpoint gap review**
   Review whether all data needed by new pages (Effekt, Flex, Methodology) is served by existing endpoints. Add any missing endpoints to `generate-api.js`.

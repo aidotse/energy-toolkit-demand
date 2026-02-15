@@ -26,6 +26,7 @@ import express from 'express';
 import cors from 'cors';
 import { OpenAPIBackend } from 'openapi-backend';
 import duckdb from 'duckdb';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import qs from 'qs';
@@ -33,6 +34,9 @@ import fs from 'fs';
 import { parsePeriod, formatPeriod } from './utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** Server start time used for ETag generation (data is static until restart) */
+const serverStartTime = Date.now();
 
 /**
  * Simple LRU cache for query results (no TTL - data is static)
@@ -396,6 +400,93 @@ function buildStrategy2Query(opts) {
 }
 
 /**
+ * Build SQL query using param_yearly aggregated table for parameter-aware yearly queries.
+ * Each segment's growth_index and flex_index are looked up independently.
+ *
+ * @param {Object} opts - Query options
+ * @returns {string|null} SQL query or null if aggregated file doesn't exist
+ */
+function buildParamAggregatedQuery(opts) {
+  const {
+    baseScenario,
+    segments,
+    geoFilter,
+    segFilter,
+    start,
+    end,
+    parameterValues
+  } = opts;
+
+  const paramYearlyPath = path.join(aggregatedDir, 'param_yearly.parquet');
+  if (!fs.existsSync(paramYearlyPath)) return null;
+
+  const scenarioName = getScenarioName(baseScenario);
+
+  // Build per-segment filter conditions based on parameter values
+  const segmentConditions = [];
+
+  for (const segment of segments) {
+    if (segFilter !== 'all' && segFilter !== 'total' && segFilter !== segment) continue;
+
+    const growthParam = `${segment}_growth`;
+    const flexParam = `${segment}_flex`;
+    const growthIndex = parameterValues[growthParam] || 0;
+    const flexIndex = parameterValues[flexParam] || 0;
+
+    segmentConditions.push(
+      `(segment = '${segment}' AND growth_index = ${growthIndex} AND flex_index = ${flexIndex})`
+    );
+  }
+
+  if (segmentConditions.length === 0) return null;
+
+  const wheres = [
+    `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
+    `CAST(year AS INTEGER) < ${new Date(end).getFullYear()}`,
+    `scenario_id = '${scenarioName}'`,
+    `(${segmentConditions.join(' OR ')})`
+  ];
+
+  if (geoFilter !== 'all' && geoFilter !== 'total') {
+    wheres.push(`geography = '${geoFilter}'`);
+  }
+
+  // Build GROUP BY and SELECT based on filters
+  const groupBy = ['year'];
+  const selectExtras = [];
+
+  if (geoFilter === 'total') {
+    selectExtras.push("'total' AS geography");
+  } else if (geoFilter === 'all') {
+    selectExtras.push('geography');
+    groupBy.push('geography');
+  } else {
+    selectExtras.push(`'${geoFilter}' AS geography`);
+  }
+
+  if (segFilter === 'total') {
+    selectExtras.push("'total' AS segment");
+  } else if (segFilter === 'all') {
+    selectExtras.push('segment');
+    groupBy.push('segment');
+  } else {
+    selectExtras.push(`'${segFilter}' AS segment`);
+  }
+
+  return `
+    SELECT
+      MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
+      ${selectExtras.join(', ')},
+      '${baseScenario}' AS scenario_id,
+      SUM(total_value) AS value
+    FROM read_parquet('${paramYearlyPath}')
+    WHERE ${wheres.join(' AND ')}
+    GROUP BY ${groupBy.join(', ')}
+    ORDER BY period
+  `;
+}
+
+/**
  * Handler for /demand endpoint with Strategy 2 support
  */
 api.register('getDemand', async (c, req, res) => {
@@ -438,10 +529,19 @@ api.register('getDemand', async (c, req, res) => {
       geoFilter, segFilter, parameterValues, fmt
     });
 
-    // Check cache first
+    // HTTP cache: check ETag before anything else
+    const etag = `"${crypto.createHash('md5').update(cacheKey + serverStartTime).digest('hex')}"`;
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch === etag) {
+      return res.status(304).end();
+    }
+
+    // Check in-memory cache
     const cachedResult = getCachedQuery(cacheKey);
     if (cachedResult) {
       console.log('📊 Cache hit for demand query');
+      res.set('ETag', etag);
+      res.set('Cache-Control', 'public, max-age=300');
       if (fmt === 'csv') {
         return res.type('text/csv').send(cachedResult);
       }
@@ -459,21 +559,28 @@ api.register('getDemand', async (c, req, res) => {
       parameterValues
     });
 
-    // Check if we can use aggregated tables (only for simple queries without parameters)
+    // Try aggregated tables for yearly resolution queries
     const hasNonZeroParams = Object.values(parameterValues).some(v => v > 0);
-    const useAggregated = resolution === '1Y' && !hasNonZeroParams &&
-      (geoFilter === 'total' || segFilter === 'total') &&
-      fs.existsSync(aggregatedDir);
+    const canUseAggregated = resolution === '1Y' && fs.existsSync(aggregatedDir);
 
     let sql;
 
-    if (useAggregated) {
-      // Use pre-aggregated tables for simple queries
-      console.log('📊 Using pre-aggregated tables');
+    if (canUseAggregated && hasNonZeroParams) {
+      // Parameter-aware aggregated query (param_yearly.parquet)
+      const segments = getSegments();
+      sql = buildParamAggregatedQuery({
+        baseScenario, segments, geoFilter, segFilter, start, end, parameterValues
+      });
+      if (sql) console.log('📊 Using param-aware aggregated tables');
+    }
 
+    if (!sql && canUseAggregated && !hasNonZeroParams) {
+      // Baseline aggregated tables (no parameters active)
       let aggregatedTable;
       if (geoFilter === 'total' && segFilter === 'total') {
         aggregatedTable = path.join(aggregatedDir, 'national_yearly.parquet');
+      } else if (geoFilter === 'all' && segFilter === 'all') {
+        aggregatedTable = path.join(aggregatedDir, 'geo_segment_yearly.parquet');
       } else if (geoFilter === 'all') {
         aggregatedTable = path.join(aggregatedDir, 'geography_yearly.parquet');
       } else if (segFilter === 'all') {
@@ -481,7 +588,7 @@ api.register('getDemand', async (c, req, res) => {
       }
 
       if (aggregatedTable && fs.existsSync(aggregatedTable)) {
-        // Use original scenario name for aggregated tables (they use non-slugified names)
+        console.log('📊 Using pre-aggregated tables');
         const scenarioName = getScenarioName(baseScenario);
         const wheres = [
           `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
@@ -532,7 +639,7 @@ api.register('getDemand', async (c, req, res) => {
     }
 
     if (!sql) {
-      // Build Strategy 2 query with parameter combination
+      // Fallback: full raw parquet scan with parameter JOINs
       const segments = getSegments();
       sql = buildStrategy2Query({
         baseScenario,
@@ -560,6 +667,10 @@ api.register('getDemand', async (c, req, res) => {
         typeof v === 'bigint' ? [k, Number(v)] : [k, v]
       ))
     );
+
+    // Set HTTP cache headers on fresh responses
+    res.set('ETag', etag);
+    res.set('Cache-Control', 'public, max-age=300');
 
     // Send response and cache result
     if (fmt === 'csv') {
