@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "start": "node local-server.js",
+    "start": "node --watch local-server.js",
     "docs:build": "typedoc",
     "docs:serve": "npx http-server docs/api -p 8081 -o",
     "docs:watch": "typedoc --watch",

@@ -71,7 +71,7 @@
 		min="0"
 		max={sortedValues.length - 1}
 		value={sliderPosition}
-		oninput={handleInput}
+		onchange={handleInput}
 		class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer parameter-slider"
 	/>
 

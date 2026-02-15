@@ -5,11 +5,12 @@
     import * as turf from '@turf/turf';
     import { mount } from 'svelte';
     import Popup from '$lib/components/map/Popup.svelte';
-    import { formatNumber } from '$lib/utilities';
+    import { formatNumber, makeDemandQuery } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
     import { fetchDemandData, mergeGeoData } from '$lib/dataService';
     import { SWEDEN_BOUNDS, FIT_BOUNDS_OPTIONS } from '$lib/mapConfig';
     import { scenarioState } from '$lib/stores/scenario.svelte';
+    import { parameterStore } from '$lib/stores/parameterStore.svelte';
     import { getSettings } from 'svelte-ux';
 
     // Get svelte-ux theme store
@@ -36,13 +37,15 @@
     let popup: mapboxgl.Popup;
     let stickyPopup: boolean = false;
 
-    // Track the year that prop data corresponds to
+    // Track the year and scenario that prop data corresponds to
     let propDataYear = $state<number | null>(null);
+    let propDataScenarioId = $state<string | null>(null);
 
-    // Initialize propDataYear when yearDataProp is first received
+    // Initialize prop data tracking when yearDataProp is first received
     $effect(() => {
         if (yearDataProp && yearDataProp.length > 0 && propDataYear === null) {
             propDataYear = year;
+            propDataScenarioId = scenario?.id || scenario?.scenario_id || 'default';
         }
     });
 
@@ -70,17 +73,37 @@
         segments.includes('total') ? 'total' : 'all'
     );
 
-    // Track the last fetched parameters to detect changes
-    let lastFetchParams = $state<{ year: number; segment: string } | null>(null);
+    // Reactive parameter dependencies
+    const baseScenario = $derived(parameterStore.baseScenario);
+    const parameterValues = $derived(parameterStore.parameterValues);
+    const hasActiveParameters = $derived(parameterStore.hasActiveParameters);
 
-    // Fetch data when year or segment selection changes
+    // Track the last fetched parameters to detect changes
+    let lastFetchParams = $state<{ year: number; segment: string; scenarioId: string; paramKey: string } | null>(null);
+
+    // Fetch data when year, segment, scenario, or parameters change
     $effect(() => {
+        const scenarioId = currentScenario?.id || currentScenario?.scenario_id || 'default';
+
+        // Create reactive dependency on parameter values
+        const _params = parameterValues;
+        const _baseScenario = baseScenario;
+
+        // Serialize active parameters for change detection
+        const paramKey = parameterStore.isDefaultScenario
+            ? JSON.stringify(parameterStore.parameterValues)
+            : '';
+
         // Determine if we should use prop data:
         // - Only if segments is 'total' (prop data is total-only)
         // - And year matches the prop data year
+        // - And scenario matches the one prop data was loaded with
+        // - And no parameters are active (prop data was loaded without parameters)
         const canUsePropData = segments.includes('total') &&
             yearDataProp && yearDataProp.length > 0 &&
-            (propDataYear === null || year === propDataYear);
+            (propDataYear === null || year === propDataYear) &&
+            (propDataScenarioId === null || scenarioId === propDataScenarioId) &&
+            !hasActiveParameters;
 
         if (canUsePropData) {
             fetchedYearData = []; // Clear fetched data to use prop data
@@ -88,28 +111,32 @@
             return;
         }
 
-        // Check if we need to fetch (year or segment changed)
-        const currentParams = { year, segment: segmentParam };
+        // Check if we need to fetch (year, segment, scenario, or parameters changed)
+        const currentParams = { year, segment: segmentParam, scenarioId, paramKey };
         if (lastFetchParams &&
             lastFetchParams.year === currentParams.year &&
-            lastFetchParams.segment === currentParams.segment) {
+            lastFetchParams.segment === currentParams.segment &&
+            lastFetchParams.scenarioId === currentParams.scenarioId &&
+            lastFetchParams.paramKey === currentParams.paramKey) {
             return; // No change, skip fetch
         }
 
         // Capture current values for the fetch (to avoid stale closures)
         const fetchYear = year;
         const fetchSegment = segmentParam;
-        const scenarioId = currentScenario?.id || currentScenario?.scenario_id || 'default';
 
-        // Fetch new data using cached dataService
-        const queryParams = new URLSearchParams({
-            'period[start]': String(fetchYear),
-            'period[end]': String(fetchYear + 1),
-            'period[resolution]': '1Y',
-            'period[aggregation]': 'sum',
-            'geography': 'all',
-            'segment': fetchSegment,
-            'scenarioId': scenarioId
+        // Build query with parameter support
+        const queryParams = makeDemandQuery({
+            start: String(fetchYear),
+            end: String(fetchYear + 1),
+            resolution: '1Y',
+            aggregation: 'sum',
+            geography: 'all',
+            segment: fetchSegment,
+            baseScenario: parameterStore.baseScenario,
+            parameterValues: parameterStore.isDefaultScenario
+                ? parameterStore.parameterValues
+                : undefined
         });
 
         fetchDemandData(queryParams)

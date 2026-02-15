@@ -96,11 +96,11 @@ components:
       name: housing_growth
       in: query
       required: false
-      description: Housing growth parameter index (0=baseline)
+      description: Housing growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)
       schema:
         type: integer
         minimum: 0
-        maximum: 3
+        maximum: 6
         default: 0
     housing_flex:
       name: housing_flex
@@ -116,11 +116,11 @@ components:
       name: transport_growth
       in: query
       required: false
-      description: Transport growth parameter index (0=baseline)
+      description: Transport growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)
       schema:
         type: integer
         minimum: 0
-        maximum: 3
+        maximum: 6
         default: 0
     transport_flex:
       name: transport_flex
@@ -136,11 +136,11 @@ components:
       name: industry_growth
       in: query
       required: false
-      description: Industry growth parameter index (0=baseline)
+      description: Industry growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)
       schema:
         type: integer
         minimum: 0
-        maximum: 3
+        maximum: 6
         default: 0
     industry_flex:
       name: industry_flex
@@ -156,11 +156,11 @@ components:
       name: services_growth
       in: query
       required: false
-      description: Services growth parameter index (0=baseline)
+      description: Services growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)
       schema:
         type: integer
         minimum: 0
-        maximum: 3
+        maximum: 6
         default: 0
     services_flex:
       name: services_flex
@@ -176,11 +176,11 @@ components:
       name: datacenters_growth
       in: query
       required: false
-      description: Datacenters growth parameter index (0=baseline)
+      description: Datacenters growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)
       schema:
         type: integer
         minimum: 0
-        maximum: 3
+        maximum: 6
         default: 0
     datacenters_flex:
       name: datacenters_flex

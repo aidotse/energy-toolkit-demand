@@ -1,6 +1,6 @@
 # The Last Plan
 
-**Progress: 2 / 31**
+**Progress: 3 / 31**
 
 We are bringing this project over the finish line. This document is the single source of truth for all remaining work. It consolidates tasks from PLANS.md, EXPLORER_PLAN.md, CHART_LIBRARY_REDESIGN.md, DATA_ANALYSIS_TODO.md, and GENERATOR.md into one actionable checklist.
 
@@ -26,8 +26,8 @@ We are bringing this project over the finish line. This document is the single s
 
 These block other work and should be addressed first.
 
-- [ ] **A1. Map widget not updating on scenario change**
-  The map component does not re-render when the user switches scenarios. Likely a reactivity issue in MapBox.svelte or the data fetch triggered by scenario change.
+- [x] **A1. Map widget not updating on scenario change** ✓ Done
+  Fixed by expanding all 5 growth parameters from 4 values to 7 (0%, -15%, -10%, -5%, +5%, +10%, +15%), matching the actual 6 S-curve indices in the curve notebooks. Regenerated housing_growth curves.parquet, all parameter parquets, and updated OpenAPI schema.
 
 - [ ] **A2. API performance optimization**
   Page load feels slow. Investigate caching strategy (in-memory or HTTP cache headers), query speed in DuckDB, and whether endpoints can be pre-aggregated. This affects the perceived quality of every other feature.

@@ -321,7 +321,7 @@ function buildStrategy2Query(opts) {
     segmentParams.forEach((param, idx) => {
       const alias = `p${idx}`;
       joins.push(`LEFT JOIN read_parquet('${param.path}') ${alias} ON b.timestamp = ${alias}.timestamp AND b.geography = ${alias}.geography`);
-      selectValue = `${selectValue} * COALESCE(${alias}.value, 1.0)`;
+      selectValue = `${selectValue} * COALESCE(${alias}.value / NULLIF(b.value, 0), 1.0)`;
     });
 
     const whereConditions = [
