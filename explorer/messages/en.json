@@ -15,6 +15,10 @@
   "toolkit_page": "Toolkit",
   "contact_page": "Contact",
   "data_page": "Data & API",
-  "reports_page": "Reports",
-  "scenario_analysis": "Scenario Analysis"
+  "reports_page": "Deep Dives",
+  "scenario_analysis": "Scenario Analysis",
+  "report_scenario_analysis": "Scenario Analysis",
+  "report_effekt": "Power Demand",
+  "report_flex": "Flexibility",
+  "report_metodik": "Methodology"
 }

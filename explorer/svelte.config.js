@@ -1,6 +1,7 @@
 import { mdsvex } from "mdsvex";
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import adapter from '@sveltejs/adapter-static';
+import { directivePreprocess } from './src/lib/remark/directivePreprocess.js';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,11 +9,12 @@ const config = {
     // for more information about preprocessors
     extensions: [".svelte", ".svx", ".md"],
     preprocess: [
+        directivePreprocess(),    // Transform :::directive{props} → <Component> tags
         vitePreprocess(),
         mdsvex({
             extensions: [".svx", ".md"],
-            // Extract frontmatter as metadata export
             layout: {
+                reports: './src/lib/components/content/ReportLayout.svelte',
                 _: './src/lib/components/content/MarkdownLayout.svelte'
             }
         })

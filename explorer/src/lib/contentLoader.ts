@@ -1,22 +1,17 @@
 /**
- * Content Loader Utility - Load and cache markdown content
+ * Content Loader Utility - Load and cache markdown/svx content
  *
- * Provides functions to load markdown content files with caching support.
+ * Provides functions to load content files with caching support.
  * Content is organized by locale (sv, en) and content type.
- * Supports frontmatter metadata extraction from markdown files.
+ * Supports frontmatter metadata extraction.
  *
- * @example
- * ```markdown
- * ---
- * title: "Energy Demand Forecast"
- * section: "time-evolution"
- * order: 1
- * ---
- * Your markdown content here...
- * ```
+ * - `.svx` files: Svelte + markdown (can import components, use $state, etc.)
+ * - `.md` files: Pure markdown prose
  *
  * @module contentLoader
  */
+
+import { languageTag } from '$paraglide/runtime';
 
 export type Locale = 'sv' | 'en';
 
@@ -29,18 +24,19 @@ export interface ContentMetadata {
 	lastUpdated?: string;
 	author?: string;
 	tags?: string[];
+	layout?: string;
 	// Any additional custom fields
 	[key: string]: any;
 }
 
 export interface ContentFile {
-	default: any; // The Svelte component (compiled markdown)
-	metadata: ContentMetadata; // Frontmatter from markdown file
+	default: any; // The Svelte component (compiled markdown/svx)
+	metadata: ContentMetadata; // Frontmatter from file
 }
 
-// Use Vite's glob import to statically import all markdown files
-// This is evaluated at build time, not runtime
-const contentModules = import.meta.glob('../content/**/*.md', { eager: false });
+// Use Vite's glob import to statically import all content files
+// Eager: false means they're lazy-loaded on demand
+const contentModules = import.meta.glob('../content/**/*.{md,svx}', { eager: false });
 
 // In-memory cache for loaded content
 const contentCache = new Map<string, ContentFile>();
@@ -58,7 +54,8 @@ function extractMetadata(module: any): ContentMetadata {
 		'order',
 		'lastUpdated',
 		'author',
-		'tags'
+		'tags',
+		'layout'
 	];
 
 	// Extract known frontmatter fields
@@ -77,10 +74,11 @@ function extractMetadata(module: any): ContentMetadata {
 }
 
 /**
- * Load a markdown content file by locale and slug
+ * Load a content file by locale and slug.
+ * Tries .svx first, then .md.
  *
  * @param locale - Language locale (sv or en)
- * @param slug - Content file slug (without extension)
+ * @param slug - Content file slug (without extension), e.g. "reports/methodology"
  * @returns Promise resolving to the content component and metadata
  */
 export async function loadContent(locale: Locale, slug: string): Promise<ContentFile | null> {
@@ -91,39 +89,56 @@ export async function loadContent(locale: Locale, slug: string): Promise<Content
 		return contentCache.get(cacheKey)!;
 	}
 
-	try {
-		// Build the path that matches the glob pattern
-		const path = `../content/${locale}/${slug}.md`;
+	// Try .svx first, then .md
+	const extensions = ['.svx', '.md'];
 
-		// Get the import function from the glob modules
-		const importFn = contentModules[path];
+	for (const ext of extensions) {
+		try {
+			const path = `../content/${locale}/${slug}${ext}`;
+			const importFn = contentModules[path];
 
-		if (!importFn) {
-			console.error(`Content file not found: ${path}`);
-			console.error('Available paths:', Object.keys(contentModules));
-			return null;
+			if (!importFn) continue;
+
+			const module = (await importFn()) as any;
+			const metadata = extractMetadata(module);
+
+			const content: ContentFile = {
+				default: module.default,
+				metadata
+			};
+
+			contentCache.set(cacheKey, content);
+			return content;
+		} catch (error) {
+			console.error(`Failed to load content: ${locale}/${slug}${ext}`, error);
 		}
-
-		// Load the module
-		const module = (await importFn()) as any;
-
-		// Extract metadata from module exports
-		const metadata = extractMetadata(module);
-
-		// Create normalized content object
-		const content: ContentFile = {
-			default: module.default,
-			metadata
-		};
-
-		// Cache the content
-		contentCache.set(cacheKey, content);
-
-		return content;
-	} catch (error) {
-		console.error(`Failed to load content: ${locale}/${slug}`, error);
-		return null;
 	}
+
+	console.error(`Content file not found: ${locale}/${slug}`);
+	console.error('Available paths:', Object.keys(contentModules));
+	return null;
+}
+
+/**
+ * Load content using the current Paraglide locale.
+ * Falls back to Swedish if the requested locale has no content.
+ *
+ * @param slug - Content file slug (without extension)
+ * @returns Promise resolving to the content component and metadata
+ */
+export async function loadLocalizedContent(slug: string): Promise<ContentFile | null> {
+	const locale = languageTag() as Locale;
+
+	// Try current locale first
+	const content = await loadContent(locale, slug);
+	if (content) return content;
+
+	// Fall back to Swedish
+	if (locale !== 'sv') {
+		return loadContent('sv', slug);
+	}
+
+	return null;
 }
 
 /**
@@ -135,10 +150,28 @@ export async function loadContent(locale: Locale, slug: string): Promise<Content
 export async function loadAllContent(
 	locale: Locale
 ): Promise<Array<{ slug: string; content: ContentFile }>> {
-	// This would require a build-time manifest or glob import
-	// For now, return empty array - to be implemented with Vite glob import
-	console.warn('loadAllContent not yet implemented - requires Vite glob import');
-	return [];
+	const prefix = `../content/${locale}/`;
+	const results: Array<{ slug: string; content: ContentFile }> = [];
+
+	for (const [path, importFn] of Object.entries(contentModules)) {
+		if (!path.startsWith(prefix)) continue;
+
+		// Extract slug: remove prefix and extension
+		const slug = path.slice(prefix.length).replace(/\.(svx|md)$/, '');
+
+		try {
+			const module = (await importFn()) as any;
+			const metadata = extractMetadata(module);
+			results.push({
+				slug,
+				content: { default: module.default, metadata }
+			});
+		} catch (error) {
+			console.error(`Failed to load content: ${path}`, error);
+		}
+	}
+
+	return results;
 }
 
 /**

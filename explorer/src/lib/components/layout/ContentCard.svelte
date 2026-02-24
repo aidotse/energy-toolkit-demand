@@ -7,11 +7,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { ComponentType } from 'svelte';
+	import { resolveIcon } from '$lib/utils/iconResolver';
 
 	let {
 		title,
 		description,
-		icon: Icon,
+		icon: iconProp,
 		hover = false,
 		noPadding = false,
 		class: className = '',
@@ -19,12 +20,16 @@
 	}: {
 		title?: string;
 		description?: string;
-		icon?: ComponentType;
+		icon?: ComponentType | string;
 		hover?: boolean;
 		noPadding?: boolean;
 		class?: string;
 		children: Snippet;
 	} = $props();
+
+	const Icon = $derived(
+		typeof iconProp === 'string' ? resolveIcon(iconProp) : iconProp
+	);
 
 	const hoverClasses = hover ? 'hover:shadow-md hover:-translate-y-0.5' : '';
 	const paddingClasses = noPadding ? '' : 'py-6 md:py-8';

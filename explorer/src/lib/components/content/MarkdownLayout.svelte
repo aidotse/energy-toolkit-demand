@@ -3,6 +3,7 @@
 
   MDsveX processes markdown files and wraps them in this layout.
   Frontmatter is automatically available as props.
+  Prose styling matches ReportLayout for consistent typography.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -25,32 +26,26 @@
 	}: Props = $props();
 </script>
 
-<!--
-  Simple passthrough layout - just renders the markdown content
-  Frontmatter metadata is available via props but not rendered here
--->
 <div class="markdown-content">
 	{@render children?.()}
 </div>
 
 <style>
-	/* Base markdown styling
-	   h1 is not used - frontmatter title is rendered separately by page
-	   Content uses h2 for main section heading, h3 for subsections */
+	/* Prose styling — mirrors ReportLayout for consistent markdown rendering */
 	.markdown-content :global(h2) {
-		@apply text-2xl font-bold mb-3;
+		@apply text-2xl font-bold text-gray-900 dark:text-gray-50 mb-3 mt-10 first:mt-0;
 	}
 
 	.markdown-content :global(h3) {
-		@apply text-xl font-semibold mb-2;
+		@apply text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-8;
 	}
 
 	.markdown-content :global(h4) {
-		@apply text-lg font-medium mb-2;
+		@apply text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 mt-6;
 	}
 
 	.markdown-content :global(p) {
-		@apply mb-4 leading-relaxed;
+		@apply text-gray-700 dark:text-gray-300 leading-relaxed mb-4;
 	}
 
 	.markdown-content :global(ul),
@@ -58,11 +53,47 @@
 		@apply mb-4 ml-6;
 	}
 
+	.markdown-content :global(ul) {
+		@apply list-disc;
+	}
+
+	.markdown-content :global(ol) {
+		@apply list-decimal;
+	}
+
 	.markdown-content :global(li) {
-		@apply mb-1;
+		@apply mb-1 text-gray-700 dark:text-gray-300 leading-relaxed;
 	}
 
 	.markdown-content :global(strong) {
-		@apply font-semibold;
+		@apply font-semibold text-gray-900 dark:text-gray-100;
+	}
+
+	.markdown-content :global(em) {
+		@apply italic;
+	}
+
+	.markdown-content :global(a) {
+		@apply text-primary-600 dark:text-primary-400 hover:underline;
+	}
+
+	.markdown-content :global(blockquote) {
+		@apply border-l-4 border-gray-200 dark:border-gray-700 pl-4 my-4 text-sm text-gray-700 dark:text-gray-300 italic;
+	}
+
+	.markdown-content :global(pre) {
+		@apply bg-gray-100 dark:bg-gray-950 p-4 rounded overflow-x-auto mb-4 text-sm;
+	}
+
+	.markdown-content :global(code) {
+		@apply font-mono text-sm;
+	}
+
+	.markdown-content :global(:not(pre) > code) {
+		@apply bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded;
+	}
+
+	.markdown-content :global(hr) {
+		@apply my-12 border-gray-200 dark:border-gray-700;
 	}
 </style>

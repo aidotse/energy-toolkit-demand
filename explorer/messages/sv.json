@@ -15,6 +15,10 @@
   "toolkit_page": "Demand Toolkit",
   "contact_page": "Kontakt",
   "data_page": "Data & API",
-  "reports_page": "Rapporter",
-  "scenario_analysis": "Scenarioanalys"
+  "reports_page": "Fördjupning",
+  "scenario_analysis": "Scenarioanalys",
+  "report_scenario_analysis": "Scenarioanalys",
+  "report_effekt": "Effekt",
+  "report_flex": "Flexibilitet",
+  "report_metodik": "Metodik"
 }

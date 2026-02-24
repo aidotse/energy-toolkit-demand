@@ -11,10 +11,11 @@
 	import { ArrowRight, Info } from 'lucide-svelte';
 	import type { ComponentType } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import { resolveIcon } from '$lib/utils/iconResolver';
 
 	let {
 		title,
-		icon: Icon = Info,
+		icon: iconProp = Info,
 		variant = 'default',
 		linkHref,
 		linkText = 'Läs mer',
@@ -22,13 +23,17 @@
 		class: className = ''
 	}: {
 		title: string;
-		icon?: ComponentType;
+		icon?: ComponentType | string;
 		variant?: 'default' | 'primary' | 'success' | 'warning';
 		linkHref?: string;
 		linkText?: string;
 		children: Snippet;
 		class?: string;
 	} = $props();
+
+	const Icon = $derived(
+		typeof iconProp === 'string' ? (resolveIcon(iconProp) ?? Info) : iconProp
+	);
 
 	// Variant configurations
 	const variantConfig = {

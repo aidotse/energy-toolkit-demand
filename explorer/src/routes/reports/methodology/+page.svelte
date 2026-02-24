@@ -2,4 +2,4 @@
 	import ContentShell from '$lib/components/content/ContentShell.svelte';
 </script>
 
-<ContentShell slug="pages/data" />
+<ContentShell slug="reports/methodology" backLink="/reports" backLabel="Alla fördjupningar" />

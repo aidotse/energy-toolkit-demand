@@ -6,7 +6,6 @@ import {
 	calculateScenarioCount
 } from '$lib/dataService';
 import { makeDemandQuery } from '$lib/utilities';
-import { loadContent } from '$lib/contentLoader';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, parent }) => {
@@ -21,19 +20,12 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 		const { scenarios, parameters, defaultScenario } = parentData;
 
 		// Fetch only what we need that layout doesn't provide
-		const [config, globals, geographies, geojson, contentSections] =
+		const [config, globals, geographies, geojson] =
 			await Promise.all([
 				fetchConfig(fetch),
 				fetchGlobals(fetch),
 				fetchGeographies('json', fetch),
-				fetchGeographies('geojson', fetch),
-				// Load content sections (using Swedish for now, will add i18n later)
-				Promise.all([
-					loadContent('sv', 'executive-summary'),
-					loadContent('sv', 'current-state'),
-					loadContent('sv', 'future-scenarios'),
-					loadContent('sv', 'key-insights')
-				])
+				fetchGeographies('geojson', fetch)
 			]);
 
 		// Get default scenario
@@ -58,15 +50,6 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 			upper_bound: globals?.upper_bound || 30000000
 		};
 
-		// Organize content sections by section name
-		const [executiveSummary, currentState, futureScenarios, keyInsights] = contentSections;
-		const content = {
-			executiveSummary,
-			currentState,
-			futureScenarios,
-			keyInsights
-		};
-
 		return {
 			config,
 			scenarios,
@@ -83,12 +66,8 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 			scenarioId,
 			geographies,
 			geojson,
-			// Map data (fetched in loader, needed for initial render)
 			geoData,
-			// Scenario count for metrics
-			scenarioCount: calculateScenarioCount(parameters, scenarios),
-			// Content sections
-			content
+			scenarioCount: calculateScenarioCount(parameters, scenarios)
 		};
 	} catch (error: any) {
 		console.error('Error loading report data:', error?.message || error);
@@ -105,13 +84,7 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 			geographies: [],
 			geojson: { type: 'FeatureCollection', features: [] },
 			geoData: [],
-			scenarioCount: 0,
-			content: {
-				executiveSummary: null,
-				currentState: null,
-				futureScenarios: null,
-				keyInsights: null
-			}
+			scenarioCount: 0
 		};
 	}
 };

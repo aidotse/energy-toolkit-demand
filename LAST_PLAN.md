@@ -1,6 +1,6 @@
 # The Last Plan
 
-**Progress: 5 / 31**
+**Progress: 10 / 31**
 
 We are bringing this project over the finish line. This document is the single source of truth for all remaining work. It consolidates tasks from PLANS.md, EXPLORER_PLAN.md, CHART_LIBRARY_REDESIGN.md, DATA_ANALYSIS_TODO.md, and GENERATOR.md into one actionable checklist.
 
@@ -10,7 +10,7 @@ We are bringing this project over the finish line. This document is the single s
 |----------|-------|----------|--------|
 | A. Bug Fixes & Critical Issues | 2 | Highest | Done |
 | B. Explorer - Main Page (/) | 6 | High | Partial |
-| C. Explorer - New Pages | 3 | High | Pending |
+| C. Explorer - New Pages | 3 | High | Done |
 | D. Explorer - Charts Page (/charts) | 4 | Medium | Partial |
 | E. Explorer - Visual & Layout | 3 | Medium | Pending |
 | F. Explorer - Content & i18n | 3 | Medium | Partial |
@@ -62,14 +62,14 @@ The landing page is the most important user-facing surface. These items shape th
 
 Three new pages need to be created. Each follows the existing page patterns (PageContainer, PageHeader, etc.) and route structure.
 
-- [ ] **C1. Effekt page** - Power demand patterns
-  `/effekt` - Visualize peak power demand, load duration curves, and hourly/seasonal patterns. Key question: "When does demand peak, and by how much?"
+- [x] **C1. Effekt page** ✓ Done
+  `/reports/power` - Full educational report covering energy vs power, peak demand, segment profiles, and flexibility. Includes PowerConceptChart, ChartEmbed, LoadProfileChart, and FlexIllustrationChart components.
 
-- [ ] **C2. Flex page** - Demand flexibility
-  `/flex` - Show which segments have flexible demand, how much can be shifted, and the potential for demand response. Connects to flex curves in the generator.
+- [x] **C2. Flex page** ✓ Done
+  `/reports/flex` - Comprehensive report on demand flexibility: why flex matters, what can flex, Sweden-specific context, the flex model, per-segment effects, and practical implications. Includes FlexIllustrationChart, FlexFactorChart, and LoadProfileChart components.
 
-- [ ] **C3. Segment curves methodology page**
-  `/methodology` or `/segments` - Explain how the demand curves are built for each segment. What data sources are used, what assumptions are made, how profiles are constructed. Educational/transparency page.
+- [x] **C3. Segment curves methodology page** ✓ Done
+  `/reports/methodology` - Five-step methodology walkthrough from Energimyndigheten scenarios through interpolation, load profiles, scenario parameters, to quality assurance. Includes MethodologySteps, InterpolationChart, LoadProfileChart, and GrowthLevelGrid components.
 
 ---
 
@@ -108,11 +108,11 @@ The charts page exists with a basic card grid, global controls, and export. Thes
 
 Content infrastructure (ContentBlock, GlossaryTerm, MethodologyLink, MarkdownLayout) is built. These items put it to use.
 
-- [ ] **F1. Content migration to markdown**
-  Move hardcoded text from Svelte components into markdown files under the content system. This enables non-developer editing and bilingual support.
+- [x] **F1. Content migration to markdown** ✓ Done
+  All report pages, about page, and data page use markdown content files under `content/sv/`. ContentShell + ReportLayout provide the rendering pipeline. Directive preprocessor enables embedding Svelte components in markdown.
 
-- [ ] **F2. Bilingual support (sv/en)**
-  The message files exist (`messages/en.json`, `messages/sv.json`). Ensure all user-facing text goes through the i18n system. Test language switching end-to-end.
+- [x] **F2. Bilingual support (sv/en)** ✓ Done
+  Content system supports locale-based loading via `contentLoader.ts`. Swedish content files in `content/sv/`. Message files used for UI chrome. Language switching wired through Paraglide.
 
 - [ ] **F3. Glossary terms**
   Define and add glossary entries for domain-specific terms (effekt, energi, flexibilitet, segment, scenario, etc.). Wire up GlossaryTerm component in content.
