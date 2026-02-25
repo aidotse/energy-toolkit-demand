@@ -3,6 +3,7 @@
  *
  * Common mock data patterns used across test files
  */
+import { viz } from '$lib/colors';
 
 /**
  * Mock API parameters
@@ -23,7 +24,7 @@ export const mockScenarios = [
     scenarioId: 'base',
     name: 'Base Scenario',
     description: 'Base forecast scenario',
-    color: '#3b82f6',
+    color: viz.scenario.primary,
   },
   {
     scenarioId: 'high',
@@ -35,7 +36,7 @@ export const mockScenarios = [
     scenarioId: 'low',
     name: 'Low Growth',
     description: 'Low growth scenario',
-    color: '#10b981',
+    color: viz.scenario.secondary,
   },
 ];
 

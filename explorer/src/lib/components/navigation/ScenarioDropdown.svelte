@@ -71,7 +71,7 @@
 {#if navigationState.scenarioDropdownOpen}
 	<div
 		bind:this={dropdownRef}
-		class="fixed top-32 lg:top-24 right-6 w-[320px] max-w-[90vw] max-h-[70vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden flex flex-col"
+		class="fixed top-32 lg:top-36 right-4 lg:right-auto lg:left-2/3 w-[320px] max-w-[90vw] max-h-[70vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden flex flex-col"
 	>
 		<!-- Header -->
 		<div

@@ -4,6 +4,8 @@
   Original (1.0), Flex 0.8, Flex 0.6, plus dashed mean line.
 -->
 <script lang="ts">
+	import { viz } from '$lib/colors';
+
 	// Housing segment — pronounced morning/evening peaks (illustrative MW values)
 	const original = [
 		60, 55, 52, 50, 55, 70, 100, 145, 160, 150, 135, 125,
@@ -48,9 +50,9 @@
 	const yTicks = [0, 50, 100, 150];
 
 	const curves = [
-		{ data: original, color: '#004d66', label: 'Original (1,0)' },
-		{ data: flex08, color: '#46a0c4', label: 'Flex 0,8' },
-		{ data: flex06, color: '#90d2e8', label: 'Flex 0,6' }
+		{ data: original, color: viz.teal[900], label: 'Original (1,0)' },
+		{ data: flex08, color: viz.teal[500], label: 'Flex 0,8' },
+		{ data: flex06, color: viz.teal[100], label: 'Flex 0,6' }
 	];
 </script>
 
@@ -58,7 +60,7 @@
 	<svg viewBox="0 0 {width} {height}" class="w-full max-w-xl mx-auto" role="img" aria-label="Flex-faktorns effekt på dygnskurvan: tre kurvor konvergerar mot medelvärdet">
 		<!-- Grid lines -->
 		{#each yTicks as tick}
-			<line x1={pad.left} y1={y(tick)} x2={width - pad.right} y2={y(tick)} stroke="#e5e7eb" stroke-width="1" />
+			<line x1={pad.left} y1={y(tick)} x2={width - pad.right} y2={y(tick)} stroke={viz.grid} stroke-width="1" />
 			<text x={pad.left - 8} y={y(tick) + 4} text-anchor="end" class="fill-gray-400" font-size="11">{tick}</text>
 		{/each}
 
@@ -83,7 +85,7 @@
 			y1={y(mean)}
 			x2={width - pad.right}
 			y2={y(mean)}
-			stroke="#9ca3af"
+			stroke={viz.axis}
 			stroke-width="1.5"
 			stroke-dasharray="6,4"
 		/>
@@ -91,7 +93,7 @@
 			x={width - pad.right + 4}
 			y={y(mean) + 4}
 			text-anchor="start"
-			fill="#9ca3af"
+			fill={viz.axis}
 			font-size="10"
 			font-weight="600"
 		>Medelvärde</text>
@@ -117,7 +119,7 @@
 			</span>
 		{/each}
 		<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-			<span class="inline-block w-5 border-t-2 border-dashed" style="border-color: #9ca3af;"></span>
+			<span class="inline-block w-5 border-t-2 border-dashed" style="border-color: {viz.axis};"></span>
 			Medelvärde
 		</span>
 	</div>

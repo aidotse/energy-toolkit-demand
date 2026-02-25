@@ -1,6 +1,6 @@
 # The Last Plan
 
-**Progress: 10 / 31**
+**Progress: 14 / 36**
 
 We are bringing this project over the finish line. This document is the single source of truth for all remaining work. It consolidates tasks from PLANS.md, EXPLORER_PLAN.md, CHART_LIBRARY_REDESIGN.md, DATA_ANALYSIS_TODO.md, and GENERATOR.md into one actionable checklist.
 
@@ -13,12 +13,13 @@ We are bringing this project over the finish line. This document is the single s
 | C. Explorer - New Pages | 3 | High | Done |
 | D. Explorer - Charts Page (/charts) | 4 | Medium | Partial |
 | E. Explorer - Visual & Layout | 3 | Medium | Pending |
-| F. Explorer - Content & i18n | 3 | Medium | Partial |
+| F. Explorer - Content & i18n | 3 | Medium | Done |
 | G. API | 2 | High | Partial |
 | H. Generator | 2 | Low | Pending |
 | I. Data Research | 3 | High | In Discovery |
 | J. Infrastructure & DevOps | 3 | Medium | Partial |
 | K. Deferred / Out of Scope | - | - | Parked |
+| L. Mobile Responsiveness | 5 | High | Pending |
 
 ---
 
@@ -44,14 +45,14 @@ The landing page is the most important user-facing surface. These items shape th
 - [ ] **B2. Infobox: what drives electricity demand**
   Add a prominent content box explaining the key drivers of electricity demand (electrification, industry, transport, datacenters, etc.). Should be concise and visual.
 
-- [ ] **B3. Chart descriptions**
-  Each chart on the main page should have a short descriptive text explaining what it shows and why it matters. Use the ContentBlock component infrastructure already built.
+- [x] **B3. Chart descriptions** ✓ Done
+  Each chart embed now has a factual description including scenario context (e.g. "Årligt elbehov för Sverige 2025–2050 i scenariot Beslutad Policy med +5% tillväxt i Bostäder."). Descriptions update reactively when scenario or parameters change.
 
-- [ ] **B4. Scenario selector variation text box**
-  Below the scenario selector, show a compact text box: "Variation on base scenario: [parameter values that differ from base]". Makes it immediately clear what the current scenario changes.
+- [x] **B4. Scenario selector variation text box** ✓ Done
+  ScenarioVariation component shows a compact natural Swedish sentence summarizing active parameter variations below the scenario selector (e.g. "Beslutad Policy med +5% tillväxt och 5% flex i Bostäder"). Parameters now reset when switching to a non-default scenario.
 
-- [ ] **B5. Change highlight/accent color**
-  Current highlight color doesn't match the visual identity. Update to something more in style with the overall design.
+- [x] **B5. Change highlight/accent color** ✓ Done
+  Changed highlight from golden yellow (#f9ca2d) to teal (#46a0c4, chart-500). Updated text selection to teal at 30% opacity. Sun icon kept yellow (semantic color).
 
 - [x] **B6. (Potential) Map extends under main card** ✓ Done
   Explore whether the map can extend beneath the main content card for a more immersive layout. Mark as potential - depends on how it looks in practice.
@@ -99,14 +100,14 @@ The charts page exists with a basic card grid, global controls, and export. Thes
 - [ ] **E2. New color scale** `BLOCKED: depends on Caisa`
   New color scale for charts needs to come from Caisa. Once received, update `chartConfig.ts` and all chart components.
 
-- [ ] **E3. Highlight color adjustment**
+- [X] **E3. Highlight color adjustment**
   Same as B5 - update the accent/highlight color used across the UI to match the agreed visual identity.
 
 ---
 
 ## F. Explorer - Content & i18n
 
-Content infrastructure (ContentBlock, GlossaryTerm, MethodologyLink, MarkdownLayout) is built. These items put it to use.
+Content infrastructure (ContentBlock, MarkdownLayout) is built. These items put it to use.
 
 - [x] **F1. Content migration to markdown** ✓ Done
   All report pages, about page, and data page use markdown content files under `content/sv/`. ContentShell + ReportLayout provide the rendering pipeline. Directive preprocessor enables embedding Svelte components in markdown.
@@ -114,8 +115,7 @@ Content infrastructure (ContentBlock, GlossaryTerm, MethodologyLink, MarkdownLay
 - [x] **F2. Bilingual support (sv/en)** ✓ Done
   Content system supports locale-based loading via `contentLoader.ts`. Swedish content files in `content/sv/`. Message files used for UI chrome. Language switching wired through Paraglide.
 
-- [ ] **F3. Glossary terms**
-  Define and add glossary entries for domain-specific terms (effekt, energi, flexibilitet, segment, scenario, etc.). Wire up GlossaryTerm component in content.
+- ~~**F3. Glossary terms**~~ — Removed. Report pages explain domain terms inline; separate glossary adds complexity without value.
 
 ---
 
@@ -206,6 +206,32 @@ These items appeared in planning documents but are explicitly **not** part of th
 
 ---
 
+## L. Mobile Responsiveness
+
+The app currently hides the map entirely on screens below `lg` (1024px). On mobile/tablet the home page is just a content card on a gray background — users never see the map of Sweden, which is the visual centerpiece. Other pages have basic responsive padding but haven't been tuned for mobile viewports.
+
+- [ ] **L1. Home page: map/content toggle for mobile**
+  Below `lg`, show a toggle (e.g., a floating button or tab bar at the bottom) that lets users switch between the content card view and a full-screen map view. In map view, the map fills the viewport with full interactivity (year select, legend, county click). In content view, the current scrollable card layout applies. The map container should always mount (not `hidden lg:block`) so Mapbox doesn't re-initialize on toggle — use visibility/positioning instead.
+  *Files: `explorer/src/routes/+page.svelte`*
+
+- [ ] **L2. Home page: subtle map nudge**
+  On mobile, when the content card is showing, add a visual hint that the map exists. Options: a small map preview strip at the top/bottom of the screen, a pulsing "Show map" button, or the map slightly visible behind the card edge. Should feel lightweight, not intrusive.
+  *Files: `explorer/src/routes/+page.svelte`*
+
+- [ ] **L3. Charts page: responsive chart sizing**
+  Replace fixed `h-[350px]`/`h-[400px]` chart heights with responsive values (e.g., `h-[250px] sm:h-[350px]`). Ensure chart cards don't overflow horizontally on narrow screens. Check that the parameter panel collapses cleanly.
+  *Files: `explorer/src/routes/charts/+page.svelte`, individual chart components*
+
+- [ ] **L4. Report pages: responsive content**
+  Ensure report pages (`/reports/power`, `/reports/flex`, `/reports/methodology`) render well on mobile. Check that embedded chart components don't overflow. ContentShell/PageContainer already handle padding — focus on chart embeds and wide content blocks.
+  *Files: report `+page.svelte` files, chart embed components*
+
+- [ ] **L5. General: touch-friendly controls**
+  Verify that interactive controls (year slider, scenario selector, map popups, chart tooltips) are usable on touch devices. Increase tap targets where needed (minimum 44×44px).
+  *Files: `ParameterSlider.svelte`, `YearSelect.svelte`, `Popup.svelte`, map controls*
+
+---
+
 ## Dependency Map
 
 ```
@@ -224,6 +250,8 @@ I1-I3 (Data)      ──> Generator runs ──> API data ──> Explorer shows
 
 J1 (Testing)      ══> BLOCKED on vite-plugin-svelte fix
 J2 (CI/CD)        ──> J3 (Deployment)
+
+L1 (Map toggle)   ──> L2 (Nudge depends on toggle existing)
 ```
 
 ---

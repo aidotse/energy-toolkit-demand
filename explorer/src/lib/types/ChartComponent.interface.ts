@@ -255,13 +255,4 @@ export interface ScenarioComparisonMetadata {
 	};
 }
 
-/**
- * Scenario color palette for comparison mode
- * Up to 3 scenarios supported with distinct colors
- */
-export const SCENARIO_COLORS = {
-	primary: '#3b82f6', // Blue
-	secondary: '#10b981', // Green
-	tertiary: '#f59e0b', // Amber
-	baseline: '#6b7280', // Gray (for baseline comparison)
-} as const;
+export { SCENARIO_COLORS } from '$lib/colors';

@@ -25,6 +25,7 @@
 		createComparisonMetadata,
 		hexToRgba
 	} from '$lib/comparisonUtils';
+	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -244,7 +245,7 @@
 			x="timestamp"
 			y="total"
 			props={{
-				line: { fill: 'none', stroke: '#47B3FF', strokeWidth: 2 }
+				line: { fill: 'none', stroke: viz.line, strokeWidth: 2 }
 			}}
 		/>
 	{:else if normalizedScenarios.length > 1}
@@ -262,11 +263,11 @@
 				return {
 					key: scenarioId,
 					value: scenarioId,
-					color: hexToRgba(scenario.color || '#6b7280', opacity * 0.4),
+					color: hexToRgba(scenario.color || viz.scenario.baseline, opacity * 0.4),
 					props: {
 						line: {
 							fill: 'none',
-							stroke: hexToRgba(scenario.color || '#6b7280', opacity),
+							stroke: hexToRgba(scenario.color || viz.scenario.baseline, opacity),
 							strokeWidth: 2
 						}
 					}

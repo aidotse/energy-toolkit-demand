@@ -4,6 +4,8 @@
   with small dots at each interpolated year. Owns its data internally.
 -->
 <script lang="ts">
+	import { viz } from '$lib/colors';
+
 	const anchorYears = [2025, 2030, 2035, 2040, 2045, 2050];
 	const anchorValues = [140, 155, 175, 200, 230, 260];
 
@@ -58,7 +60,7 @@
 				y1={y(tick)}
 				x2={width - pad.right}
 				y2={y(tick)}
-				stroke="#e5e7eb"
+				stroke={viz.grid}
 				stroke-width="1"
 			/>
 			<text
@@ -92,16 +94,16 @@
 		{/each}
 
 		<!-- Line -->
-		<path d={linePath} fill="none" stroke="#004d66" stroke-width="2" />
+		<path d={linePath} fill="none" stroke={viz.teal[900]} stroke-width="2" />
 
 		<!-- Interpolated points (small) -->
 		{#each allPoints.filter(p => !p.isAnchor) as p}
-			<circle cx={x(p.year)} cy={y(p.value)} r="3" fill="#004d66" />
+			<circle cx={x(p.year)} cy={y(p.value)} r="3" fill={viz.teal[900]} />
 		{/each}
 
 		<!-- Anchor points (large, hollow) -->
 		{#each allPoints.filter(p => p.isAnchor) as p}
-			<circle cx={x(p.year)} cy={y(p.value)} r="6" fill="white" stroke="#004d66" stroke-width="2.5" />
+			<circle cx={x(p.year)} cy={y(p.value)} r="6" fill="white" stroke={viz.teal[900]} stroke-width="2.5" />
 		{/each}
 	</svg>
 

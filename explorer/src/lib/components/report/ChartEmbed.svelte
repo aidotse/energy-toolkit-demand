@@ -10,6 +10,7 @@
 	import GeoSegmentChart from '$lib/components/GeoSegmentChart.svelte';
 	import PeriodHeatmap from '$lib/components/PeriodHeatmap.svelte';
 	import { viewStore } from '$lib/stores/viewStore.svelte';
+	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
 
 	let {
 		chart,
@@ -25,16 +26,59 @@
 		[key: string]: any;
 	} = $props();
 
-	const DESCRIPTIONS: Record<string, (year: number) => string> = {
-		'area-yearly': (y) =>
-			`Årligt elbehov för Sverige 2025–2050. Kurvan visar en tydlig uppåtgående trend med en acceleration efter 2030.`,
-		'sector-pie': (y) => `Sektorsfördelning av elbehov år ${y}.`,
-		'geo-segment': (y) => `Sektorernas andel av elbehovet per län, år ${y}.`,
-		'period-heatmap': (y) =>
-			`Elbehov fördelat på månad och tid på dygnet, år ${y}. Mörkare färg visar högre genomsnittligt elbehov.`
+	const SEGMENT_LABELS: Record<string, string> = {
+		housing: 'Bostäder',
+		transport: 'Transport',
+		industry: 'Industri',
+		services: 'Service',
+		datacenters: 'Datacenter'
 	};
 
-	let description = $derived(DESCRIPTIONS[chart]?.(viewStore.year) ?? '');
+	function getParamTypeLabel(paramName: string): string {
+		const labels: Record<string, string> = { growth: 'tillväxt', flex: 'flex' };
+		const type = paramName.split('_').pop() || '';
+		return labels[type] || type;
+	}
+
+	const scenarioSuffix = $derived.by(() => {
+		const name =
+			parameterStore.baseScenarios.find((s) => s.id === parameterStore.baseScenario)?.name || '';
+		if (!name) return '';
+
+		const entries = Object.entries(parameterStore.parameterValues).filter(([_, v]) => v > 0);
+		if (entries.length === 0) return `i scenariot ${name}.`;
+
+		const bySegment = new Map<string, string[]>();
+		for (const [pName, index] of entries) {
+			const param = parameterStore.getParameter(pName);
+			if (!param) continue;
+			const type = getParamTypeLabel(pName);
+			const label = getParameterLabel(param, index);
+			if (!bySegment.has(param.segment)) bySegment.set(param.segment, []);
+			bySegment.get(param.segment)!.push(`${label} ${type}`);
+		}
+
+		const clauses: string[] = [];
+		for (const [segment, params] of bySegment) {
+			const segmentName = SEGMENT_LABELS[segment] || segment;
+			const paramText =
+				params.length === 1
+					? params[0]
+					: params.slice(0, -1).join(', ') + ' och ' + params[params.length - 1];
+			clauses.push(`${paramText} i ${segmentName}`);
+		}
+
+		return `i scenariot ${name} med ${clauses.join(', ')}.`;
+	});
+
+	const DESCRIPTIONS: Record<string, (year: number, suffix: string) => string> = {
+		'area-yearly': (y, s) => `Årligt elbehov för Sverige 2025–2050 ${s}`,
+		'sector-pie': (y, s) => `Sektorsfördelning av elbehov år ${y} ${s}`,
+		'geo-segment': (y, s) => `Sektorernas andel av elbehovet per län år ${y} ${s}`,
+		'period-heatmap': (y, s) => `Elbehov fördelat på månad och tid på dygnet år ${y} ${s}`
+	};
+
+	let description = $derived(DESCRIPTIONS[chart]?.(viewStore.year, scenarioSuffix) ?? '');
 </script>
 
 <div class="pb-6">

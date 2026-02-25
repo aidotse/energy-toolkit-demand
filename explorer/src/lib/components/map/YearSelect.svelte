@@ -6,11 +6,13 @@
     let {
         parameterData,
         year,
-        onYearChange
+        onYearChange,
+        embedded = false
     }: {
         parameterData: any;
         year: number;
         onYearChange?: (year: number) => void;
+        embedded?: boolean;
     } = $props();
 
     const minYear:number = parameterData?.years?.length > 0 ? Math.min(...parameterData.years) : 2025;
@@ -61,7 +63,7 @@
 
 </script>
 
-<div class="flex flex-col w-40 2xl:w-72 pt-1 px-3 pb-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-sm">
+<div class="flex flex-col {embedded ? 'w-full' : 'w-40 2xl:w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-sm'} pt-1 px-3 pb-2">
     <div class="relative h-7">
         <input
             bind:this={sliderRef}
@@ -99,6 +101,7 @@
 		transform: translateX(-50%) rotate(45deg);
 		width: 6px;
 		height: 6px;
+		/* viz.teal[900] from $lib/colors */
 		background: #004d66;
 		border: 1px solid #004d66;
 		border-top: none;

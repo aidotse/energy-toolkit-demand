@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/svelte/svelte5';
 import GeoBarChart from './GeoBarChart.svelte';
+import { viz } from '$lib/colors';
 
 describe('GeoBarChart', () => {
 	const mockGeoData = [
@@ -26,7 +27,7 @@ describe('GeoBarChart', () => {
 		scenario_id: 'test-scenario',
 		name: 'Test Scenario',
 		description: 'Test description',
-		color: '#47B3FF'
+		color: viz.line
 	};
 
 	it('should render with required props', () => {

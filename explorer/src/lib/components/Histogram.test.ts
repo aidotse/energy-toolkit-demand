@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/svelte/svelte5';
 import Histogram from './Histogram.svelte';
+import { viz } from '$lib/colors';
 
 describe('Histogram', () => {
 	const mockHourData = Array.from({ length: 24 }, (_, i) => ({
@@ -17,7 +18,7 @@ describe('Histogram', () => {
 		scenario_id: 'test-scenario',
 		name: 'Test Scenario',
 		description: 'Test description',
-		color: '#47B3FF'
+		color: viz.line
 	};
 
 	it('should render with required props', () => {

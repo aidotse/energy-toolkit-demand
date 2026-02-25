@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/svelte/svelte5';
 import SegmentBars from './SegmentBars.svelte';
+import { viz } from '$lib/colors';
 
 describe('SegmentBars', () => {
 	const mockSegmentData = [
@@ -18,7 +19,7 @@ describe('SegmentBars', () => {
 		scenario_id: 'test-scenario',
 		name: 'Test Scenario',
 		description: 'Test description',
-		color: '#47B3FF'
+		color: viz.line
 	};
 
 	it('should render with required props', () => {

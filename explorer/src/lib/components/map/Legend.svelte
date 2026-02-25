@@ -1,15 +1,16 @@
 <script lang="ts">
     import { formatNumber } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
+    import { viz } from '$lib/colors';
 
     let { lower_bound, upper_bound } = $props();
 
     // Specify demand levels and corresponding colors
     let demandLevels = [
-        { value: lower_bound, color: '#61bbd9' }, // Light blue
-        { value: lower_bound + (upper_bound - lower_bound) * 0.33, color: '#007399' }, // Teal
-        { value: lower_bound + (upper_bound - lower_bound) * 0.66, color: '#002a66' }, // Dark navy
-        { value: upper_bound, color: '#660042' }, // Burgundy
+        { value: lower_bound, color: viz.mapGradient[0] },
+        { value: lower_bound + (upper_bound - lower_bound) * 0.33, color: viz.mapGradient[1] },
+        { value: lower_bound + (upper_bound - lower_bound) * 0.66, color: viz.mapGradient[2] },
+        { value: upper_bound, color: viz.mapGradient[3] },
     ];
 </script>
 
@@ -29,6 +30,7 @@
 
 <style>
     .legend-gradient {
+        /* viz.mapGradient from $lib/colors */
         background: linear-gradient(to right, #61bbd9, #007399, #002a66, #660042);
     }
 </style>

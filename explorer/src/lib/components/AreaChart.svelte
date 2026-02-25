@@ -27,6 +27,7 @@
 		hexToRgba
 	} from '$lib/comparisonUtils';
 	import { getTimeSeriesAxisConfig } from '$lib/chartConfig';
+	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -293,8 +294,8 @@
             grid={false}
             props={{
 				...getTimeSeriesAxisConfig(displayAxes, aggregation),
-				line: { fill: 'none', stroke: '#004d66', strokeWidth: 2 },
-				area: { fill: '#46a0c4', fillOpacity: 0.3 },
+				line: { fill: 'none', stroke: viz.teal[900], strokeWidth: 2 },
+				area: { fill: viz.teal[500], fillOpacity: 0.3 },
 				highlight: {
 					lines: { class: 'stroke-black [stroke-width:1.5px] [stroke-dasharray:6_4]' },
 					axis: 'both',
@@ -346,11 +347,11 @@
 			return {
 				key: scenarioId,
 				value: scenarioId,
-				color: hexToRgba(scenario.color || '#6b7280', opacity * 0.4),
+				color: hexToRgba(scenario.color || viz.scenario.baseline, opacity * 0.4),
 				props: {
 					line: {
 						fill: 'none',
-						stroke: hexToRgba(scenario.color || '#6b7280', opacity),
+						stroke: hexToRgba(scenario.color || viz.scenario.baseline, opacity),
 						strokeWidth: 2
 					}
 				}

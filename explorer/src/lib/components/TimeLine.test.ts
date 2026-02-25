@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/svelte/svelte5';
 import TimeLine from './TimeLine.svelte';
+import { viz } from '$lib/colors';
 
 describe('TimeLine', () => {
 	const mockDayData = Array.from({ length: 365 }, (_, i) => ({
@@ -17,7 +18,7 @@ describe('TimeLine', () => {
 		scenario_id: 'test-scenario',
 		name: 'Test Scenario',
 		description: 'Test description',
-		color: '#47B3FF'
+		color: viz.line
 	};
 
 	it('should render with required props', () => {

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/svelte';
 import SegmentBars from './SegmentBars.svelte';
+import { viz } from '$lib/colors';
 
 /**
  * SegmentBars displays electricity demand breakdown by segment (buildings, transport, industry).
@@ -63,14 +64,14 @@ const mockScenarios = [
 		name: 'Base Scenario',
 		scenario_id: 'base',
 		description: 'Business as usual scenario',
-		color: '#3b82f6'
+		color: viz.scenario.primary
 	},
 	{
 		id: 'high',
 		name: 'High Electrification',
 		scenario_id: 'high',
 		description: 'Aggressive electrification scenario',
-		color: '#10b981'
+		color: viz.scenario.secondary
 	}
 ];
 

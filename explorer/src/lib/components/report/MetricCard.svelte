@@ -8,6 +8,7 @@
 	 * @component
 	 */
 	import type { ComponentType } from 'svelte';
+	import { viz } from '$lib/colors';
 
 	let {
 		value,
@@ -45,7 +46,7 @@
 
 <div
 	class="metric-card rounded-lg p-4 {className}"
-	style="background-color: #004d66;"
+	style="background-color: {viz.teal[900]};"
 >
 	<!-- Icon (optional) -->
 	{#if Icon}

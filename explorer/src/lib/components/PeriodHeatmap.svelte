@@ -14,6 +14,7 @@
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
+	import { viz } from '$lib/colors';
 	import type { DemandRow } from '$lib/dataService';
 
 	type PeriodHeatmapCell = {
@@ -121,13 +122,16 @@
 	/**
 	 * Get heatmap color based on value
 	 */
+	// Dark endpoint RGB (viz.teal[900] = #004d66 → 0, 77, 102)
+	const DARK = [0, 77, 102] as const;   // viz.teal[900]
+	const LIGHT = [230, 243, 247] as const; // #e6f3f7
+
 	function getHeatmapColor(value: number, min: number, max: number): string {
 		if (max === min) return 'rgb(136, 197, 217)'; // Mid-range color if no variation
 		const t = (value - min) / (max - min); // 0-1 normalized
-		// Interpolate from light blue (#e6f3f7) to dark blue (#004d66)
-		const r = Math.round(230 - t * 230);
-		const g = Math.round(243 - t * 166);
-		const b = Math.round(247 - t * 145);
+		const r = Math.round(LIGHT[0] + t * (DARK[0] - LIGHT[0]));
+		const g = Math.round(LIGHT[1] + t * (DARK[1] - LIGHT[1]));
+		const b = Math.round(LIGHT[2] + t * (DARK[2] - LIGHT[2]));
 		return `rgb(${r}, ${g}, ${b})`;
 	}
 
@@ -293,9 +297,9 @@
 				<div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-600 dark:text-gray-400">
 					<span>Lägre</span>
 					<div class="flex h-3 w-24">
-						<div class="flex-1 rounded-l" style="background: rgb(230, 243, 247);"></div>
+						<div class="flex-1 rounded-l" style="background: rgb({LIGHT[0]}, {LIGHT[1]}, {LIGHT[2]});"></div>
 						<div class="flex-1" style="background: rgb(136, 197, 217);"></div>
-						<div class="flex-1 rounded-r" style="background: rgb(0, 77, 102);"></div>
+						<div class="flex-1 rounded-r" style="background: rgb({DARK[0]}, {DARK[1]}, {DARK[2]});"></div>
 					</div>
 					<span>Högre</span>
 				</div>

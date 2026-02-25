@@ -11,17 +11,9 @@ import type {
 	ComparisonTimeSeriesDataPoint,
 	ScenarioComparisonMetadata
 } from '$lib/types/ChartComponent.interface';
-import { SCENARIO_COLORS } from '$lib/types/ChartComponent.interface';
+import { SCENARIO_COLORS, COMPARISON_COLORS } from '$lib/colors';
 
-/**
- * Scenario color palette
- * Provides consistent colors for up to 3 scenarios in comparison mode
- */
-export const COMPARISON_COLORS = [
-	SCENARIO_COLORS.primary, // Blue
-	SCENARIO_COLORS.secondary, // Green
-	SCENARIO_COLORS.tertiary // Amber
-] as const;
+export { COMPARISON_COLORS };
 
 /**
  * Get normalized scenarios array from props

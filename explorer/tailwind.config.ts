@@ -4,7 +4,7 @@ import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
 import type { Config } from 'tailwindcss';
 import layerstack from '@layerstack/tailwind/plugin';
-//import colors from 'tailwindcss/colors';
+import { tailwindColors } from './src/lib/colors';
 
 export default {
   content: [
@@ -38,25 +38,7 @@ export default {
       scale: {
         '98': '0.98',     // For active button states
       },
-      colors: {
-        // Monochrome chart scale (dark to light)
-        'chart': {
-          '900': '#004d66',  // Darkest - tooltip bg
-          '700': '#007399',
-          '500': '#46a0c4',
-          '300': '#61bbd9',
-          '100': '#90d2e8',  // Lightest
-        },
-        // Map gradient colors (for future use)
-        'map': {
-          'light': '#61bbd9',
-          'mid': '#007399',
-          'dark': '#002a66',
-          'accent': '#660042',
-        },
-        // Accent yellow for highlights
-        'highlight': '#f9ca2d',
-      },
+      colors: tailwindColors,
     },
   },
 
@@ -69,13 +51,6 @@ export default {
         "accent": "hsl(154.2 49.0196% 60%)",
         "neutral": "hsl(233.3333 27.2727% 12.9412%)",
         "surface-100": "hsl(180 100% 100%)",
-        "chart-transport": "#47B3FF",
-        "chart": {
-          "total": "#47B3FF",
-          "buildings": "#EEB902",
-          "industry": "#07ED7A",
-          "transport": "#47B3FF"
-        }
       },
       "dark": {
         "color-scheme": "dark",
@@ -88,13 +63,6 @@ export default {
         "warning": "hsl(39.2308 64.3564% 60.3922%)",
         "danger": "hsl(6.3415 55.6561% 43.3333%)",
         "surface-100": "hsl(0 0% 12.549%)",
-        "chart-transport": "#47B3FF",
-        "chart": {
-          "total": "#47B3FF",
-          "buildings": "#EEB902",
-          "industry": "#07ED7A",
-          "transport": "#47B3FF"
-        }
       }
     },
   },

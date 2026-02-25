@@ -19,6 +19,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { getSegmentColor, getSegmentLabel } from '$lib/chartConfig';
+	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 
 	interface PieSlice {
@@ -471,7 +472,7 @@
 			x={CX}
 			y="-5"
 			text-anchor="middle"
-			fill="#374151"
+			fill={viz.label}
 			style="font-size: 24px; font-weight: 500;"
 		>
 			{label}
@@ -510,7 +511,7 @@
 			<path
 				d={lbl.leaderLine}
 				fill="none"
-				stroke="#374151"
+				stroke={viz.label}
 				stroke-width="1"
 			/>
 		{/if}
@@ -562,10 +563,10 @@
 			<text x="10" y="18" fill="#000000" style="font-size: 12px;">
 				{hoveredData.displayName}
 			</text>
-			<text x="10" y="36" fill="#374151" style="font-size: 11px;">
+			<text x="10" y="36" fill={viz.label} style="font-size: 11px;">
 				{Math.round(hoveredData.value / 1000)} TWh
 			</text>
-			<text x="10" y="52" fill="#374151" style="font-size: 11px;">
+			<text x="10" y="52" fill={viz.label} style="font-size: 11px;">
 				{hoveredData.percentage.toFixed(1)}% av totalt
 			</text>
 		</g>

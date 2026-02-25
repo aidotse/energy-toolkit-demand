@@ -4,6 +4,8 @@
   Vertical line connects the circles. Owns its data internally.
 -->
 <script lang="ts">
+	import { viz } from '$lib/colors';
+
 	const steps = [
 		{
 			title: 'Energimyndighetens scenarier',
@@ -35,12 +37,12 @@
 			<div class="flex flex-col items-center">
 				<div
 					class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-					style="background-color: #004d66;"
+					style="background-color: {viz.teal[900]};"
 				>
 					<span class="text-base font-bold text-white">{i + 1}</span>
 				</div>
 				{#if i < steps.length - 1}
-					<div class="w-0.5 flex-1 mt-1" style="background-color: #004d66; opacity: 0.25;"></div>
+					<div class="w-0.5 flex-1 mt-1" style="background-color: {viz.teal[900]}; opacity: 0.25;"></div>
 				{/if}
 			</div>
 

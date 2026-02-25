@@ -109,9 +109,16 @@ function createParameterStore() {
 
         /**
          * Set base scenario
+         * Resets parameters to baseline when switching away from the default scenario,
+         * since parameter adjustments only apply to the default scenario.
          */
         setBaseScenario(scenarioId: string) {
             state.baseScenario = scenarioId;
+
+            const defaultId = state.config?.baseScenarios.find(s => s.default)?.id || 'beslutad-policy';
+            if (scenarioId !== defaultId && state.config?.defaults) {
+                state.parameterValues = { ...state.config.defaults };
+            }
         },
 
         /**

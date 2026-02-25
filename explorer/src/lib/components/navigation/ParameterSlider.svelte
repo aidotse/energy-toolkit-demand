@@ -96,6 +96,7 @@
 		appearance: none;
 		width: 16px;
 		height: 16px;
+		/* gray-800 — pseudo-element, can't bind dynamically */
 		background-color: #1f2937;
 		border-radius: 50%;
 		cursor: pointer;
@@ -108,6 +109,7 @@
 	.parameter-slider::-moz-range-thumb {
 		width: 16px;
 		height: 16px;
+		/* gray-800 — pseudo-element, can't bind dynamically */
 		background-color: #1f2937;
 		border-radius: 50%;
 		border: none;

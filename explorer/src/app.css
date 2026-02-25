@@ -2,18 +2,18 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* Text selection highlight color - washed out yellow */
+/* Text selection highlight color - teal from chart scale */
 ::selection {
-    background-color: rgba(249, 202, 45, 0.35);
+    background-color: theme('colors.chart.500 / 0.30');
     color: inherit;
 }
 
 ::-moz-selection {
-    background-color: rgba(249, 202, 45, 0.35);
+    background-color: theme('colors.chart.500 / 0.30');
     color: inherit;
 }
 
-/* ThemeSwitch sun icon color - targets the sun icon (second icon in the grid) */
+/* ThemeSwitch sun icon color - targets third-party SVG (ui.sunIcon from $lib/colors) */
 .grid.grid-cols-1.grid-rows-1 svg:last-child {
     color: #f9ca2d !important;
 }

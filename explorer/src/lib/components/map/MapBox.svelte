@@ -12,6 +12,7 @@
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { parameterStore } from '$lib/stores/parameterStore.svelte';
     import { getSettings } from 'svelte-ux';
+    import { viz } from '$lib/colors';
 
     // Get svelte-ux theme store
     const { currentTheme } = getSettings();
@@ -36,6 +37,8 @@
     let mapContainer: HTMLDivElement;
     let popup: mapboxgl.Popup;
     let stickyPopup: boolean = false;
+    let fadeLeftPad = $state(0);
+    let resizeObserver: ResizeObserver | null = null;
 
     // Track the year and scenario that prop data corresponds to
     let propDataYear = $state<number | null>(null);
@@ -244,13 +247,42 @@
         stickyPopup = false;
     };
 
+    // Compute fitBounds padding that accounts for the fadeLeft mask
+    function getFitPadding() {
+        return {
+            ...FIT_BOUNDS_OPTIONS.padding,
+            left: FIT_BOUNDS_OPTIONS.padding.left + fadeLeftPad
+        };
+    }
+
     onMount(() => {
+        // When fadeLeft is active, shift Sweden right so it renders
+        // in the visible (non-masked) portion of the container.
+        if (fadeLeft) {
+            fadeLeftPad = Math.round(mapContainer.clientWidth * 0.45);
+
+            resizeObserver = new ResizeObserver((entries) => {
+                const newPad = Math.round(entries[0].contentRect.width * 0.45);
+                if (newPad !== fadeLeftPad) {
+                    fadeLeftPad = newPad;
+                    if (map && mapLoaded && geography === 'total') {
+                        map.fitBounds(SWEDEN_BOUNDS, {
+                            ...FIT_BOUNDS_OPTIONS,
+                            padding: getFitPadding(),
+                            duration: 0
+                        });
+                    }
+                }
+            });
+            resizeObserver.observe(mapContainer);
+        }
+
         map = new mapboxgl.Map({
             container: mapContainer,
             accessToken: 'pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA',
             style: MAPBOX_STYLES[$currentTheme.dark ? 'dark' : 'light'],
             bounds: SWEDEN_BOUNDS,
-            fitBoundsOptions: FIT_BOUNDS_OPTIONS,
+            fitBoundsOptions: { ...FIT_BOUNDS_OPTIONS, padding: getFitPadding() },
             attributionControl: false // Hide Mapbox logo and info button
         });
 
@@ -278,10 +310,10 @@
                             'interpolate',
                             ['linear'],
                             ['get', 'total'],
-                            lower_bound, '#61bbd9',
-                            lower_bound + (upper_bound - lower_bound) * 0.33, '#007399',
-                            lower_bound + (upper_bound - lower_bound) * 0.66, '#002a66',
-                            upper_bound, '#660042',
+                            lower_bound, viz.mapGradient[0],
+                            lower_bound + (upper_bound - lower_bound) * 0.33, viz.mapGradient[1],
+                            lower_bound + (upper_bound - lower_bound) * 0.66, viz.mapGradient[2],
+                            upper_bound, viz.mapGradient[3],
                         ],
                         'fill-opacity': 0.7,
                     },
@@ -405,10 +437,10 @@
                                 'interpolate',
                                 ['linear'],
                                 ['get', 'total'],
-                                lower_bound, '#61bbd9',
-                                lower_bound + (upper_bound - lower_bound) * 0.33, '#007399',
-                                lower_bound + (upper_bound - lower_bound) * 0.66, '#002a66',
-                                upper_bound, '#660042',
+                                lower_bound, viz.mapGradient[0],
+                                lower_bound + (upper_bound - lower_bound) * 0.33, viz.mapGradient[1],
+                                lower_bound + (upper_bound - lower_bound) * 0.66, viz.mapGradient[2],
+                                upper_bound, viz.mapGradient[3],
                             ],
                             'fill-opacity': 0.7,
                         },
@@ -495,6 +527,7 @@
             // Reset to Sweden view instead of fixed center/zoom
             map.fitBounds(SWEDEN_BOUNDS, {
                 ...FIT_BOUNDS_OPTIONS,
+                padding: getFitPadding(),
                 duration: 1000
             });
             closePopup();
@@ -519,6 +552,7 @@
     });
 
     onDestroy(() => {
+        resizeObserver?.disconnect();
         map?.off('click', handleMapClick); // Detach the event
         map?.remove();
     });

@@ -25,6 +25,7 @@
 		hexToRgba
 	} from '$lib/comparisonUtils';
 	import { getDistributionAxisConfig } from '$lib/chartConfig';
+	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -327,7 +328,7 @@
 				{@const series = normalizedScenarios.map(scenario => {
 					const scenarioId = scenario.id || scenario.scenario_id || '';
 					const opacity = getScenarioOpacity(scenarioId);
-					const color = hexToRgba(scenario.color || '#6b7280', opacity);
+					const color = hexToRgba(scenario.color || viz.scenario.baseline, opacity);
 					return {
 						key: scenarioId,
 						color,

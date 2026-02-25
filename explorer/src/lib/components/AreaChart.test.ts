@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte/svelte5';
 import AreaChart from './AreaChart.svelte';
+import { viz } from '$lib/colors';
 
 describe('AreaChart', () => {
 	const mockYearData = [
@@ -18,7 +19,7 @@ describe('AreaChart', () => {
 		scenario_id: 'test-scenario',
 		name: 'Test Scenario',
 		description: 'Test description',
-		color: '#47B3FF'
+		color: viz.line
 	};
 
 	it('should render with required props', () => {

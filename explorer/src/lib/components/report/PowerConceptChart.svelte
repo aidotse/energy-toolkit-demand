@@ -5,6 +5,8 @@
   Right: peaked profile with morning/evening peaks, same total 2400 MWh
 -->
 <script lang="ts">
+	import { viz } from '$lib/colors';
+
 	// Flat profile: constant 100 MW for 24 hours
 	const flatValue = 100;
 
@@ -78,13 +80,13 @@
 		<!-- LEFT PANEL: Flat profile -->
 		<!-- Y-axis -->
 		{#each yTicks as tick}
-			<line x1={pad.left} y1={yScale(tick)} x2={panelW - pad.right} y2={yScale(tick)} stroke="#e5e7eb" stroke-width="1" />
+			<line x1={pad.left} y1={yScale(tick)} x2={panelW - pad.right} y2={yScale(tick)} stroke={viz.grid} stroke-width="1" />
 			<text x={pad.left - 6} y={yScale(tick) + 4} text-anchor="end" class="fill-gray-400" font-size="10">{tick}</text>
 		{/each}
 
 		<!-- Area -->
-		<path d={flatAreaPath} fill="#004d66" fill-opacity="0.25" />
-		<line x1={xScale(0, 0)} y1={yScale(flatValue)} x2={xScale(23, 0)} y2={yScale(flatValue)} stroke="#004d66" stroke-width="2" />
+		<path d={flatAreaPath} fill={viz.teal[900]} fill-opacity="0.25" />
+		<line x1={xScale(0, 0)} y1={yScale(flatValue)} x2={xScale(23, 0)} y2={yScale(flatValue)} stroke={viz.teal[900]} stroke-width="2" />
 
 		<!-- 100 MW label -->
 		<text x={xScale(11.5, 0)} y={yScale(flatValue) - 8} text-anchor="middle" class="fill-gray-700 dark:fill-gray-300" font-size="11" font-weight="600">100 MW</text>
@@ -98,24 +100,24 @@
 		{/each}
 
 		<!-- Energy label -->
-		<text x={xScale(11.5, 0)} y={yScale(50)} text-anchor="middle" class="fill-[#004d66] dark:fill-[#46a0c4]" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
+		<text x={xScale(11.5, 0)} y={yScale(50)} text-anchor="middle" class="fill-chart-900 dark:fill-chart-500" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
 
 
 		<!-- RIGHT PANEL: Peaked profile -->
 
 		<!-- Y-axis -->
 		{#each yTicks as tick}
-			<line x1={rightOffset + pad.left} y1={yScale(tick)} x2={rightOffset + panelW - pad.right} y2={yScale(tick)} stroke="#e5e7eb" stroke-width="1" />
+			<line x1={rightOffset + pad.left} y1={yScale(tick)} x2={rightOffset + panelW - pad.right} y2={yScale(tick)} stroke={viz.grid} stroke-width="1" />
 			<text x={rightOffset + pad.left - 6} y={yScale(tick) + 4} text-anchor="end" class="fill-gray-400" font-size="10">{tick}</text>
 		{/each}
 
 		<!-- Area -->
-		<path d={peakedAreaPath} fill="#004d66" fill-opacity="0.25" />
-		<path d={peakedLinePath} fill="none" stroke="#004d66" stroke-width="2" stroke-linejoin="round" />
+		<path d={peakedAreaPath} fill={viz.teal[900]} fill-opacity="0.25" />
+		<path d={peakedLinePath} fill="none" stroke={viz.teal[900]} stroke-width="2" stroke-linejoin="round" />
 
 		<!-- Peak annotation -->
-		<line x1={rightOffset + pad.left} y1={yScale(peakMax)} x2={rightOffset + panelW - pad.right} y2={yScale(peakMax)} stroke="#b91c1c" stroke-width="1" stroke-dasharray="4,3" />
-		<text x={rightOffset + panelW - pad.right + 2} y={yScale(peakMax) + 4} text-anchor="start" fill="#b91c1c" font-size="10" font-weight="600">{peakMax} MW</text>
+		<line x1={rightOffset + pad.left} y1={yScale(peakMax)} x2={rightOffset + panelW - pad.right} y2={yScale(peakMax)} stroke={viz.emphasis} stroke-width="1" stroke-dasharray="4,3" />
+		<text x={rightOffset + panelW - pad.right + 2} y={yScale(peakMax) + 4} text-anchor="start" fill={viz.emphasis} font-size="10" font-weight="600">{peakMax} MW</text>
 
 		<!-- Title -->
 		<text x={rightOffset + pad.left + plotW / 2} y={12} text-anchor="middle" class="fill-gray-600 dark:fill-gray-400" font-size="12" font-weight="600">Ojämn last</text>
@@ -126,7 +128,7 @@
 		{/each}
 
 		<!-- Energy label -->
-		<text x={xScale(11.5, rightOffset)} y={yScale(50)} text-anchor="middle" class="fill-[#004d66] dark:fill-[#46a0c4]" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
+		<text x={xScale(11.5, rightOffset)} y={yScale(50)} text-anchor="middle" class="fill-chart-900 dark:fill-chart-500" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
 	</svg>
 
 	<figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">

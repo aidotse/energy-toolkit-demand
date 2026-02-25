@@ -6,6 +6,9 @@
  */
 
 import { formatNumber } from '$lib/utilities';
+import { SEGMENT_COLORS, viz } from '$lib/colors';
+
+export { SEGMENT_COLORS };
 
 /**
  * Segment display name mapping (API name → Swedish display name)
@@ -16,19 +19,6 @@ export const SEGMENT_LABELS: Record<string, string> = {
 	'services': 'Service',
 	'transport': 'Transport',
 	'datacenters': 'Datacenter',
-} as const;
-
-/**
- * Segment color mapping for pie/sector charts
- * Colors assigned from darkest to lightest based on segment importance
- * Uses API segment names (lowercase)
- */
-export const SEGMENT_COLORS: Record<string, { bg: string; text: string }> = {
-	'industry': { bg: '#004d66', text: 'white' },
-	'housing': { bg: '#007399', text: 'white' },
-	'services': { bg: '#46a0c4', text: 'white' },
-	'transport': { bg: '#61bbd9', text: 'black' },
-	'datacenters': { bg: '#90d2e8', text: 'black' },
 } as const;
 
 /**
@@ -43,7 +33,7 @@ export function getSegmentLabel(segment: string): string {
  * Returns default gray if segment not found
  */
 export function getSegmentColor(segment: string): { bg: string; text: string } {
-	return SEGMENT_COLORS[segment] || { bg: '#9ca3af', text: 'white' };
+	return SEGMENT_COLORS[segment] || { bg: viz.fallback, text: 'white' };
 }
 import { getEnergyPrefix, getPowerPrefix } from '$lib/stores/units.svelte';
 

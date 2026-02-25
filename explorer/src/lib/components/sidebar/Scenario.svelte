@@ -138,6 +138,7 @@
 		-webkit-appearance: none;
 		appearance: none;
 		margin-top: -4px;
+		/* viz.scenario.primary from $lib/colors */
 		background-color: #3b82f6;
 		height: 12px;
 		width: 12px;
@@ -146,6 +147,7 @@
 	}
 
 	.range-input::-moz-range-thumb {
+		/* viz.scenario.primary from $lib/colors */
 		background-color: #3b82f6;
 		height: 12px;
 		width: 12px;
