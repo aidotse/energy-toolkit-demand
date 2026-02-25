@@ -19,8 +19,8 @@
 
     // Mapbox style URLs for light and dark themes
     const MAPBOX_STYLES = {
-        light: 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq', // Your current light style
-        dark: 'mapbox://styles/mapbox/dark-v11' // Mapbox default dark style (you can replace with your custom dark style)
+        light: import.meta.env.VITE_MAPBOX_STYLE_LIGHT || 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq',
+        dark: 'mapbox://styles/mapbox/dark-v11'
     };
 
     let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'], fadeLeft = false } = $props();
@@ -279,7 +279,7 @@
 
         map = new mapboxgl.Map({
             container: mapContainer,
-            accessToken: 'pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA',
+            accessToken: import.meta.env.VITE_MAPBOX_TOKEN,
             style: MAPBOX_STYLES[$currentTheme.dark ? 'dark' : 'light'],
             bounds: SWEDEN_BOUNDS,
             fitBoundsOptions: { ...FIT_BOUNDS_OPTIONS, padding: getFitPadding() },

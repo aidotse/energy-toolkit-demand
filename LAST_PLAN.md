@@ -158,7 +158,7 @@ These are research and data acquisition tasks that feed into the generator. Each
   - Potentially add cycling compressors behavior
   - End goal: Scenario fork
 
-- [ ] **I3. Transport**
+- [X] **I3. Transport**
   - Contact Jocke (Filip to reach out)
   - Get BK1 data from Behovskartan 1
   - End goal: Scenario fork
@@ -170,10 +170,10 @@ These are research and data acquisition tasks that feed into the generator. Each
 - [ ] **J1. Testing framework** `BLOCKED: vite-plugin-svelte compatibility`
   Unit tests work for utilities/services (7 passing via Vitest). Svelte component tests are blocked by a compatibility issue with `vite-plugin-svelte`. 11 test files exist but component tests can't run. Investigate fix or workaround.
 
-- [ ] **J2. CI/CD pipeline**
+- [X] **J2. CI/CD pipeline**
   Set up automated testing and build pipeline. AWS deployment infrastructure exists (from PR #110). Connect: push -> test -> build -> deploy.
 
-- [ ] **J3. Deployment**
+- [X] **J3. Deployment**
   Finalize deployment to AWS. Verify API and Explorer both deploy correctly. Test with production data.
 
 ---
