@@ -52,7 +52,7 @@ cd generator
 python generator_notebook-county.py
 ```
 
-This creates Parquet files in `/api/data/demand/` with demand forecasts for all scenarios.
+This creates Parquet files in `/data/` with demand forecasts for all scenarios.
 
 ### 2. Build Static API Endpoints
 
@@ -63,7 +63,7 @@ npm install
 node generate-api.js --defaults
 ```
 
-This creates metadata files in `/api/data/` including:
+This creates metadata files in `/data/` including:
 - `scenarios.json` - Available forecast scenarios
 - `geographies.json` - Geographic regions
 - `parameters.json` - Available query parameters
@@ -113,23 +113,25 @@ Visit http://localhost:5173/charts to see the chart library with all visualizati
 │   ├── input/                    # Historical demand data
 │   └── transformers/             # Scenario transformation modules
 │
+├── data/                         # Generated data (not in git)
+│   ├── base/                     # Base scenarios
+│   │   └── {scenario-id}/        # e.g. current-policy/
+│   │       └── {segment}/data.parquet
+│   ├── scenarios/                # Parametric scenarios
+│   ├── aggregated/               # Pre-computed aggregations
+│   ├── scenarios.json            # Scenario definitions
+│   ├── geographies.json          # Geography metadata
+│   ├── parameters.json           # Available parameters
+│   └── globals.json              # Data bounds
+│
 ├── api/                          # REST API server
-│   ├── local-server.js           # API server (OpenAPI/Prism + DuckDB)
+│   ├── local-server.js           # API server (OpenAPI Backend + DuckDB)
 │   ├── generate-api.js           # Static endpoint generator
 │   ├── openapi.yaml              # API specification
 │   ├── parameters.yaml           # Parameter definitions
 │   ├── scripts/                  # Generation scripts
 │   │   ├── generate-endpoints.js
 │   │   └── endpoints/            # Endpoint generation modules
-│   ├── data/                     # Generated data (not in git)
-│   │   ├── demand/               # Parquet files (133k+ files)
-│   │   │   ├── base/             # Base scenarios
-│   │   │   ├── scenarios/        # Parametric scenarios
-│   │   │   └── aggregated/       # Pre-computed aggregations
-│   │   ├── scenarios.json        # Scenario definitions
-│   │   ├── geographies.json      # Geography metadata
-│   │   ├── parameters.json       # Available parameters
-│   │   └── globals.json          # Data bounds
 │   └── tests/                    # API tests
 │
 └── explorer/                     # SvelteKit web application

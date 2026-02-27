@@ -285,7 +285,7 @@ def process_all_parameters(
     Args:
         con: DuckDB connection
         config_path: Path to config.yaml
-        base_scenario_name: Name of base scenario (e.g., "Beslutad Policy")
+        base_scenario_name: Name of base scenario (e.g., "current-policy")
         base_dir: Base output directory containing base scenario files
         output_dir: Output directory for parameter files
 

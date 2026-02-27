@@ -233,7 +233,7 @@ PUBLIC_MAPBOX_TOKEN=your_token_here      # Mapbox access token
 
 ### Map not displaying
 - Verify Mapbox token is set in `.env`
-- Check that geographies.geojson exists in `/api/data/`
+- Check that geographies.geojson exists in `/data/`
 - Ensure geography IDs match between data and GeoJSON
 
 ### Parameters not updating

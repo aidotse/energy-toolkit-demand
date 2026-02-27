@@ -1,14 +1,16 @@
 # Dependencies (will be installed fresh)
-node_modules/
+**/node_modules/
+
+# Components not needed in API image
+generator/
+explorer/
+infrastructure/
+setup/
+docs/
 
 # Development files
 *.md
-docs/
-tests/
 .github/
-vitest.config.js
-tsconfig.json
-typedoc.json
 
 # Git
 .git/

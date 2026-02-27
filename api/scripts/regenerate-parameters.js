@@ -113,21 +113,8 @@ async function regenerateHousingCurves(conn) {
  * For each segment and each curve index, combines base data with curve multiplier.
  */
 async function generateParameterParquets(conn, config) {
-  const baseScenario = config.parameters.baseScenario;
-
-  // Find slugified base scenario directory
-  const mappingPath = path.join(dataDir, 'scenario-mapping.json');
-  let baseSlug = baseScenario.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  if (fs.existsSync(mappingPath)) {
-    const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
-    // Find the slug that maps to our base scenario
-    for (const [slug, name] of Object.entries(mapping)) {
-      if (name === baseScenario) {
-        baseSlug = slug;
-        break;
-      }
-    }
-  }
+  // baseScenario is now the English ID used directly as directory name
+  const baseScenarioId = config.parameters.baseScenario;
 
   const definitions = config.parameters.definitions;
   let totalGenerated = 0;
@@ -138,7 +125,7 @@ async function generateParameterParquets(conn, config) {
 
     const segment = paramDef.segments[0];
     const curvesPath = path.join(projectRoot, `generator/input/scenarios/${paramName}/curves.parquet`);
-    const basePath = path.join(baseDir, baseSlug, segment, 'data.parquet');
+    const basePath = path.join(baseDir, baseScenarioId, segment, 'data.parquet');
 
     if (!fs.existsSync(curvesPath)) {
       console.log(`  SKIP ${paramName}: curves file not found at ${curvesPath}`);
@@ -192,14 +179,11 @@ async function generateParameterParquets(conn, config) {
 }
 
 /**
- * Load scenario slug-to-name mapping for aggregated tables.
+ * Load base scenario IDs from config.yaml.
+ * Returns array of { id, label } objects.
  */
-function loadScenarioMapping() {
-  const mappingPath = path.join(dataDir, 'scenario-mapping.json');
-  if (fs.existsSync(mappingPath)) {
-    return JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
-  }
-  return {};
+function loadBaseScenarios(config) {
+  return config?.parameters?.baseScenarios || [];
 }
 
 /**
@@ -207,9 +191,8 @@ function loadScenarioMapping() {
  * Covers the geoFilter='all' + segFilter='all' query shape that previously had no aggregated table.
  * Schema: scenario_id (VARCHAR), geography (VARCHAR), segment (VARCHAR), year (VARCHAR), total_value (DOUBLE)
  */
-async function generateGeoSegmentYearly(conn) {
-  const scenarioMapping = loadScenarioMapping();
-  const scenarios = Object.keys(scenarioMapping);
+async function generateGeoSegmentYearly(conn, config) {
+  const baseScenarios = loadBaseScenarios(config);
   const segments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
 
   fs.mkdirSync(aggregatedDir, { recursive: true });
@@ -217,17 +200,16 @@ async function generateGeoSegmentYearly(conn) {
 
   const unionParts = [];
 
-  for (const scenarioSlug of scenarios) {
-    const scenarioName = scenarioMapping[scenarioSlug];
+  for (const scenario of baseScenarios) {
     for (const segment of segments) {
-      const basePath = path.join(baseDir, scenarioSlug, segment, 'data.parquet');
+      const basePath = path.join(baseDir, scenario.id, segment, 'data.parquet');
       if (!fs.existsSync(basePath)) {
-        console.warn(`  SKIP ${scenarioSlug}/${segment}: base file not found`);
+        console.warn(`  SKIP ${scenario.id}/${segment}: base file not found`);
         continue;
       }
       unionParts.push(`
         SELECT
-          '${scenarioName}' AS scenario_id,
+          '${scenario.id}' AS scenario_id,
           b.geography,
           '${segment}' AS segment,
           CAST(EXTRACT(YEAR FROM b.timestamp) AS VARCHAR) AS year,
@@ -270,8 +252,7 @@ async function generateGeoSegmentYearly(conn) {
  * Processes each parameter combination individually to avoid expensive CROSS JOINs.
  */
 async function generateParamYearly(conn, config) {
-  const scenarioMapping = loadScenarioMapping();
-  const scenarios = Object.keys(scenarioMapping);
+  const baseScenarios = loadBaseScenarios(config);
   const segments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
   const definitions = config.parameters.definitions;
 
@@ -293,13 +274,11 @@ async function generateParamYearly(conn, config) {
 
   let comboCount = 0;
 
-  for (const scenarioSlug of scenarios) {
-    const scenarioName = scenarioMapping[scenarioSlug];
-
+  for (const scenario of baseScenarios) {
     for (const segment of segments) {
-      const basePath = path.join(baseDir, scenarioSlug, segment, 'data.parquet');
+      const basePath = path.join(baseDir, scenario.id, segment, 'data.parquet');
       if (!fs.existsSync(basePath)) {
-        console.warn(`  SKIP ${scenarioSlug}/${segment}: base file not found`);
+        console.warn(`  SKIP ${scenario.id}/${segment}: base file not found`);
         continue;
       }
 
@@ -317,7 +296,7 @@ async function generateParamYearly(conn, config) {
       const hasFlexCurves = fs.existsSync(flexCurvesPath);
 
       const combos = (maxGrowth + 1) * (maxFlex + 1);
-      console.log(`  ${scenarioSlug}/${segment}: ${combos} combos (growth 0-${maxGrowth} × flex 0-${maxFlex})`);
+      console.log(`  ${scenario.id}/${segment}: ${combos} combos (growth 0-${maxGrowth} × flex 0-${maxFlex})`);
 
       // Process each (growth_index, flex_index) combination individually
       for (let gi = 0; gi <= maxGrowth; gi++) {
@@ -339,7 +318,7 @@ async function generateParamYearly(conn, config) {
           const sql = `
             INSERT INTO param_yearly_tmp
             SELECT
-              '${scenarioName}' AS scenario_id,
+              '${scenario.id}' AS scenario_id,
               b.geography,
               '${segment}' AS segment,
               CAST(EXTRACT(YEAR FROM b.timestamp) AS VARCHAR) AS year,
@@ -409,7 +388,7 @@ async function main() {
 
     // Step 3: Generate geo_segment_yearly aggregated table
     console.log('Step 3: Generate geo_segment_yearly aggregated table');
-    await generateGeoSegmentYearly(conn);
+    await generateGeoSegmentYearly(conn, config);
     console.log('');
 
     // Step 4: Generate param_yearly aggregated table (all parameter combos)

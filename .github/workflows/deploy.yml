@@ -44,17 +44,15 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Download API data from S3
-        working-directory: ./api
         run: aws s3 sync s3://${{ vars.S3_DATA_BUCKET }}/ data/
 
       - name: Build and push Docker image
         id: build
-        working-directory: ./api
         run: |
           IMAGE_TAG="${{ github.sha }}"
           FULL_IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
 
-          docker build -t ${FULL_IMAGE} .
+          docker build -f infrastructure/Dockerfile -t ${FULL_IMAGE} .
           docker push ${FULL_IMAGE}
 
           # Also tag as latest for the environment

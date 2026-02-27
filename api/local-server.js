@@ -10,9 +10,9 @@
  * - Parameters are combined multiplicatively with base scenario data
  *
  * **Data Structure:**
- * - Base scenarios: /api/data/base/{scenario-slug}/{segment}/data.parquet
- * - Parameters: /api/data/parameters/{param}/{index}/{segment}/data.parquet
- * - Aggregated tables: /api/data/aggregated/*.parquet (pre-computed for performance)
+ * - Base scenarios: /data/base/{scenario-id}/{segment}/data.parquet
+ * - Parameters: /data/parameters/{param}/{index}/{segment}/data.parquet
+ * - Aggregated tables: /data/aggregated/*.parquet (pre-computed for performance)
  *
  * **Performance:**
  * - Uses DuckDB in-memory database with persistent connection
@@ -32,6 +32,7 @@ import path from 'path';
 import qs from 'qs';
 import fs from 'fs';
 import { parsePeriod, formatPeriod } from './utils.js';
+import { getDataDir } from '../paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -75,7 +76,7 @@ function setCachedQuery(key, data) {
   }
   queryCache.set(key, data);
 }
-const api = new OpenAPIBackend({ definition: './openapi.yaml' });
+const api = new OpenAPIBackend({ definition: path.join(__dirname, 'openapi.yaml') });
 
 /**
  * Generate ETag from file stats
@@ -165,7 +166,7 @@ const conn = db.connect();
 /**
  * Data directory paths
  */
-const dataDir = path.join(__dirname, 'data');
+const dataDir = getDataDir();
 const baseDir = path.join(dataDir, 'base');
 const parametersDir = path.join(dataDir, 'parameters');
 const aggregatedDir = path.join(dataDir, 'aggregated');
@@ -185,23 +186,11 @@ function loadStrategy2Config() {
 const strategy2Config = loadStrategy2Config();
 
 /**
- * Load scenario slug to name mapping
- */
-function loadScenarioMapping() {
-  const mappingPath = path.join(dataDir, 'scenario-mapping.json');
-  if (fs.existsSync(mappingPath)) {
-    return JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
-  }
-  return {};
-}
-
-const scenarioMapping = loadScenarioMapping();
-
-/**
- * Get original scenario name from slug (for aggregated table queries)
+ * Get scenario ID for aggregated table queries.
+ * With English IDs, the slug is the scenario_id directly.
  */
 function getScenarioName(slug) {
-  return scenarioMapping[slug] || slug;
+  return slug;
 }
 
 /**

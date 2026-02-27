@@ -163,7 +163,15 @@ api:
 # API combines them at query time
 parameters:
   strategy: 2                          # 1=precomputed, 2=independent, 3=query-time
-  baseScenario: 'Beslutad Policy'      # Base for parameter calculations
+  baseScenario: current-policy         # Base for parameter calculations
+  baseScenarios:
+    - id: current-policy
+      label: Beslutad Policy
+      default: true
+    - id: local-environment
+      label: Lokal Miljöhänsyn
+    - id: international-growth
+      label: Internationell Tillväxt
 
   definitions:
     # Pattern: {segment}_{type} where type is 'growth' or 'flex'

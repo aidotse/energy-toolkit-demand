@@ -44,8 +44,8 @@ export function getApiDir() {
  * @returns {string} - Absolute path to the data directory
  */
 export function getDataDir() {
-  const apiDir = getApiDir();
-  return path.join(apiDir, 'data');
+  const projectRoot = findProjectRoot();
+  return path.join(projectRoot, 'data');
 }
 
 /**

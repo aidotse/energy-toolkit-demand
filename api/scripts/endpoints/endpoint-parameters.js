@@ -7,18 +7,6 @@ import $RefParser from 'json-schema-ref-parser';
 import { getDataDir } from '../../../paths.js';
 
 /**
- * Helper to convert scenario name to URL-safe slug
- */
-function slugify(name) {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/**
  * Reads parameters.yaml and config.yaml to generate parameter values.
  * For Strategy 2, includes independent parameter definitions.
  *
@@ -193,28 +181,20 @@ export async function generateParameters(paramsPath, openapiPath, config = null)
  */
 function buildStrategy2Config(config, dataDir) {
   const definitions = config.parameters.definitions;
-  const baseScenario = config.parameters.baseScenario;
-  const defaultSlug = slugify(baseScenario);
 
-  // Read scenario mapping to get base scenarios
-  const mappingPath = path.join(dataDir, 'scenario-mapping.json');
-  let baseScenarios = [];
+  // Read base scenarios directly from config
+  const baseScenarios = (config.parameters.baseScenarios || []).map(s => ({
+    id: s.id,
+    name: s.label,
+    default: !!s.default
+  }));
 
-  if (fs.existsSync(mappingPath)) {
-    const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
-    baseScenarios = Object.entries(mapping).map(([slug, name]) => ({
-      id: slug,
-      name: name,
-      default: slug === defaultSlug
-    }));
-
-    // Sort so default is first
-    baseScenarios.sort((a, b) => {
-      if (a.default) return -1;
-      if (b.default) return 1;
-      return a.name.localeCompare(b.name);
-    });
-  }
+  // Sort so default is first
+  baseScenarios.sort((a, b) => {
+    if (a.default) return -1;
+    if (b.default) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   // Build parameter definitions for the API
   const parameters = {};

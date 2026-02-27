@@ -236,7 +236,7 @@ paths:
         **Data Structure:**
         The API provides both legacy top-level bounds (for backward compatibility) and
         aggregation-specific bounds under the `bounds` object. The nested structure at
-        `/api/data/base/` and `/api/data/scenarios/` is queried via DuckDB to compute
+        `/data/base/` and `/data/scenarios/` is queried via DuckDB to compute
         realistic bounds for each aggregation level.
 
         Statistics are computed during API generation from all Parquet files using DuckDB.
@@ -341,8 +341,8 @@ paths:
 
         **Data Structure:**
         The API queries data from two directories:
-        - `/api/data/base/` - Base scenario files (e.g., `base/default/data.parquet`)
-        - `/api/data/scenarios/` - Parametric scenarios (e.g., `scenarios/housing_electrification=2/.../data.parquet`)
+        - `/data/base/` - Base scenario files (e.g., `base/current-policy/data.parquet`)
+        - `/data/scenarios/` - Parametric scenarios (e.g., `scenarios/housing_electrification=2/.../data.parquet`)
 
         **Query Performance:**
         - Uses DuckDB for efficient Parquet scanning with predicate pushdown

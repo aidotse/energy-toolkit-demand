@@ -2,8 +2,8 @@
 
 ## Data Pipeline
 
-1. **Data Generation**: Generator (Python) → Parquet files in `/api/data/demand/` (133k+ files)
-2. **Static Endpoints**: `generate-api.js` → JSON files in `/api/data/`
+1. **Data Generation**: Generator (Python) → Parquet files in `/data/`
+2. **Static Endpoints**: `generate-api.js` → JSON files in `/data/`
 3. **API Server**: Prism serves OpenAPI spec + static files + DuckDB queries
 4. **Frontend Loading**: `+page.ts` fetches initial data → passes props to components
 5. **Component Data**: Hybrid pattern - components accept props OR fetch own data
@@ -72,7 +72,7 @@ pkill -f "local-server"          # Kill by process name
 - `/api/local-server.js` - Main API server using OpenAPI/Prism (runs on port 4010)
 - `/api/generate-api.js` - Script to generate static endpoints and compute globals.json
 - `/api/scripts/generate-endpoints.js` - Builds static JSON endpoints from config files
-- `/api/data/` - Directory containing all static JSON endpoints:
+- `/data/` - Directory containing all static JSON endpoints:
   - `globals.json` - Min/max bounds for different aggregation levels
   - `parameters.json` - Available years, geographies, segments
   - `scenarios.json` - Scenario definitions
@@ -135,7 +135,7 @@ pkill -f "local-server"          # Kill by process name
 - `/api/parameters.yaml` - OpenAPI parameter definitions with enums
 - `/api/openapi.yaml` - Full OpenAPI 3.1 specification
 
-**Generated Files Location**: `/api/data/`
+**Generated Files Location**: `/data/`
 - All static JSON files are written to this directory
 - Files are regenerated each time `node generate-api.js` is run
 - API server serves these files directly for static endpoints
@@ -155,7 +155,7 @@ node scripts/generate-endpoints.js
 ### Nested Parquet File Structure (Current Standard)
 
 ```
-/api/data/
+/data/
 ├── base/
 │   └── {scenario_id}/
 │       └── data.parquet           # Base scenario files

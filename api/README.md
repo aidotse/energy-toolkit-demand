@@ -33,10 +33,10 @@ The Demand Toolkit API provides endpoints for accessing demand forecasting data 
 The API uses a nested Parquet file structure for efficient querying:
 
 ```
-api/data/
+data/
 ├── base/
-│   └── default/
-│       └── data.parquet           # Base scenario (21 geographies × 3 segments × 8760 hours × 26 years)
+│   └── current-policy/
+│       └── data.parquet           # Base scenario (21 geographies × 5 segments × 8760 hours × 26 years)
 ├── scenarios/
 │   ├── housing_electrification=0/
 │   │   └── transport_electrification=0/

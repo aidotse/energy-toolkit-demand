@@ -72,9 +72,9 @@ load_profiles/*.json  ──┘
 ### Output Structure
 
 ```
-generator/output/
+data/
 ├── base/                              # Base scenarios (segmented)
-│   └── {scenario_name}/
+│   └── {scenario_id}/                 # e.g. current-policy/
 │       ├── housing/data.parquet       # ~33 MB per segment
 │       ├── transport/data.parquet
 │       ├── industry/data.parquet
@@ -86,7 +86,7 @@ generator/output/
 │       └── {index}/
 │           └── {segment}/data.parquet
 │
-├── scenarios/                         # Legacy: full scenario files
+├── scenarios/                         # Parametric scenario files
 │   └── {scenario_name}/data.parquet
 │
 └── aggregated/                        # Pre-aggregated for fast queries
@@ -112,12 +112,12 @@ All output files follow the canonical schema:
 ### Example Query
 
 ```sql
-SELECT * FROM read_parquet('output/base/Beslutad Policy/housing/data.parquet')
+SELECT * FROM read_parquet('data/base/current-policy/housing/data.parquet')
 LIMIT 5;
 
 -- timestamp                  value        geography  segment  scenario_id
--- 2025-01-01 00:00:00        0.00234      01         housing  Beslutad Policy
--- 2025-01-01 01:00:00        0.00221      01         housing  Beslutad Policy
+-- 2025-01-01 00:00:00        0.00234      01         housing  current-policy
+-- 2025-01-01 01:00:00        0.00221      01         housing  current-policy
 -- ...
 ```
 
@@ -197,7 +197,7 @@ Independent parameters for scenario exploration:
 ```yaml
 parameters:
   strategy: 2                   # Independent parameter strategy
-  baseScenario: 'Beslutad Policy'
+  baseScenario: current-policy
 
   definitions:
     housing_growth:
@@ -257,10 +257,10 @@ Map Energy Agency segments to load curves:
 ### Generated Data Summary
 
 ```
-output/base/
-├── Beslutad Policy/          (~165 MB per scenario)
-├── Lokal Miljöhänsyn/
-└── Internationell Tillväxt/
+data/base/
+├── current-policy/           (~165 MB per scenario)
+├── local-environment/
+└── international-growth/
 
 Total: 71,789,760 rows
 - 3 base scenarios
@@ -335,7 +335,7 @@ Flex (demand response) curves flatten the demand profile while preserving totals
 
 ```python
 SEGMENT = "housing"
-BASE_SCENARIO = "Beslutad Policy"
+BASE_SCENARIO = "current-policy"
 SCENARIOS = [
     # (index, flex_factor, label)
     # flex_factor: 1.0 = no change, 0.0 = completely flat
@@ -460,9 +460,9 @@ files = create_all_curve_files(
 stats = process_all_parameters(
     con=duckdb_connection,
     config_path='config.yaml',
-    base_scenario_name='Beslutad Policy',
-    base_dir='generator/output/base',
-    output_dir='generator/output/parameters'
+    base_scenario_name='current-policy',
+    base_dir='data/base',
+    output_dir='data/parameters'
 )
 ```
 
@@ -701,7 +701,7 @@ Currently implementing **Strategy 2** (independent parameters).
 4. **Alternative base scenarios**: Switch between Energy Agency projections
    ```yaml
    parameters:
-     baseScenario: 'Internationell Tillväxt'  # or 'Lokal Miljöhänsyn'
+     baseScenario: international-growth  # or local-environment
    ```
 
 ### Output Path Evolution
@@ -765,7 +765,7 @@ assert required <= {r[0] for r in result}, "Missing required columns!"
 | Configuration | `/config.yaml` |
 | Library functions | `generator/library/*.py` |
 | Input data | `generator/input/` |
-| Output data | `generator/output/` |
+| Output data | `/data/` |
 | Curve files | `generator/input/scenarios/{param}/curves.parquet` |
 | Growth curve notebooks | `generator/input/scenarios/{segment}_growth/generate_curves.ipynb` |
 | Flex curve notebooks | `generator/input/scenarios/{segment}_flex/generate_curves.ipynb` |

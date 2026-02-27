@@ -150,6 +150,9 @@ node_modules
 /build
 output
 
+# Data (generated parquet/JSON files shared between generator and API)
+data/
+
 # OS
 .DS_Store
 Thumbs.db

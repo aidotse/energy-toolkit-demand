@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sync api/data/ to S3 (replaces bucket contents entirely).
+# Sync data/ to S3 (replaces bucket contents entirely).
 # Usage:
 #   ./api/scripts/sync-data-to-s3.sh
 #   ./api/scripts/sync-data-to-s3.sh --profile AWSAdministratorAccess-600627346413
@@ -7,7 +7,8 @@
 set -euo pipefail
 
 BUCKET="behovskartan-data-dev"
-DATA_DIR="$(cd "$(dirname "$0")/.." && pwd)/data"
+# Data directory is at repo root
+DATA_DIR="$(cd "$(dirname "$0")/../.." && pwd)/data"
 AWS_ARGS=()
 
 while [[ $# -gt 0 ]]; do

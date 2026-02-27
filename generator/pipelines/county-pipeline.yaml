@@ -14,7 +14,7 @@ base_data:
     value: value
 
 base_scenario:
-  name: default
+  name: current-policy
   include_base_scenario: true
   base_year: 2024
   start_year: 2025
