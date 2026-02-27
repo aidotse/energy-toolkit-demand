@@ -43,6 +43,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Download API data from S3
+        working-directory: ./api
+        run: aws s3 sync s3://${{ vars.S3_DATA_BUCKET }}/ data/
+
       - name: Build and push Docker image
         id: build
         working-directory: ./api
