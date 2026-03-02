@@ -25,6 +25,7 @@
 import express from 'express';
 import cors from 'cors';
 import { OpenAPIBackend } from 'openapi-backend';
+import addFormats from 'ajv-formats';
 import duckdb from 'duckdb';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
@@ -33,50 +34,21 @@ import qs from 'qs';
 import fs from 'fs';
 import { parsePeriod, formatPeriod } from './utils.js';
 import { getDataDir } from '../paths.js';
+import { getCachedQuery, setCachedQuery } from './cache.js';
+import { sanitizeSqlValue, buildStrategy2Query, buildParamAggregatedQuery, getScenarioName } from './query-builder.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Server start time used for ETag generation (data is static until restart) */
 const serverStartTime = Date.now();
 
-/**
- * Simple LRU cache for query results (no TTL - data is static)
- * Cache is cleared on server restart. Max 500 entries with LRU eviction.
- * @type {Map<string, any>}
- */
-const queryCache = new Map();
-const QUERY_CACHE_MAX = 500;
-
-/**
- * Get cached query result
- * @param {string} key - Cache key
- * @returns {any|null} Cached data or null
- */
-function getCachedQuery(key) {
-  const data = queryCache.get(key);
-  if (data !== undefined) {
-    // Move to end (most recently used) by re-inserting
-    queryCache.delete(key);
-    queryCache.set(key, data);
-    return data;
+const api = new OpenAPIBackend({
+  definition: path.join(__dirname, 'openapi.yaml'),
+  customizeAjv: (ajv) => {
+    addFormats(ajv);
+    return ajv;
   }
-  return null;
-}
-
-/**
- * Set query result in cache
- * @param {string} key - Cache key
- * @param {any} data - Data to cache
- */
-function setCachedQuery(key, data) {
-  // LRU eviction: if at max capacity, delete oldest (first) entry
-  if (queryCache.size >= QUERY_CACHE_MAX) {
-    const oldestKey = queryCache.keys().next().value;
-    queryCache.delete(oldestKey);
-  }
-  queryCache.set(key, data);
-}
-const api = new OpenAPIBackend({ definition: path.join(__dirname, 'openapi.yaml') });
+});
 
 /**
  * Generate ETag from file stats
@@ -186,14 +158,6 @@ function loadStrategy2Config() {
 const strategy2Config = loadStrategy2Config();
 
 /**
- * Get scenario ID for aggregated table queries.
- * With English IDs, the slug is the scenario_id directly.
- */
-function getScenarioName(slug) {
-  return slug;
-}
-
-/**
  * Handler for geography endpoint
  */
 api.register('getGeographies', (c, req, res) => {
@@ -233,247 +197,26 @@ staticOps.forEach((op) => {
 });
 
 /**
- * Get all segments from config
+ * Get all segments from config (cached at module level)
  */
+let _cachedSegments = null;
 function getSegments() {
-  return ['housing', 'transport', 'industry', 'services', 'datacenters'];
+  if (_cachedSegments) return _cachedSegments;
+  const configPath = path.join(dataDir, 'config.json');
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (config.segments) {
+      _cachedSegments = config.segments;
+      return _cachedSegments;
+    }
+  }
+  _cachedSegments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
+  return _cachedSegments;
 }
 
-/**
- * Build SQL query for Strategy 2 demand data with parameter combination
- *
- * @param {Object} opts - Query options
- * @returns {string} SQL query
- */
-function buildStrategy2Query(opts) {
-  const {
-    baseScenario,
-    segments,
-    geoFilter,
-    segFilter,
-    start,
-    end,
-    resolution,
-    aggregation,
-    parameterValues // { housing_growth: 1, housing_flex: 0, ... }
-  } = opts;
+/* Query builders imported from ./query-builder.js */
 
-  const aggFunc = aggregation === 'sum' ? 'SUM' : aggregation === 'max' ? 'MAX' : 'AVG';
-
-  // Map resolution to SQL truncation (using 'combined' as the outer alias)
-  let timeExpr;
-  switch (resolution) {
-    case '1h': timeExpr = 'combined.timestamp'; break;
-    case '1d': timeExpr = "DATE_TRUNC('day', combined.timestamp)"; break;
-    case '1w': timeExpr = "DATE_TRUNC('week', combined.timestamp)"; break;
-    case '1M': timeExpr = "DATE_TRUNC('month', combined.timestamp)"; break;
-    case '1Y': timeExpr = "DATE_TRUNC('year', combined.timestamp)"; break;
-    default: timeExpr = 'combined.timestamp';
-  }
-
-  // Build queries for each segment
-  const segmentQueries = [];
-
-  for (const segment of segments) {
-    // Skip if segment filter doesn't match
-    if (segFilter !== 'all' && segFilter !== 'total' && segFilter !== segment) {
-      continue;
-    }
-
-    // Base parquet path for this segment
-    const basePath = path.join(baseDir, baseScenario, segment, 'data.parquet');
-
-    if (!fs.existsSync(basePath)) {
-      console.warn(`Base file not found: ${basePath}`);
-      continue;
-    }
-
-    // Find relevant parameters for this segment
-    const segmentParams = [];
-    if (strategy2Config?.parameters) {
-      for (const [paramName, paramDef] of Object.entries(strategy2Config.parameters)) {
-        if (paramDef.segment === segment) {
-          const paramIndex = parameterValues[paramName] || 0;
-          if (paramIndex > 0) {
-            // Only join if parameter is not baseline (0)
-            const paramPath = path.join(parametersDir, paramName, String(paramIndex), segment, 'data.parquet');
-            if (fs.existsSync(paramPath)) {
-              segmentParams.push({ name: paramName, path: paramPath, alias: paramName.replace(/_/g, '') });
-            }
-          }
-        }
-      }
-    }
-
-    // Build the query for this segment
-    let selectValue = 'b.value';
-    let fromClause = `read_parquet('${basePath}') b`;
-    const joins = [];
-
-    // Add JOIN clauses for each parameter
-    segmentParams.forEach((param, idx) => {
-      const alias = `p${idx}`;
-      joins.push(`LEFT JOIN read_parquet('${param.path}') ${alias} ON b.timestamp = ${alias}.timestamp AND b.geography = ${alias}.geography`);
-      selectValue = `${selectValue} * COALESCE(${alias}.value / NULLIF(b.value, 0), 1.0)`;
-    });
-
-    const whereConditions = [
-      `b.timestamp >= TIMESTAMP '${start}'`,
-      `b.timestamp < TIMESTAMP '${end}'`
-    ];
-
-    if (geoFilter !== 'all' && geoFilter !== 'total') {
-      whereConditions.push(`b.geography = '${geoFilter}'`);
-    }
-
-    const segmentQuery = `
-      SELECT
-        b.timestamp,
-        b.geography,
-        '${segment}' as segment,
-        (${selectValue}) as value
-      FROM ${fromClause}
-      ${joins.join('\n      ')}
-      WHERE ${whereConditions.join(' AND ')}
-    `;
-
-    segmentQueries.push(segmentQuery);
-  }
-
-  if (segmentQueries.length === 0) {
-    throw new Error('No matching segments found');
-  }
-
-  // Combine all segment queries with UNION ALL
-  const combinedData = segmentQueries.length > 1
-    ? `(${segmentQueries.join('\n      UNION ALL\n      ')}) combined`
-    : `(${segmentQueries[0]}) combined`;
-
-  // Build GROUP BY and SELECT based on filters
-  const groupBy = [timeExpr];
-  const selectExtras = [];
-
-  // Geography handling
-  if (geoFilter === 'total') {
-    selectExtras.push("'total' AS geography");
-  } else if (geoFilter === 'all') {
-    selectExtras.push('combined.geography AS geography');
-    groupBy.push('combined.geography');
-  } else {
-    selectExtras.push(`'${geoFilter}' AS geography`);
-  }
-
-  // Segment handling
-  if (segFilter === 'total') {
-    selectExtras.push("'total' AS segment");
-  } else if (segFilter === 'all') {
-    selectExtras.push('combined.segment AS segment');
-    groupBy.push('combined.segment');
-  } else {
-    selectExtras.push(`'${segFilter}' AS segment`);
-  }
-
-  // Build final query
-  const sql = `
-    SELECT
-      ${timeExpr} AS period,
-      ${selectExtras.join(',\n      ')},
-      '${baseScenario}' AS scenario_id,
-      ${aggFunc}(combined.value) AS value
-    FROM ${combinedData}
-    GROUP BY ${groupBy.join(', ')}
-    ORDER BY period
-  `;
-
-  return sql;
-}
-
-/**
- * Build SQL query using param_yearly aggregated table for parameter-aware yearly queries.
- * Each segment's growth_index and flex_index are looked up independently.
- *
- * @param {Object} opts - Query options
- * @returns {string|null} SQL query or null if aggregated file doesn't exist
- */
-function buildParamAggregatedQuery(opts) {
-  const {
-    baseScenario,
-    segments,
-    geoFilter,
-    segFilter,
-    start,
-    end,
-    parameterValues
-  } = opts;
-
-  const paramYearlyPath = path.join(aggregatedDir, 'param_yearly.parquet');
-  if (!fs.existsSync(paramYearlyPath)) return null;
-
-  const scenarioName = getScenarioName(baseScenario);
-
-  // Build per-segment filter conditions based on parameter values
-  const segmentConditions = [];
-
-  for (const segment of segments) {
-    if (segFilter !== 'all' && segFilter !== 'total' && segFilter !== segment) continue;
-
-    const growthParam = `${segment}_growth`;
-    const flexParam = `${segment}_flex`;
-    const growthIndex = parameterValues[growthParam] || 0;
-    const flexIndex = parameterValues[flexParam] || 0;
-
-    segmentConditions.push(
-      `(segment = '${segment}' AND growth_index = ${growthIndex} AND flex_index = ${flexIndex})`
-    );
-  }
-
-  if (segmentConditions.length === 0) return null;
-
-  const wheres = [
-    `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
-    `CAST(year AS INTEGER) < ${new Date(end).getFullYear()}`,
-    `scenario_id = '${scenarioName}'`,
-    `(${segmentConditions.join(' OR ')})`
-  ];
-
-  if (geoFilter !== 'all' && geoFilter !== 'total') {
-    wheres.push(`geography = '${geoFilter}'`);
-  }
-
-  // Build GROUP BY and SELECT based on filters
-  const groupBy = ['year'];
-  const selectExtras = [];
-
-  if (geoFilter === 'total') {
-    selectExtras.push("'total' AS geography");
-  } else if (geoFilter === 'all') {
-    selectExtras.push('geography');
-    groupBy.push('geography');
-  } else {
-    selectExtras.push(`'${geoFilter}' AS geography`);
-  }
-
-  if (segFilter === 'total') {
-    selectExtras.push("'total' AS segment");
-  } else if (segFilter === 'all') {
-    selectExtras.push('segment');
-    groupBy.push('segment');
-  } else {
-    selectExtras.push(`'${segFilter}' AS segment`);
-  }
-
-  return `
-    SELECT
-      MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
-      ${selectExtras.join(', ')},
-      '${baseScenario}' AS scenario_id,
-      SUM(total_value) AS value
-    FROM read_parquet('${paramYearlyPath}')
-    WHERE ${wheres.join(' AND ')}
-    GROUP BY ${groupBy.join(', ')}
-    ORDER BY period
-  `;
-}
+/* buildParamAggregatedQuery imported from ./query-builder.js */
 
 /**
  * Handler for /demand endpoint with Strategy 2 support
@@ -493,14 +236,15 @@ api.register('getDemand', async (c, req, res) => {
     const segFilter = query.segment || 'total';
 
     // Strategy 2 parameters
-    let baseScenario = query.baseScenario || 'beslutad-policy';
+    const defaultScenario = strategy2Config?.baseScenarios?.find(s => s.default)?.id || 'current-policy';
+    let baseScenario = query.baseScenario || defaultScenario;
 
     // Handle legacy scenarioId parameter for backward compatibility
     if (query.scenarioId && query.scenarioId !== 'default' && query.scenarioId !== 'all') {
       // Map old scenario IDs to new base scenarios
       baseScenario = query.scenarioId;
     } else if (query.scenarioId === 'default') {
-      baseScenario = 'beslutad-policy';
+      baseScenario = defaultScenario;
     }
 
     // Collect parameter values from query
@@ -558,7 +302,7 @@ api.register('getDemand', async (c, req, res) => {
       // Parameter-aware aggregated query (param_yearly.parquet)
       const segments = getSegments();
       sql = buildParamAggregatedQuery({
-        baseScenario, segments, geoFilter, segFilter, start, end, parameterValues
+        baseScenario, segments, geoFilter, segFilter, start, end, parameterValues, aggregatedDir
       });
       if (sql) console.log('📊 Using param-aware aggregated tables');
     }
@@ -578,46 +322,49 @@ api.register('getDemand', async (c, req, res) => {
 
       if (aggregatedTable && fs.existsSync(aggregatedTable)) {
         console.log('📊 Using pre-aggregated tables');
-        const scenarioName = getScenarioName(baseScenario);
+        const safeGeoFilter = sanitizeSqlValue(geoFilter);
+        const safeSegFilter = sanitizeSqlValue(segFilter);
+        const safeBaseScenario = sanitizeSqlValue(baseScenario);
+        const scenarioName = getScenarioName(safeBaseScenario);
         const wheres = [
           `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
           `CAST(year AS INTEGER) < ${new Date(end).getFullYear()}`,
           `scenario_id = '${scenarioName}'`
         ];
 
-        if (geoFilter !== 'all' && geoFilter !== 'total') {
-          wheres.push(`geography = '${geoFilter}'`);
+        if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
+          wheres.push(`geography = '${safeGeoFilter}'`);
         }
-        if (segFilter !== 'all' && segFilter !== 'total') {
-          wheres.push(`segment = '${segFilter}'`);
+        if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
+          wheres.push(`segment = '${safeSegFilter}'`);
         }
 
         const groupBy = ['year'];
         const selectExtras = [];
 
-        if (geoFilter === 'total') {
+        if (safeGeoFilter === 'total') {
           selectExtras.push("'total' AS geography");
-        } else if (geoFilter === 'all') {
+        } else if (safeGeoFilter === 'all') {
           selectExtras.push('geography');
           groupBy.push('geography');
         } else {
-          selectExtras.push(`'${geoFilter}' AS geography`);
+          selectExtras.push(`'${safeGeoFilter}' AS geography`);
         }
 
-        if (segFilter === 'total') {
+        if (safeSegFilter === 'total') {
           selectExtras.push("'total' AS segment");
-        } else if (segFilter === 'all') {
+        } else if (safeSegFilter === 'all') {
           selectExtras.push('segment');
           groupBy.push('segment');
         } else {
-          selectExtras.push(`'${segFilter}' AS segment`);
+          selectExtras.push(`'${safeSegFilter}' AS segment`);
         }
 
         sql = `
           SELECT
             MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
             ${selectExtras.join(', ')},
-            '${baseScenario}' AS scenario_id,
+            '${safeBaseScenario}' AS scenario_id,
             SUM(total_value) AS value
           FROM read_parquet('${aggregatedTable}')
           WHERE ${wheres.join(' AND ')}
@@ -639,7 +386,10 @@ api.register('getDemand', async (c, req, res) => {
         end,
         resolution,
         aggregation,
-        parameterValues
+        parameterValues,
+        baseDir,
+        parametersDir,
+        strategy2Config
       });
     }
 
@@ -698,7 +448,7 @@ api.register('validationFail', (c, req, res) =>
  * Pre-warm cache with common queries for faster initial page loads
  */
 async function warmupCache() {
-  const baseScenarios = strategy2Config?.baseScenarios?.map(s => s.id) || ['beslutad-policy'];
+  const baseScenarios = strategy2Config?.baseScenarios?.map(s => s.id) || ['current-policy'];
   const years = Array.from({ length: 26 }, (_, i) => 2025 + i); // 2025-2050
 
   console.log('🔥 Warming up cache...');
@@ -718,7 +468,7 @@ async function warmupCache() {
         const sql = buildStrategy2Query({
           baseScenario, segments, geoFilter: 'total', segFilter: 'total',
           start: '2025-01-01', end: '2051-01-01', resolution: '1Y', aggregation: 'sum',
-          parameterValues: {}
+          parameterValues: {}, baseDir, parametersDir, strategy2Config
         });
         const rows = await new Promise((resolve, reject) =>
           conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
@@ -749,7 +499,7 @@ async function warmupCache() {
           const sql = buildStrategy2Query({
             baseScenario, segments, geoFilter: 'all', segFilter: 'total',
             start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}
+            parameterValues: {}, baseDir, parametersDir, strategy2Config
           });
           const rows = await new Promise((resolve, reject) =>
             conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
@@ -763,7 +513,7 @@ async function warmupCache() {
           cached++;
         }
       } catch (e) {
-        // Skip failed queries silently
+        console.warn(`  Warning: Could not warm geo data for ${baseScenario} year ${year}`);
       }
     }
 
@@ -781,7 +531,7 @@ async function warmupCache() {
           const sql = buildStrategy2Query({
             baseScenario, segments, geoFilter: 'total', segFilter: 'all',
             start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}
+            parameterValues: {}, baseDir, parametersDir, strategy2Config
           });
           const rows = await new Promise((resolve, reject) =>
             conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
@@ -795,7 +545,7 @@ async function warmupCache() {
           cached++;
         }
       } catch (e) {
-        // Skip failed queries silently
+        console.warn(`  Warning: Could not warm segment data for ${baseScenario} year ${year}`);
       }
     }
 
@@ -813,7 +563,7 @@ async function warmupCache() {
           const sql = buildStrategy2Query({
             baseScenario, segments, geoFilter: 'all', segFilter: 'all',
             start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}
+            parameterValues: {}, baseDir, parametersDir, strategy2Config
           });
           const rows = await new Promise((resolve, reject) =>
             conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
@@ -827,7 +577,7 @@ async function warmupCache() {
           cached++;
         }
       } catch (e) {
-        // Skip failed queries silently
+        console.warn(`  Warning: Could not warm all-geo/all-seg data for ${baseScenario} year ${year}`);
       }
     }
   }

@@ -19,7 +19,7 @@ export const load: PageLoad = async ({ fetch }) => {
 
 	try {
 		// 1) Fetch static configuration data
-		const [config, scenarios, parameters, globals, geographies, geojson] = await Promise.all([
+		const [configResult, scenariosResult, parametersResult, globalsResult, geographiesResult, geojsonResult] = await Promise.all([
 			fetchConfig(fetch),
 			fetchScenarios(fetch),
 			fetchParameters(fetch),
@@ -27,6 +27,12 @@ export const load: PageLoad = async ({ fetch }) => {
 			fetchGeographies('json', fetch),
 			fetchGeographies('geojson', fetch)
 		]);
+		const config = configResult.data;
+		const scenarios = scenariosResult.data;
+		const parameters = parametersResult.data;
+		const globals = globalsResult.data;
+		const geographies = geographiesResult.data;
+		const geojson = geojsonResult.data;
 
 		// Get default scenario
 		const scenario = scenarios.find((s: any) => s.is_default) || scenarios[0];

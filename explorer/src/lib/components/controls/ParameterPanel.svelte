@@ -8,15 +8,7 @@
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
 	import type { Strategy2Parameter } from '$lib/dataService';
 	import { ChevronDown, ChevronUp, RotateCcw, Sliders } from 'lucide-svelte';
-
-	// Segment display names
-	const SEGMENT_LABELS: Record<string, string> = {
-		housing: 'Bostäder',
-		transport: 'Transport',
-		industry: 'Industri',
-		services: 'Service',
-		datacenters: 'Datacenter'
-	};
+	import { SEGMENT_LABELS } from '$lib/chartConfig';
 
 	// Parameter type labels
 	const PARAM_TYPE_LABELS: Record<string, string> = {

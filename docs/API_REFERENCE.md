@@ -4,7 +4,7 @@
 
 1. **Data Generation**: Generator (Python) → Parquet files in `/data/`
 2. **Static Endpoints**: `generate-api.js` → JSON files in `/data/`
-3. **API Server**: Prism serves OpenAPI spec + static files + DuckDB queries
+3. **API Server**: Express + OpenAPI Backend serves validated endpoints + DuckDB queries
 4. **Frontend Loading**: `+page.ts` fetches initial data → passes props to components
 5. **Component Data**: Hybrid pattern - components accept props OR fetch own data
 
@@ -69,7 +69,9 @@ pkill -f "local-server"          # Kill by process name
 
 ### API Layer
 
-- `/api/local-server.js` - Main API server using OpenAPI/Prism (runs on port 4010)
+- `/api/local-server.js` - Main API server using OpenAPI Backend (runs on port 4010)
+- `/api/query-builder.js` - SQL query builders (buildStrategy2Query, buildParamAggregatedQuery, sanitizeSqlValue)
+- `/api/cache.js` - LRU query cache (getCachedQuery, setCachedQuery)
 - `/api/generate-api.js` - Script to generate static endpoints and compute globals.json
 - `/api/scripts/generate-endpoints.js` - Builds static JSON endpoints from config files
 - `/data/` - Directory containing all static JSON endpoints:

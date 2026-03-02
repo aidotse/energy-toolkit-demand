@@ -186,3 +186,8 @@ layerchart_docs/
 *storybook.log
 storybook-static
 archive/
+chrome
+.playwright-mcp
+LAST_PLAN.md
+.vscode
+.tmp

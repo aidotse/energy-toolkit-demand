@@ -11,9 +11,11 @@
 	 * <LoadingSkeleton variant="map" message="Loading geography data..." />
 	 */
 
+	import * as m from '$paraglide/messages';
+
 	let {
 		variant = 'chart',
-		message = 'Laddar data...',
+		message = m.loading_data(),
 		class: className = ''
 	}: {
 		variant?: 'chart' | 'map' | 'table' | 'text';

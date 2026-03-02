@@ -3,12 +3,22 @@
 	 * SectorPieChart Component - Pie chart visualization for sector breakdown
 	 *
 	 * Displays electricity demand by sector as a pie chart with:
-	 * - Color-coded segments (darkest to lightest)
-	 * - Smart label placement (inside or outside with leader lines)
-	 * - Custom tooltips with segment details
-	 * - Optional side-by-side comparison (year or scenario mode)
+	 * - Color-coded segments (darkest to lightest, order from SEGMENT_ORDER)
+	 * - Smart label placement (inside for slices ≥10%, outside with leader lines otherwise)
+	 * - Custom SVG tooltips with segment details
+	 * - Optional side-by-side comparison: year mode (two years) or scenario mode (base vs adjusted)
+	 *
+	 * Data flow: fetches demand data via `fetchDemandData` on mount and when
+	 * `year`, `geography`, or `parameterValues` change. Uses `parameterStore`
+	 * for base scenario and parameter state.
 	 *
 	 * @component
+	 * @prop geography - Geography code to filter data by
+	 * @prop year - Target year for the right/main pie
+	 * @prop enableComparison - Enable dual-pie comparison mode
+	 * @prop comparisonYear - Reference year for the left pie (year mode)
+	 * @prop initialComparisonMode - Start in 'year' or 'scenario' comparison
+	 * @prop exportable - Whether to show ChartContainer export controls
 	 */
 	import { formatNumber, makeDemandQuery } from '$lib/utilities';
 	import { getEnergyPrefix } from '$lib/stores/units.svelte';
@@ -18,7 +28,8 @@
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
-	import { getSegmentColor, getSegmentLabel } from '$lib/chartConfig';
+	import { getSegmentColor, getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
+	import * as m from '$lib/paraglide/messages';
 	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 
@@ -70,8 +81,8 @@
 	const baseScenario = $derived(parameterStore.baseScenario);
 	const parameterValues = $derived(parameterStore.parameterValues);
 
-	// Define segment order using API names (from largest/most important to smallest)
-	const SEGMENT_ORDER = ['industry', 'housing', 'services', 'transport', 'datacenters'];
+	// Use shared segment order (re-typed as string[] for indexOf checks)
+	const segmentOrder: string[] = [...SEGMENT_ORDER];
 
 	// Chart dimensions (constants for SVG rendering)
 	const CX = 250;
@@ -93,9 +104,9 @@
 	let leftLabel = $derived(
 		comparisonMode === 'year'
 			? String(comparisonYear)
-			: parameterStore.defaultScenario?.name || 'Grundscenario'
+			: parameterStore.defaultScenario?.name || m.scenario_base_label()
 	);
-	let rightLabel = $derived(comparisonMode === 'year' ? String(year) : 'Med justeringar');
+	let rightLabel = $derived(comparisonMode === 'year' ? String(year) : m.scenario_with_adjustments());
 
 	// Dynamic description based on comparison mode
 	let effectiveDescription = $derived(
@@ -205,8 +216,8 @@
 		if (total === 0) return [];
 
 		const sorted = [...segments].sort((a, b) => {
-			const aIndex = SEGMENT_ORDER.indexOf(a.segment);
-			const bIndex = SEGMENT_ORDER.indexOf(b.segment);
+			const aIndex = segmentOrder.indexOf(a.segment);
+			const bIndex = segmentOrder.indexOf(b.segment);
 			if (aIndex === -1 && bIndex === -1) return b.value - a.value;
 			if (aIndex === -1) return 1;
 			if (bIndex === -1) return -1;
@@ -263,8 +274,8 @@
 			])
 		];
 		allSegments.sort((a, b) => {
-			const ai = SEGMENT_ORDER.indexOf(a);
-			const bi = SEGMENT_ORDER.indexOf(b);
+			const ai = segmentOrder.indexOf(a);
+			const bi = segmentOrder.indexOf(b);
 			if (ai === -1 && bi === -1) return 0;
 			if (ai === -1) return 1;
 			if (bi === -1) return -1;

@@ -1,5 +1,54 @@
 # Recent Major Changes
 
+## February 2026 - Monorepo Review & Refactor
+
+**Summary**: Comprehensive codebase review addressing dead code, test coverage, error handling, i18n, and code quality across all three modules.
+
+**Phase 1: Cleanup**
+- Deleted obsolete `config (old).yaml`
+- Fixed workspace config: `"frontend"` → `"explorer"` in root `package.json`
+- Fixed broken setup tool (`setup/generate-api.js`) — removed dead imports for deleted scripts
+- Cleaned 33 merged local git branches, pruned stale remote tracking refs
+- Moved `@inquirer/prompts` to devDependencies in API
+
+**Phase 2: API Module**
+- Extracted query builders into testable `query-builder.js` module
+- Extracted LRU cache into `cache.js` module
+- Added `sanitizeSqlValue()` input validation for SQL queries
+- `getSegments()` now reads from `config.json` instead of hardcoded list
+- Improved `warmupCache()` error messages (no longer silent)
+- Added 37 new unit tests (query-builder: 29, cache: 8)
+
+**Phase 3: Generator Module**
+- Created `pyproject.toml` with project metadata and dependencies
+- Built comprehensive test suite: 60 tests across 3 test files
+  - `test_curves.py` (33 tests) — S-curve, exponential growth, curve loading/validation
+  - `test_utilities.py` (18 tests) — path generation, parameter handling, config
+  - `test_db.py` (9 tests) — parquet read/write, scaffold, DuckDB operations
+- Fixed deprecated `fillna(method=...)` → `.ffill()` / `.bfill()` in curves.py
+- Added docstrings to all public functions in growth.py, randomizer.py, scenario_constraints.py, utilities.py
+
+**Phase 4: Explorer Module**
+- Added `FetchResult<T>` type to `dataService.ts` — components can now distinguish "no data" from "fetch failed"
+- Updated all call sites (5 route files) for new return type
+- Added 56 new tests: utilities (18), comparisonUtils (38), parameterStore (27 — pending Vite 6 upgrade)
+- Extracted hardcoded Swedish strings to Paraglide i18n (14 new message keys in sv/en)
+- Consolidated duplicate `comparisonScenarios` state (removed from navigation store)
+- Extracted `DEFAULT_BASE_SCENARIO` constant from hardcoded `'beslutad-policy'`
+
+**Files Created** (12):
+- `api/query-builder.js`, `api/cache.js`
+- `api/tests/unit/query-builder.test.js`, `api/tests/unit/cache.test.js`
+- `generator/pyproject.toml`, `generator/tests/__init__.py`, `generator/tests/conftest.py`
+- `generator/tests/test_curves.py`, `generator/tests/test_utilities.py`, `generator/tests/test_db.py`
+- `explorer/src/lib/utilities.test.ts`, `explorer/src/lib/comparisonUtils.test.ts`
+
+**Files Modified** (20+):
+- API: `local-server.js`, `package.json`
+- Generator: `library/curves.py`, `library/growth.py`, `library/randomizer.py`, `library/scenario_constraints.py`, `library/utilities.py`
+- Explorer: `dataService.ts`, 5 route loaders, 4 components (i18n), 2 stores, 2 message files
+- Root: `package.json`, `setup/generate-api.js`
+
 ## January 2025 - Scenario Comparison and Chart Export
 
 **Summary**: Added multi-scenario comparison support and chart export functionality

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getSegmentLabel } from '$lib/chartConfig';
+    import { getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
 
     let { segments = $bindable(['total']), embedded = false }: { segments: string[]; embedded?: boolean } = $props();
 
@@ -7,11 +7,7 @@
 
     const AVAILABLE_SEGMENTS = [
         { id: 'total', label: 'Total' },
-        { id: 'industry', label: 'Industri' },
-        { id: 'housing', label: 'Bostäder' },
-        { id: 'services', label: 'Service' },
-        { id: 'transport', label: 'Transport' },
-        { id: 'datacenters', label: 'Datacenter' },
+        ...SEGMENT_ORDER.map(id => ({ id, label: getSegmentLabel(id) }))
     ];
 
     // Display text when collapsed

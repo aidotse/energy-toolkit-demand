@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "demand-toolkit-generator"
+version = "0.1.0"
+description = "Data generation pipeline for the Energy Demand Toolkit"
+requires-python = ">=3.10"
+dependencies = [
+    "duckdb>=0.9.0",
+    "pandas>=2.0.0",
+    "pyarrow>=14.0.0",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".."]
+
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["generator*"]

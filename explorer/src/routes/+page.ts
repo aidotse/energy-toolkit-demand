@@ -20,13 +20,17 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 		const { scenarios, parameters, defaultScenario } = parentData;
 
 		// Fetch only what we need that layout doesn't provide
-		const [config, globals, geographies, geojson] =
+		const [configResult, globalsResult, geographiesResult, geojsonResult] =
 			await Promise.all([
 				fetchConfig(fetch),
 				fetchGlobals(fetch),
 				fetchGeographies('json', fetch),
 				fetchGeographies('geojson', fetch)
 			]);
+		const config = configResult.data;
+		const globals = globalsResult.data;
+		const geographies = geographiesResult.data;
+		const geojson = geojsonResult.data;
 
 		// Get default scenario
 		const scenario = defaultScenario || scenarios[0];

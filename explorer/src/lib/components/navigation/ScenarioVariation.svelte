@@ -7,14 +7,7 @@
 	 * "Beslutad Policy med +5% tillväxt och 5% flex i Bostäder, -10% tillväxt i Industri"
 	 */
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
-
-	const SEGMENT_LABELS: Record<string, string> = {
-		housing: 'Bostäder',
-		transport: 'Transport',
-		industry: 'Industri',
-		services: 'Service',
-		datacenters: 'Datacenter'
-	};
+	import { SEGMENT_LABELS } from '$lib/chartConfig';
 
 	function getParamTypeLabel(paramName: string): string {
 		const labels: Record<string, string> = {

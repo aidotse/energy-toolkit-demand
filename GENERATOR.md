@@ -6,7 +6,7 @@ The generator is a flexible framework for producing electricity demand forecasts
 
 The Generator is a **flexible framework/tool** for creating energy demand forecasts, not a fixed pipeline. Users fork this repo and customize input loaders, scenario definitions, and output formats for their specific forecasting needs.
 
-**Core Principle**: Separate reusable framework code (`generator/library/`, `generator/transformers/`) from project-specific customizations (`generator/input/`, `generator/notebooks/`, `config.yaml`).
+**Core Principle**: Separate reusable framework code (`generator/library/`) from project-specific customizations (`generator/input/`, `generator/notebooks/`, `config.yaml`).
 
 ## Table of Contents
 
@@ -401,103 +401,22 @@ cd generator/input/scenarios/housing_flex && jupyter execute generate_curves.ipy
 
 ## Library Functions
 
-The `generator/library/` directory contains reusable functions.
+The `generator/library/` directory contains the curves library — generators and utilities for creating and working with time-indexed value curves used in scenario modelling.
 
-### curves.py - Curve Generation
+Four curve generators (`generate_constant`, `generate_linear`, `generate_exponential_growth`, `generate_s_curve`) all return DataFrames with `[curve_id, timestamp, value]` columns. Utility functions handle loading, normalizing, validating, and applying curves to demand data.
 
 ```python
 from generator.library.curves import generate_s_curve, generate_exponential_growth
 
 # S-curve (logistic transition)
-curve = generate_s_curve(
-    curve_id="electrification",
-    start_year=2025,
-    end_year=2050,
-    y0=0.1,                    # Starting value
-    y1=0.9,                    # Ending value
-    resolution="1h",           # Time resolution
-    midpoint="2035-01-01",     # Transition midpoint
-    steepness="5y"             # 90% transition in 5 years
-)
-# Returns: DataFrame with [curve_id, timestamp, value]
+curve = generate_s_curve("electrification", 2025, 2050, y0=0.1, y1=0.9, steepness="5y")
 
-# Exponential growth
-curve = generate_exponential_growth(
-    curve_id="base_growth",
-    start_year=2025,
-    end_year=2050,
-    resolution="1h",
-    annual_growth=0.02         # 2% per year
-)
-# Returns: DataFrame with [curve_id, timestamp, value]
+# Exponential growth (rate mode or endpoint mode)
+curve = generate_exponential_growth("growth", 2025, 2050, annual_growth=0.02)
+curve = generate_exponential_growth("growth", 2025, 2050, y0=100, y1=150)
 ```
 
-### parameters.py - Parameter Processing
-
-```python
-from generator.library.parameters import (
-    load_parameter_config,
-    get_parameter_definitions,
-    generate_growth_curves,
-    generate_flex_curves,
-    create_all_curve_files,
-    process_independent_parameter,
-    process_all_parameters
-)
-
-# Load parameter config
-config = load_parameter_config('config.yaml')
-
-# Generate curve files for all segments
-files = create_all_curve_files(
-    base_dir='generator/input/scenarios',
-    segments=['housing', 'transport', 'industry'],
-    start_year=2025,
-    end_year=2050
-)
-
-# Process all parameters (generates output files)
-stats = process_all_parameters(
-    con=duckdb_connection,
-    config_path='config.yaml',
-    base_scenario_name='current-policy',
-    base_dir='data/base',
-    output_dir='data/parameters'
-)
-```
-
-### loaders.py - Data Loading
-
-```python
-from generator.library.loaders import base_loader_csv
-
-# Load and validate CSV to DuckDB
-result = base_loader_csv(
-    base_schema=['geography', 'segment', 'timestamp', 'value'],
-    base_schema_map={
-        'geography': 'region_code',
-        'segment': 'sector',
-        'timestamp': 'datetime',
-        'value': 'demand_gwh'
-    },
-    base_data='input/raw_data.csv',
-    output_path='input/processed.duckdb'
-)
-# Returns: {'target', 'table', 'added_rows', 'added_columns'}
-```
-
-### growth.py - Growth Time Series
-
-```python
-from generator.library.growth import generate_growth_time_series
-
-factors = generate_growth_time_series(
-    timestamps=pd.date_range('2025-01-01', '2050-12-31', freq='h'),
-    resolution='1h',
-    scenario={'type': 'exp-growth-to-target', 'target': 1.5}
-)
-# Returns: numpy array of growth factors
-```
+See **[generator/CURVES.md](generator/CURVES.md)** for the full reference including all generators, utilities, types, and common patterns.
 
 ---
 

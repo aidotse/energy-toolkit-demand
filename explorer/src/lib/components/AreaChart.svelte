@@ -29,6 +29,7 @@
 	import { getTimeSeriesAxisConfig } from '$lib/chartConfig';
 	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
+	import * as m from '$paraglide/messages';
 
 	let {
 		data: allYearsData = [],
@@ -88,7 +89,7 @@
 	}
 
 	let titleMeasure = $derived(
-		aggregation === 'sum' ? 'energi' : aggregation === 'mean' ? 'medeleffekt' : 'maxeffekt'
+		aggregation === 'sum' ? m.measure_energy() : aggregation === 'mean' ? m.measure_mean_power() : m.measure_max_power()
 	);
 
 	// For single scenario mode (backwards compatibility)
@@ -150,7 +151,7 @@
 
 	async function fetchChartData() {
 		if (!geography || !aggregation) {
-			error = 'Saknar obligatoriska parametrar (geografi, aggregering)';
+			error = m.error_missing_params();
 			return;
 		}
 
@@ -204,7 +205,7 @@
 				dataByScenario = newDataByScenario;
 			}
 		} catch (err: any) {
-			error = err?.message || 'Ett oväntat fel inträffade';
+			error = err?.message || m.error_unexpected();
 			console.error('Error fetching chart data:', err);
 			allYearsData = [];
 			dataByScenario = {};
@@ -266,7 +267,7 @@
 </script>
 
 <ChartContainer
-	title="Årlig {titleMeasure} 2025-2045"
+	title={m.yearly_chart_title({ measure: titleMeasure })}
 	{description}
 	sizeVariant="standard"
 	aspectRatio="auto"
@@ -278,11 +279,11 @@
 	{contentClass}
 >
 	{#if loading}
-		<LoadingSkeleton variant="chart" message="Laddar tidsseriedata..." />
+		<LoadingSkeleton variant="chart" message={m.loading_timeseries()} />
 	{:else if error}
-		<ErrorState message="Kunde inte ladda tidsserie" details={error} onRetry={fetchChartData} />
+		<ErrorState message={m.error_load_timeseries()} details={error} onRetry={fetchChartData} />
 	{:else if chartData.length === 0 && comparisonData.length === 0}
-		<EmptyState message="Ingen data tillgänglig" description="Ingen årsdata finns tillgänglig" />
+		<EmptyState message={m.no_data_available()} description={m.no_yearly_data()} />
 	{:else if normalizedScenarios.length === 1}
 		<!-- Single scenario mode -->
         <AreaChart

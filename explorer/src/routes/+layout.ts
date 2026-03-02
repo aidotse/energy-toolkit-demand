@@ -6,10 +6,12 @@ export const prerender = true;
 export const load: LayoutLoad = async ({ fetch }) => {
 	try {
 		// Load scenarios and parameters for the navigation
-		const [scenarios, parameters] = await Promise.all([
+		const [scenariosResult, parametersResult] = await Promise.all([
 			fetchScenarios(fetch),
 			fetchParameters(fetch)
 		]);
+		const scenarios = scenariosResult.data;
+		const parameters = parametersResult.data;
 
 		// Find default scenario or use first
 		const defaultScenario = scenarios.find((s: any) => s.is_default) || scenarios[0];

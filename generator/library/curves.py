@@ -1,3 +1,9 @@
+"""Curve generators and utilities for energy demand scenario modelling.
+
+See ``generator/CURVES.md`` for full documentation including formulas,
+examples, and common patterns.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -6,86 +12,294 @@ import pandas as pd
 from pathlib import Path
 from typing import Any, Mapping, Optional, Union
 
+
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+def _make_timestamp_range(start_year: int, end_year: int, resolution: str) -> pd.DatetimeIndex:
+    """Create a timestamp range spanning full calendar years.
+
+    Parameters
+    ----------
+    start_year : int
+        First year (inclusive, from Jan 1 00:00).
+    end_year : int
+        Last year (inclusive, through Dec 31 23:59:59).
+    resolution : str
+        Pandas frequency string (e.g. ``'1h'``, ``'1D'``).
+
+    Returns
+    -------
+    pd.DatetimeIndex
+    """
+    start = pd.Timestamp(f"{start_year}-01-01 00:00:00")
+    end = pd.Timestamp(f"{end_year}-12-31 23:59:59")
+    return pd.date_range(start=start, end=end, freq=resolution)
+
+
+def _make_curve_df(curve_id: str, timestamps: pd.DatetimeIndex, values) -> pd.DataFrame:
+    """Assemble the standard ``[curve_id, timestamp, value]`` DataFrame.
+
+    Parameters
+    ----------
+    curve_id : str
+        Identifier stored in every row.
+    timestamps : pd.DatetimeIndex
+        Timestamp column.
+    values : array-like
+        Value column (same length as *timestamps*).
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``curve_id``, ``timestamp``, ``value``.
+    """
+    return pd.DataFrame({
+        "curve_id": curve_id,
+        "timestamp": timestamps,
+        "value": values,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Generators
+# ---------------------------------------------------------------------------
+
+def generate_constant(
+    curve_id: str,
+    start_year: int,
+    end_year: int,
+    value: float,
+    resolution: str = "1h",
+) -> pd.DataFrame:
+    """Generate a flat curve at a fixed value.
+
+    Useful for baseline "no change" scenarios or as a reference multiplier.
+
+    Parameters
+    ----------
+    curve_id : str
+        Identifier for the curve.
+    start_year, end_year : int
+        Year range (inclusive).
+    value : float
+        Constant value at every timestamp.
+    resolution : str, default ``'1h'``
+        Pandas frequency string.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``curve_id``, ``timestamp``, ``value``.
+
+    Examples
+    --------
+    >>> df = generate_constant("baseline", 2025, 2025, 1.0, resolution="1D")
+    >>> df["value"].nunique()
+    1
+    """
+    ts = _make_timestamp_range(start_year, end_year, resolution)
+    values = np.full(len(ts), value)
+    return _make_curve_df(curve_id, ts, values)
+
+
+def generate_linear(
+    curve_id: str,
+    start_year: int,
+    end_year: int,
+    y0: float,
+    y1: float,
+    resolution: str = "1h",
+) -> pd.DataFrame:
+    """Generate a linear interpolation from *y0* to *y1*.
+
+    Useful for constant-rate policy phase-ins and simple ramp scenarios.
+
+    Parameters
+    ----------
+    curve_id : str
+        Identifier for the curve.
+    start_year, end_year : int
+        Year range (inclusive).
+    y0 : float
+        Value at the start of the range.
+    y1 : float
+        Value at the end of the range.
+    resolution : str, default ``'1h'``
+        Pandas frequency string.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``curve_id``, ``timestamp``, ``value``.
+
+    Examples
+    --------
+    >>> df = generate_linear("ramp", 2025, 2030, 1.0, 1.5)
+    >>> df["value"].iloc[0]
+    1.0
+    """
+    ts = _make_timestamp_range(start_year, end_year, resolution)
+    values = np.linspace(y0, y1, len(ts))
+    return _make_curve_df(curve_id, ts, values)
+
+
+def generate_exponential_growth(
+    curve_id: str,
+    start_year: int,
+    end_year: int,
+    y0: float = 1.0,
+    y1: float | None = None,
+    resolution: str = "1h",
+    annual_growth: float | None = None,
+) -> pd.DataFrame:
+    """Generate a smooth exponential growth curve.
+
+    Two mutually exclusive interfaces:
+
+    * **Endpoint mode** — provide *y0* and *y1*; the annual growth rate is
+      derived so that the curve passes through both endpoints.
+    * **Rate mode** — provide *annual_growth*; the curve starts at *y0* and
+      compounds at the given rate.
+
+    Exactly one of *y1* or *annual_growth* must be supplied.
+
+    Parameters
+    ----------
+    curve_id : str
+        Identifier for the curve.
+    start_year, end_year : int
+        Year range (inclusive).
+    y0 : float, default 1.0
+        Value at the start of the range.
+    y1 : float or None
+        Value at the end of the range.  Mutually exclusive with
+        *annual_growth*.
+    resolution : str, default ``'1h'``
+        Pandas frequency string.
+    annual_growth : float or None
+        Fractional growth per year (e.g. 0.02 for 2 %).  Mutually exclusive
+        with *y1*.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``curve_id``, ``timestamp``, ``value``.
+
+    Raises
+    ------
+    ValueError
+        If both or neither of *y1* and *annual_growth* are provided.
+
+    Examples
+    --------
+    >>> df = generate_exponential_growth("g", 2025, 2030, annual_growth=0.02)
+    >>> df["value"].iloc[0]
+    1.0
+
+    >>> df = generate_exponential_growth("g", 2025, 2030, y0=100, y1=150)
+    """
+    if (y1 is not None) and (annual_growth is not None):
+        raise ValueError("Provide either y1 or annual_growth, not both.")
+    if (y1 is None) and (annual_growth is None):
+        raise ValueError("Provide either y1 or annual_growth.")
+
+    ts = _make_timestamp_range(start_year, end_year, resolution)
+
+    # Fractional years since start
+    start_ts = ts[0]
+    seconds_per_year = 365.25 * 24 * 3600
+    years_since_start = (ts - start_ts).total_seconds() / seconds_per_year
+
+    if annual_growth is not None:
+        # Rate mode: y(t) = y0 * (1 + annual_growth) ^ t
+        values = y0 * (1 + annual_growth) ** years_since_start
+    else:
+        # Endpoint mode: solve for rate from y0, y1, total_years
+        total_years = years_since_start[-1]
+        if total_years == 0:
+            values = np.full(len(ts), y0)
+        else:
+            # y1 = y0 * r^T  =>  r = (y1/y0)^(1/T)
+            ratio = y1 / y0
+            values = y0 * ratio ** (years_since_start / total_years)
+
+    return _make_curve_df(curve_id, ts, values)
+
+
 def generate_s_curve(
     curve_id: str,
     start_year: int,
     end_year: int,
     y0: float,
     y1: float,
-    resolution: str = "1h",  # '1h', '1D', etc.
-    midpoint: str = None,  # optional override
-    steepness: float = 10.0  # higher = faster transition
+    resolution: str = "1h",
+    midpoint: str = None,
+    steepness: float = 10.0,
 ) -> pd.DataFrame:
-    """
-    Generate a timestamp-indexed logistic S-curve from y0 to y1.
+    """Generate a logistic S-curve transitioning from *y0* to *y1*.
 
-    Now uses actual time deltas for leap-safe and precise interpolation.
+    Uses actual time deltas for leap-safe and precise interpolation.
+
+    Parameters
+    ----------
+    curve_id : str
+        Identifier for the curve.
+    start_year, end_year : int
+        Year range (inclusive).
+    y0 : float
+        Value at the start of the range.
+    y1 : float
+        Value at the end of the range.
+    resolution : str, default ``'1h'``
+        Pandas frequency string.
+    midpoint : str or None
+        ISO timestamp for the inflection point.  Defaults to the midpoint
+        of the time range.
+    steepness : float or str, default 10.0
+        Controls transition speed.  A numeric value is a raw multiplier;
+        a string like ``'5y'`` sets the window in which ~90 % of the
+        transition occurs.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``curve_id``, ``timestamp``, ``value``.
+
+    Examples
+    --------
+    >>> df = generate_s_curve("elec", 2025, 2050, 0.1, 0.9, steepness="5y")
     """
-    start = pd.Timestamp(f"{start_year}-01-01 00:00:00")
-    end = pd.Timestamp(f"{end_year}-12-31 23:59:59")
-    ts = pd.date_range(start=start, end=end, freq=resolution)
+    ts = _make_timestamp_range(start_year, end_year, resolution)
+    start = ts[0]
+    end = ts[-1] + pd.Timedelta(seconds=1)  # match original end semantics
 
     # Midpoint in time
     if midpoint is None:
-        midpoint = start + (end - start) / 2
+        mid = start + (end - start) / 2
     else:
-        midpoint = pd.Timestamp(midpoint)
+        mid = pd.Timestamp(midpoint)
 
     # Compute time offset in seconds
     seconds_total = (end - start).total_seconds()
-    seconds_from_mid = (ts - midpoint).total_seconds()
+    seconds_from_mid = (ts - mid).total_seconds()
 
     # Logistic curve based on normalized offset from midpoint
-    # Allow steepness to represent transition width in years (90% transition)
     if isinstance(steepness, str) and steepness.endswith("y"):
         transition_years = float(steepness[:-1])
         seconds_for_90pct = transition_years * 365.25 * 24 * 3600
         x = 6 * seconds_from_mid / seconds_for_90pct
     else:
-        # fallback to raw steepness multiplier
         x = steepness * seconds_from_mid / seconds_total
+
     values = y0 + (y1 - y0) / (1 + np.exp(-x))
+    return _make_curve_df(curve_id, ts, values)
 
-    return pd.DataFrame({
-        "curve_id": curve_id,
-        "timestamp": ts,
-        "value": values
-    })
 
-def generate_exponential_growth(
-    curve_id: str,
-    start_year: int,
-    end_year: int,
-    resolution: str = "1h",
-    annual_growth: float = 0.02,
-) -> pd.DataFrame:
-    """
-    Generate a smooth growth curve from start_year to end_year where the value grows
-    exponentially by `annual_growth` per year, spread evenly across the resolution.
-
-    Returns a DataFrame with:
-        - curve_id
-        - timestamp
-        - value (multiplicative growth factor)
-    """
-    # Create timestamp range
-    start_ts = pd.Timestamp(f"{start_year}-01-01 00:00:00")
-    end_ts = pd.Timestamp(f"{end_year}-12-31 23:59:59")
-    timestamps = pd.date_range(start=start_ts, end=end_ts, freq=resolution)
-
-    # Compute fractional years since start
-    seconds_per_year = 365.25 * 24 * 3600
-    seconds_since_start = (timestamps - start_ts).total_seconds()
-    years_since_start = seconds_since_start / seconds_per_year
-
-    # Apply exponential growth
-    growth_factors = (1 + annual_growth) ** years_since_start
-
-    return pd.DataFrame({
-        "curve_id": curve_id,
-        "timestamp": timestamps,
-        "value": growth_factors
-    })
+# ---------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------
 
 CurveLike = Union[
     pd.Series,                 # index = DatetimeIndex, values = factors
@@ -95,43 +309,53 @@ CurveLike = Union[
     Path,
 ]
 
+
+# ---------------------------------------------------------------------------
+# Utilities
+# ---------------------------------------------------------------------------
+
 def apply_growth_curve_to_value(
     df: pd.DataFrame,
     curve_df: pd.DataFrame,
     *,
     how: str = "multiply",
-    target_col: str = "value"
+    target_col: str = "value",
 ) -> pd.DataFrame:
-    """
-    Join a growth curve (timestamp/value) onto df by timestamp and apply it
-    to df[target_col] either by multiplying or adding.
+    """Join a growth curve onto *df* by timestamp and apply it.
 
     Parameters
     ----------
-    df : DataFrame
-        Must contain 'timestamp' and the target_col.
-    curve_df : DataFrame
-        Must contain 'timestamp' and 'value' (growth factors or increments).
-    how : {'multiply', 'add'}, default 'multiply'
-        How to apply the growth curve to the target column.
-    target_col : str, default 'value'
-        Column in df to transform.
+    df : pd.DataFrame
+        Must contain ``timestamp`` and *target_col*.
+    curve_df : pd.DataFrame
+        Must contain ``timestamp`` and ``value`` columns (extra columns
+        like ``curve_id`` are allowed and will be ignored).
+    how : ``'multiply'`` or ``'add'``, default ``'multiply'``
+        How to combine the curve with the target column.
+    target_col : str, default ``'value'``
+        Column in *df* to transform.
 
     Returns
     -------
-    DataFrame
-        New DataFrame with target_col transformed.
+    pd.DataFrame
+        Copy of *df* with *target_col* transformed.
+
+    Raises
+    ------
+    ValueError
+        If required columns are missing or *how* is invalid.
     """
     if "timestamp" not in df.columns:
         raise ValueError("df must have a 'timestamp' column")
     if target_col not in df.columns:
         raise ValueError(f"df must have '{target_col}' column")
-    if set(curve_df.columns) != {"timestamp", "value"}:
-        raise ValueError("curve_df must have exactly ['timestamp', 'value'] columns")
+    if "timestamp" not in curve_df.columns or "value" not in curve_df.columns:
+        raise ValueError("curve_df must have 'timestamp' and 'value' columns")
 
-    merged = df.merge(curve_df, on="timestamp", how="left", suffixes=("", "_curve"))
+    # Only use timestamp and value from curve_df
+    curve_subset = curve_df[["timestamp", "value"]]
+    merged = df.merge(curve_subset, on="timestamp", how="left", suffixes=("", "_curve"))
 
-    # NOTE: the curve's column is 'value_curve' after merge
     curve_col = "value_curve"
     if curve_col not in merged.columns:
         raise RuntimeError("Internal error: expected 'value_curve' after merge.")
@@ -143,19 +367,30 @@ def apply_growth_curve_to_value(
     else:
         raise ValueError("how must be 'multiply' or 'add'")
 
-    # drop only the curve column
     return merged.drop(columns=[curve_col])
 
 
 def load_curve(curve: CurveLike) -> Any:
-    """
-    Load a growth curve from a flexible input:
-      - pd.Series with a DatetimeIndex
-      - pd.DataFrame with columns ['timestamp', 'value' | 'factor' | 'multiplier']
-      - Mapping[timestamp->factor]
-      - Path/str to a parquet or csv with the above DataFrame shape
+    """Load a growth curve from a flexible input.
 
-    Returns the same python object for in-memory inputs; for file inputs returns a DataFrame.
+    Parameters
+    ----------
+    curve : CurveLike
+        One of: ``pd.Series`` (DatetimeIndex), ``pd.DataFrame``,
+        ``Mapping[timestamp, factor]``, or a path (``str`` / ``Path``)
+        to a ``.parquet`` or ``.csv`` file.
+
+    Returns
+    -------
+    pd.Series, pd.DataFrame, or dict
+        The same object for in-memory inputs; a DataFrame for file inputs.
+
+    Raises
+    ------
+    ValueError
+        If a file path has an unsupported extension.
+    TypeError
+        If *curve* is not a recognised type.
     """
     if isinstance(curve, (pd.Series, pd.DataFrame)):
         return curve
@@ -169,7 +404,6 @@ def load_curve(curve: CurveLike) -> Any:
             return pd.read_csv(p)
         raise ValueError(f"Unsupported curve file extension: {p.suffix}. Use .parquet or .csv.")
 
-    # mapping/dict-like
     if isinstance(curve, Mapping):
         return dict(curve)
 
@@ -181,15 +415,21 @@ def load_curve(curve: CurveLike) -> Any:
 
 
 def curve_to_series(curve_obj: Any, *, name: str = "value") -> pd.Series:
-    """
-    Normalize a curve into a pandas Series indexed by Timestamp with multiplicative factors.
+    """Normalize a curve into a timestamp-indexed Series.
 
-    Accepted shapes:
-      - Series: will be sorted; index coerced to DatetimeIndex if needed
-      - DataFrame: must contain 'timestamp' and one of ['value','factor','multiplier']
-      - Mapping: keys coerced to timestamps
+    Parameters
+    ----------
+    curve_obj : pd.Series, pd.DataFrame, or Mapping
+        The curve data.  DataFrames must contain ``timestamp`` and one of
+        ``value``, ``factor``, or ``multiplier``.
+    name : str, default ``'value'``
+        Name assigned to the resulting Series.
+
+    Returns
+    -------
+    pd.Series
+        Sorted by DatetimeIndex.
     """
-    # Series
     if isinstance(curve_obj, pd.Series):
         s = curve_obj.copy()
         if not isinstance(s.index, pd.DatetimeIndex):
@@ -199,7 +439,6 @@ def curve_to_series(curve_obj: Any, *, name: str = "value") -> pd.Series:
             s.name = name
         return s
 
-    # DataFrame
     if isinstance(curve_obj, pd.DataFrame):
         dfc = curve_obj.copy()
         cols = {c.lower(): c for c in dfc.columns}
@@ -213,7 +452,6 @@ def curve_to_series(curve_obj: Any, *, name: str = "value") -> pd.Series:
         dfc = dfc[[ts_col, val_col]].dropna().sort_values(ts_col)
         return pd.Series(dfc[val_col].values, index=dfc[ts_col].values, name=name)
 
-    # Mapping
     if isinstance(curve_obj, Mapping):
         idx = pd.to_datetime(list(curve_obj.keys()), utc=False)
         vals = list(curve_obj.values())
@@ -234,24 +472,29 @@ def validate_curve_alignment(
     required_max: Optional[pd.Timestamp] = None,
     require_complete_cover: bool = True,
 ) -> None:
-    """
-    Validate that a growth curve series aligns with a target index.
+    """Validate that a curve covers a target timestamp index.
 
-    Args:
-        curve: pd.Series indexed by Timestamp, containing multiplicative factors.
-        data_index: the timestamps you will apply the curve to.
-        required_min / required_max: optional absolute bounds the curve must cover.
-        require_complete_cover: if True, every timestamp in data_index must exist in curve.
-                                If False, missing points are allowed (caller can reindex+ffill).
-    Raises:
-        ValueError on coverage or alignment issues.
+    Parameters
+    ----------
+    curve : pd.Series
+        Indexed by Timestamp.
+    data_index : pd.DatetimeIndex
+        Timestamps the curve will be applied to.
+    required_min, required_max : pd.Timestamp or None
+        Absolute bounds the curve must cover.
+    require_complete_cover : bool, default True
+        If ``True``, every timestamp in *data_index* must exist in *curve*.
+
+    Raises
+    ------
+    ValueError
+        On coverage or alignment issues.
     """
     if not isinstance(curve.index, pd.DatetimeIndex):
         raise ValueError("Curve must have a DatetimeIndex.")
 
     cmin, cmax = curve.index.min(), curve.index.max()
 
-    # Absolute bounds check (if provided)
     if required_min is not None and cmin > required_min:
         raise ValueError(
             f"Curve starts at {cmin}, earlier coverage required: {required_min}."
@@ -262,11 +505,9 @@ def validate_curve_alignment(
         )
 
     if require_complete_cover:
-        # Check every timestamp is present
         probe = curve.reindex(data_index)
         if probe.isna().any():
             missing = int(probe.isna().sum())
-            # for a friendlier hint, show the first few missing stamps
             missing_examples = data_index[probe.isna()][:5]
             raise ValueError(
                 f"Curve is missing {missing} timestamps required by data_index. "
@@ -278,15 +519,28 @@ def map_curve_to_values(
     timestamps: pd.Series | pd.DatetimeIndex,
     curve: pd.Series,
     *,
-    on_missing: str = "error",  # 'error' | 'ffill' | 'bfill' | 'nearest'
+    on_missing: str = "error",
 ) -> pd.Series:
-    """
-    Map a validated curve onto a vector of timestamps, returning aligned factors.
+    """Map a validated curve onto a vector of timestamps.
 
-    on_missing:
-      - 'error' (default): raise if any timestamp is missing
-      - 'ffill'/'bfill': use forward/backward fill after reindex
-      - 'nearest': use nearest timestamp (ties choose earlier)
+    Parameters
+    ----------
+    timestamps : pd.Series or pd.DatetimeIndex
+        Target timestamps.
+    curve : pd.Series
+        Curve indexed by Timestamp.
+    on_missing : ``'error'``, ``'ffill'``, ``'bfill'``, or ``'nearest'``
+        Strategy for timestamps absent from *curve*.
+
+    Returns
+    -------
+    pd.Series
+        Aligned factors indexed by *timestamps*.
+
+    Raises
+    ------
+    ValueError
+        If *on_missing* is ``'error'`` and timestamps are missing.
     """
     if isinstance(timestamps, pd.Series):
         idx = pd.to_datetime(timestamps.values, utc=False)
@@ -301,25 +555,33 @@ def map_curve_to_values(
         return pd.Series(vals.values, index=timestamps, name=curve.name or "value")
 
     if on_missing in {"ffill", "bfill"}:
-        vals = curve.reindex(idx).fillna(method=on_missing)
+        reindexed = curve.reindex(idx)
+        vals = reindexed.ffill() if on_missing == "ffill" else reindexed.bfill()
         return pd.Series(vals.values, index=timestamps, name=curve.name or "value")
 
     if on_missing == "nearest":
-        # Use asof (requires curve index sorted ascending)
         s = curve.sort_index()
-        vals = pd.Series(index=idx, dtype=float)
-        # asof works on DatetimeIndex + monotonic increasing
-        vals[:] = s.reindex(idx, method="nearest").values
+        vals = s.reindex(idx, method="nearest")
         return pd.Series(vals.values, index=timestamps, name=curve.name or "value")
 
     raise ValueError("on_missing must be one of: 'error', 'ffill', 'bfill', 'nearest'.")
 
 
-# ---------------------------- convenience facade -----------------------------
-
 def load_and_prepare_curve(curve: CurveLike) -> pd.Series:
-    """
-    One-liner convenience: load any CurveLike and return a normalized Series.
+    """Load any ``CurveLike`` and return a normalized Series.
+
+    Convenience wrapper combining :func:`load_curve` and
+    :func:`curve_to_series`.
+
+    Parameters
+    ----------
+    curve : CurveLike
+        Any supported curve input.
+
+    Returns
+    -------
+    pd.Series
+        Sorted, timestamp-indexed Series.
     """
     obj = load_curve(curve)
     return curve_to_series(obj)

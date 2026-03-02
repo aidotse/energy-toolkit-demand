@@ -2,6 +2,13 @@
  * Canonical color definitions for the Explorer application.
  * Single source of truth — all other files import from here.
  *
+ * Architecture:
+ * - `ui` — non-chart UI colors (highlights, selection, page background)
+ * - `viz` — chart/visualization colors (segment teal scale, map gradient, axis furniture)
+ * - `SEGMENT_COLORS` — derived segment→color mapping consumed by chartConfig
+ * - `tailwindColors` — object shaped for `theme.extend.colors` in tailwind.config.ts,
+ *   so Tailwind utility classes (e.g. `bg-chart-900`, `bg-page-bg`) stay in sync
+ *
  * Zero external imports, pure data, `as const`.
  */
 
@@ -16,6 +23,8 @@ export const ui = {
 	selection: '#46a0c4',
 	/** ThemeSwitch sun icon — targets third-party SVG */
 	sunIcon: '#f9ca2d',
+	/** Page background (light mode) */
+	pageBg: '#ededed',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -97,4 +106,5 @@ export const tailwindColors = {
 		accent: viz.mapGradient[3], // #660042
 	},
 	highlight: ui.highlight,
+	'page-bg': ui.pageBg,
 } as const;

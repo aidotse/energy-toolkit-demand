@@ -28,7 +28,7 @@
 	});
 </script>
 
-<div class="relative min-h-screen dark:bg-gray-900" style="background-color: #ededed;">
+<div class="relative min-h-screen bg-page-bg dark:bg-gray-900">
 	<!-- Map: fixed right-half background (hidden on mobile) -->
 	<div class="hidden lg:block fixed top-14 right-0 bottom-0 w-2/3 z-0">
 		<Map

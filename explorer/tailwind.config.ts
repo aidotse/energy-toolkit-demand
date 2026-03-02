@@ -13,6 +13,13 @@ export default {
     './node_modules/layerchart/**/*.{svelte,js}'
   ],
 
+  safelist: [
+    'fill-transparent',
+    'contents',
+    'grid-cols-[1fr_auto]',
+    'tabular-nums',
+  ],
+
   darkMode: 'class', // Enable class-based dark mode
 
   theme: {
