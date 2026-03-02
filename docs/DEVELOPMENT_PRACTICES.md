@@ -96,13 +96,24 @@ When asked to "clean up the codebase" or after completing major features:
 ### Test File Locations
 
 - **API Unit Tests**: `/api/tests/unit/`
-  - `utils.test.js` - Utility function tests
+  - `utils.test.js` - Utility function tests (parsePeriod, formatPeriod)
   - `config.test.js` - Configuration loading tests
   - `endpoints.test.js` - Static endpoint generation tests
+  - `query-builder.test.js` - SQL query builder and input sanitization tests
+  - `cache.test.js` - LRU cache behavior tests
 - **API Integration Tests**: `/api/tests/integration/`
   - `server.test.js` - Server and static endpoint tests
-  - `demand.test.js` - DuckDB query and /demand endpoint tests
-- **Explorer Tests**: `/explorer/src/tests/` (to be added)
+  - `demand.test.js` - DuckDB query and /demand endpoint tests (requires data files)
+- **Generator Tests**: `/generator/tests/`
+  - `test_curves.py` - S-curve, exponential growth, curve loading and validation
+  - `test_utilities.py` - Path generation, parameter handling, config helpers
+  - `test_db.py` - Parquet scaffold read/write, DuckDB operations
+  - Run with: `conda run -n energy-toolkit python -m pytest generator/tests/ -v`
+- **Explorer Tests**: `/explorer/src/lib/`
+  - `utilities.test.ts` - formatNumber, getGeos, makeDemandQuery
+  - `comparisonUtils.test.ts` - Scenario comparison, color assignment, data merging
+  - `stores/parameterStore.test.ts` - Parameter store state management
+  - Component tests co-located with components (e.g., `AreaChart.test.ts`)
 
 ### Test Coverage Requirements
 
@@ -120,7 +131,12 @@ npm test                    # Run all tests
 npm run test:coverage       # With coverage report
 npm run test:watch          # Watch mode for development
 
-# Explorer tests (when added)
+# Generator tests
+conda run -n energy-toolkit python -m pytest generator/tests/ -v
+conda run -n energy-toolkit python -m pytest generator/tests/ --cov  # With coverage
+
+# Explorer tests
 cd explorer
-npm test
+npx vitest run              # Run all tests
+npx vitest run --coverage   # With coverage report
 ```

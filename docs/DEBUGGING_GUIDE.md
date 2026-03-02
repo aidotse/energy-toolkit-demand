@@ -50,6 +50,30 @@
 6. **Debug**: Check browser dev tools Network tab for API calls
 7. **Kill processes**: `pkill -f "local-server"` when done
 
+### Vite / Svelte Plugin Version Mismatch
+
+- **Problem**: `@sveltejs/vite-plugin-svelte` v6 requires Vite 6, but the project uses Vite 5
+- **Symptom**: Tests that import Svelte components fail with `server.environments` error
+- **Solution**: Upgrade Vite to v6 or pin `@sveltejs/vite-plugin-svelte` to v5
+- **Workaround**: Pure TypeScript tests (utilities, comparisonUtils) run fine; only component tests are affected
+
+### Silent API Errors in Explorer
+
+- **Problem**: `fetchConfig()`, `fetchScenarios()`, etc. returned fallback data on error — components couldn't tell "no data" from "fetch failed"
+- **Solution**: These functions now return `FetchResult<T>` with `{ data, error? }`. Call sites destructure with `const { data: config } = await fetchConfig(fetch)`
+- **Check**: If a component shows fallback data unexpectedly, check the `error` field on the FetchResult
+
+### Generator Tests Not Found
+
+- **Problem**: `python -m pytest` can't find generator tests
+- **Solution**: Use the conda environment: `conda run -n energy-toolkit python -m pytest generator/tests/ -v`
+- **Check**: Ensure `pyproject.toml` has `pythonpath = [".."]` in `[tool.pytest.ini_options]`
+
+### Deprecated Pandas Warning in Generator
+
+- **Problem**: `FutureWarning: fillna with method is deprecated` in curves.py
+- **Solution**: Already fixed — uses `.ffill()` / `.bfill()` instead of `fillna(method=...)`
+
 ## Running Commands
 
 - Make sure you kill already running npm commands (npm run dev or npm run start etc.) before starting new ones

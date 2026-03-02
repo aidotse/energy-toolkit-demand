@@ -49,7 +49,7 @@ Modern SvelteKit web application for interactive visualization of energy demand 
 ```bash
 # Generate forecast data with default parameters
 cd generator
-python generator_notebook-county.py
+jupyter notebook notebooks/behovskartan2.ipynb
 ```
 
 This creates Parquet files in `/data/` with demand forecasts for all scenarios.
@@ -109,9 +109,8 @@ Visit http://localhost:5173/charts to see the chart library with all visualizati
 ├── README.md                     # This file
 │
 ├── generator/                    # Python forecasting engine
-│   ├── generator_notebook-county.py   # Main generation script
-│   ├── input/                    # Historical demand data
-│   └── transformers/             # Scenario transformation modules
+│   ├── notebooks/behovskartan2.ipynb  # Main generation notebook
+│   └── input/                    # Historical demand data
 │
 ├── data/                         # Generated data (not in git)
 │   ├── base/                     # Base scenarios

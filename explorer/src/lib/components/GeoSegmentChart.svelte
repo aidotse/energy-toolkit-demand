@@ -16,19 +16,18 @@
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
-	import { getSegmentColor, getSegmentLabel, SEGMENT_LABELS } from '$lib/chartConfig';
+	import { viewStore } from '$lib/stores/viewStore.svelte';
+	import { getSegmentColor, getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
 
 	let {
 		year,
-		parameterData,
 		exportable = true,
 		description = '',
 		headerControls,
 		class: className = ''
 	}: {
 		year?: number;
-		parameterData?: any;
 		exportable?: boolean;
 		description?: string;
 		headerControls?: Snippet;
@@ -43,8 +42,8 @@
 	const baseScenario = $derived(parameterStore.baseScenario);
 	const parameterValues = $derived(parameterStore.parameterValues);
 
-	// Define segment order (matching SectorPieChart)
-	const SEGMENT_ORDER = ['industry', 'housing', 'services', 'transport', 'datacenters'];
+	// Geography lookup from viewStore (set by page loader)
+	const geographies = $derived((viewStore.pageData as any)?.geographies || []);
 
 	// Reactive data fetching when parameters change
 	$effect(() => {
@@ -88,7 +87,7 @@
 
 	// Transform data into 100% stacked format
 	let chartData = $derived.by(() => {
-		if (!fetchedData || fetchedData.length === 0 || !parameterData?.geographies) {
+		if (!fetchedData || fetchedData.length === 0 || !geographies.length) {
 			return [];
 		}
 
@@ -115,10 +114,10 @@
 
 		for (const [geoId, data] of geoMap.entries()) {
 			// Look up geography name
-			const geoLookup = parameterData.geographies.find(
+			const geoLookup = geographies.find(
 				(g: any) => g.geo_id === geoId || g.id === geoId
 			);
-			const geoName = geoLookup?.geo_name || geoLookup?.name || geoId;
+			const geoName = (geoLookup?.geo_name || geoLookup?.name || geoId).replace(/s? län$/, '');
 
 			// Skip if no valid name or 'Sverige' (total)
 			if (!geoName || geoName === 'Sverige') {
@@ -188,12 +187,13 @@
 				description="Ingen data finns för valt år"
 			/>
 		{:else}
-			<div class="h-[320px]">
+			<div class="h-[400px] overflow-visible">
 				<BarChart
 					data={chartData}
 					x="name"
 					{series}
 					seriesLayout="stack"
+					padding={{ top: 4, bottom: 80, left: 48, right: 4 }}
 					props={{
 						xAxis: {
 							tweened: false,
@@ -203,7 +203,21 @@
 							tweened: false,
 							format: (v: number) => `${Math.round(v)}%`
 						},
-						bars: { radius: 0, stroke: 'none' }
+						bars: { radius: 0, stroke: 'none' },
+						highlight: {
+							area: { fill: 'rgba(0,0,0,0.05)' }
+						},
+						tooltip: {
+							hideTotal: true,
+							root: {
+								variant: 'none',
+								contained: 'window',
+								class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+							},
+							item: {
+								format: (v: number) => `${Math.round(v)}%`
+							}
+						}
 					}}
 				/>
 			</div>

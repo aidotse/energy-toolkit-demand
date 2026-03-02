@@ -16,7 +16,7 @@
 
 <div class="flex flex-col rounded shadow px-2 lg:px-3 pt-3 pb-2 bg-gray-100 text-gray-content">
     <!-- Gradient Bar -->
-    <div class="w-full h-3 lg:h-5 rounded mb-1 legend-gradient"></div>
+    <div class="w-full h-3 lg:h-5 rounded mb-1" style="background: linear-gradient(to right, {viz.mapGradient.join(', ')})"></div>
 
     <!-- Labels -->
     <div class="flex flex-row justify-between w-full">
@@ -27,10 +27,3 @@
         {/each}
     </div>
 </div>
-
-<style>
-    .legend-gradient {
-        /* viz.mapGradient from $lib/colors */
-        background: linear-gradient(to right, #61bbd9, #007399, #002a66, #660042);
-    }
-</style>

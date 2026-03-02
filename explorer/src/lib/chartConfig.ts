@@ -7,11 +7,19 @@
 
 import { formatNumber } from '$lib/utilities';
 import { SEGMENT_COLORS, viz } from '$lib/colors';
+import * as m from '$lib/paraglide/messages';
 
 export { SEGMENT_COLORS };
 
 /**
- * Segment display name mapping (API name → Swedish display name)
+ * Canonical segment ordering for charts (largest/most important first).
+ * LoadProfileChart intentionally uses a different order (housing first).
+ */
+export const SEGMENT_ORDER = ['industry', 'housing', 'services', 'transport', 'datacenters'] as const;
+
+/**
+ * Static segment labels (Swedish). Kept for backward compatibility.
+ * Prefer getSegmentLabel() for locale-aware labels.
  */
 export const SEGMENT_LABELS: Record<string, string> = {
 	'industry': 'Industri',
@@ -22,10 +30,19 @@ export const SEGMENT_LABELS: Record<string, string> = {
 } as const;
 
 /**
- * Get display label for a segment
+ * Get locale-aware display label for a segment.
+ * Uses Paraglide messages so labels follow the active language.
  */
 export function getSegmentLabel(segment: string): string {
-	return SEGMENT_LABELS[segment] || segment;
+	const labels: Record<string, () => string> = {
+		industry: m.segment_industry,
+		housing: m.segment_housing,
+		services: m.segment_services,
+		transport: m.segment_transport,
+		datacenters: m.segment_datacenters,
+		total: m.segment_total,
+	};
+	return labels[segment]?.() ?? segment;
 }
 
 /**
@@ -37,21 +54,18 @@ export function getSegmentColor(segment: string): { bg: string; text: string } {
 }
 import { getEnergyPrefix, getPowerPrefix } from '$lib/stores/units.svelte';
 
+export interface AxisConfig {
+	format?: ((value: number) => string) | string;
+	ticks?: unknown[] | ((scale: { domain(): unknown[] }) => unknown[]);
+	labels?: boolean;
+	rule?: boolean | { class?: string };
+	tweened?: boolean | { duration: number };
+	tickLabelProps?: Record<string, unknown>;
+}
+
 export interface StandardAxisConfig {
-	xAxis?: {
-		format?: (value: any) => string;
-		ticks?: any;
-		labels?: boolean;
-		rule?: boolean | { class?: string };
-		tweened?: boolean | { duration: number };
-	};
-	yAxis?: {
-		format?: (value: any) => string;
-		ticks?: any;
-		labels?: boolean;
-		rule?: boolean | { class?: string };
-		tweened?: boolean | { duration: number };
-	};
+	xAxis?: AxisConfig;
+	yAxis?: AxisConfig;
 	grid?: {
 		x?: boolean;
 		y?: boolean;
@@ -138,13 +152,13 @@ export function getDistributionAxisConfig(
 
 	// Use a function to select a subset of domain values for ticks
 	// For band scales (like BarChart), we need to return values from the actual domain
-	const xTicks = (scale: any) => {
+	const xTicks = (scale: { domain(): unknown[] }) => {
 		const domain = scale.domain();
 		if (!domain || domain.length === 0) return [];
 
 		const tickCount = 6;
 		const step = Math.max(1, Math.floor(domain.length / (tickCount - 1)));
-		const ticks: any[] = [];
+		const ticks: unknown[] = [];
 
 		// Always include first
 		ticks.push(domain[0]);
@@ -212,7 +226,7 @@ export function getGeographicAxisConfig(displayAxes: boolean = true): StandardAx
 export function getBarChartProps(config?: {
 	displayAxes?: boolean;
 	resolution?: string;
-}): any {
+}): { xAxis: AxisConfig; yAxis: AxisConfig; bars: Record<string, unknown> } {
 	const { displayAxes = true, resolution = '1d' } = config || {};
 
 	return {

@@ -9,6 +9,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import LoadingSkeleton from './LoadingSkeleton.svelte';
+	import * as m from '$paraglide/messages';
 
 	let {
 		rootMargin = '200px',
@@ -54,7 +55,7 @@
 		<slot />
 	{:else}
 		<div style="height: {height}">
-			<LoadingSkeleton variant="chart" message="Väntar på att ladda..." />
+			<LoadingSkeleton variant="chart" message={m.loading_waiting()} />
 		</div>
 	{/if}
 </div>

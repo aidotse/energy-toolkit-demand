@@ -4,6 +4,13 @@
 	 *
 	 * Used as a leaf directive in markdown content: ::ChartEmbed{chart="area-yearly"}
 	 * Reads year/geography from viewStore so charts react to Map interactions.
+	 * Generates dynamic descriptions incorporating the active scenario suffix.
+	 *
+	 * @component
+	 * @prop chart - Chart identifier: 'area-yearly' | 'sector-pie' | 'geo-segment' | 'period-heatmap'
+	 * @prop exportable - Pass through to child chart's export controls
+	 * @prop aggregationInit - Initial aggregation mode for AreaChart
+	 * @prop enableComparison - Enable comparison mode for SectorPieChart
 	 */
 	import AreaChart from '$lib/components/AreaChart.svelte';
 	import SectorPieChart from '$lib/components/SectorPieChart.svelte';
@@ -11,6 +18,7 @@
 	import PeriodHeatmap from '$lib/components/PeriodHeatmap.svelte';
 	import { viewStore } from '$lib/stores/viewStore.svelte';
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
+	import { SEGMENT_LABELS } from '$lib/chartConfig';
 
 	let {
 		chart,
@@ -25,14 +33,6 @@
 		enableComparison?: boolean;
 		[key: string]: any;
 	} = $props();
-
-	const SEGMENT_LABELS: Record<string, string> = {
-		housing: 'Bostäder',
-		transport: 'Transport',
-		industry: 'Industri',
-		services: 'Service',
-		datacenters: 'Datacenter'
-	};
 
 	function getParamTypeLabel(paramName: string): string {
 		const labels: Record<string, string> = { growth: 'tillväxt', flex: 'flex' };
@@ -103,7 +103,6 @@
 	{:else if chart === 'geo-segment'}
 		<GeoSegmentChart
 			year={viewStore.year}
-			parameterData={viewStore.pageData?.parameters}
 			exportable={exportable}
 			{description}
 		/>

@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
 	import { getSegmentColor } from '$lib/chartConfig';
+	import { viz } from '$lib/colors';
 
 	type SegmentData = { values: number[]; label: string };
 	type ProfileData = { hours: number[]; segments: Record<string, SegmentData> };
@@ -73,7 +74,7 @@
 					y1={y(val, range.min, range.max)}
 					x2={width - pad.right}
 					y2={y(val, range.min, range.max)}
-					stroke="#e5e7eb"
+					stroke={viz.grid}
 					stroke-width="1"
 				/>
 			{/each}

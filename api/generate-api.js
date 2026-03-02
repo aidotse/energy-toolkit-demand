@@ -15,6 +15,7 @@ import yaml from 'js-yaml';
 import { fileURLToPath } from 'url';
 import { checkbox, confirm, input } from '@inquirer/prompts';
 import duckdb from 'duckdb';
+import { getDataDir } from '../paths.js';
 
 // ES module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +31,7 @@ console.log('='.repeat(50));
  * Check if data directory exists and has parquet files
  */
 function validateDataExists() {
-    const dataDir = path.join(__dirname, 'data');
+    const dataDir = getDataDir();
 
     if (!fs.existsSync(dataDir)) {
         console.error('❌ Error: Data directory not found at', dataDir);
@@ -123,38 +124,25 @@ async function computeGlobalStatistics(dataDir) {
         const conn = db.connect();
 
         // Setup paths for nested structure
-        const scenariosDir = path.join(dataDir, 'scenarios');
         const baseDir = path.join(dataDir, 'base');
 
         console.log('📊 Computing data bounds...');
 
-        // Build UNION query to scan both base and scenarios directories
-        const patterns = [];
-        if (fs.existsSync(baseDir)) {
-            patterns.push(path.join(baseDir, '**', '*.parquet').replace(/\\/g, '/'));
+        // Only scan base data for globals (scenarios are variations, not separate datasets)
+        if (!fs.existsSync(baseDir)) {
+            console.error('❌ No base data directory found');
+            reject(new Error('No base data directory'));
+            return;
         }
-        if (fs.existsSync(scenariosDir)) {
-            patterns.push(path.join(scenariosDir, '**', '*.parquet').replace(/\\/g, '/'));
-        }
-
-        const parquetPattern = patterns;
-
-        // Build unified query with appropriate parquet scan
-        let dataSource;
-        if (parquetPattern.length > 1) {
-            // Multiple patterns - use UNION ALL
-            const unionParts = parquetPattern.map(pattern => `SELECT * FROM read_parquet('${pattern}')`);
-            dataSource = `(${unionParts.join(' UNION ALL ')}) AS combined_data`;
-        } else {
-            // Single pattern
-            dataSource = `read_parquet('${parquetPattern[0]}')`;
-        }
+        const parquetPattern = path.join(baseDir, '**', '*.parquet').replace(/\\/g, '/');
+        const dataSource = `read_parquet('${parquetPattern}')`;
 
         // Single unified query to compute all bounds efficiently
-        // Uses subqueries instead of CROSS JOIN to avoid cartesian product
+        // Groups by scenario_id to get per-scenario bounds (not cross-scenario sums)
         const unifiedQuery = `
             WITH yearly_data AS (
                 SELECT
+                    scenario_id,
                     geography,
                     segment,
                     DATE_TRUNC('year', timestamp) as year,
@@ -175,9 +163,9 @@ async function computeGlobalStatistics(dataDir) {
                     MIN(geography_total) as map_min,
                     MAX(geography_total) as map_max
                 FROM (
-                    SELECT geography, year, SUM(value) as geography_total
+                    SELECT scenario_id, geography, year, SUM(value) as geography_total
                     FROM yearly_data
-                    GROUP BY geography, year
+                    GROUP BY scenario_id, geography, year
                 ) t
             ),
             sector_stats AS (
@@ -185,9 +173,9 @@ async function computeGlobalStatistics(dataDir) {
                     MIN(sector_total) as sector_min,
                     MAX(sector_total) as sector_max
                 FROM (
-                    SELECT segment, year, SUM(value) as sector_total
+                    SELECT scenario_id, segment, year, SUM(value) as sector_total
                     FROM yearly_data
-                    GROUP BY segment, year
+                    GROUP BY scenario_id, segment, year
                 ) t
             ),
             national_stats AS (
@@ -195,9 +183,9 @@ async function computeGlobalStatistics(dataDir) {
                     MIN(national_total) as national_min,
                     MAX(national_total) as national_max
                 FROM (
-                    SELECT year, SUM(value) as national_total
+                    SELECT scenario_id, year, SUM(value) as national_total
                     FROM yearly_data
-                    GROUP BY year
+                    GROUP BY scenario_id, year
                 ) t
             )
             SELECT

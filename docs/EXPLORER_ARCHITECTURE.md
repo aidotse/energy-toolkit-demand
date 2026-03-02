@@ -63,14 +63,14 @@ Explorer is a **modular visual framework** for communicating energy forecast dat
 ```
 /explorer/src/lib/
 ├── dataService.ts             # API communication layer
-│   ├── fetchDemandData()      # Query demand data
-│   ├── fetchGlobals()         # Fetch global bounds
-│   ├── fetchGeographies()     # Fetch geography metadata
-│   └── fetchScenarios()       # Fetch scenario definitions
+│   ├── fetchDemandData()      # Query demand data (returns DemandRow[])
+│   ├── fetchConfig()          # Fetch config (returns FetchResult<ApiConfig>)
+│   ├── fetchGlobals()         # Fetch global bounds (returns FetchResult<Globals>)
+│   ├── fetchGeographies()     # Fetch geography metadata (returns FetchResult)
+│   ├── fetchScenarios()       # Fetch scenario definitions (returns FetchResult<Scenario[]>)
+│   └── FetchResult<T>         # { data: T, error?: string } for error-aware fetch
+├── comparisonUtils.ts         # Scenario comparison utilities
 ├── contentLoader.ts           # Markdown content system
-│   ├── loadContent()          # Load markdown files with frontmatter
-│   ├── getCachedContent()     # Retrieve cached content
-│   └── clearContentCache()    # Clear content cache
 ├── utilities.ts               # Helper functions
 │   ├── makeDemandQuery()      # Construct API queries
 │   ├── formatNumber()         # Number formatting
@@ -117,8 +117,11 @@ Explorer is a **modular visual framework** for communicating energy forecast dat
 ├── inline/
 │   └── Change.svelte          # Inline percentage/absolute change
 └── shared/
-    ├── LoadingSkeleton.svelte # Reusable loading states
-    ├── ErrorState.svelte      # Reusable error displays
+    ├── LoadingSkeleton.svelte # Reusable loading states (i18n via Paraglide)
+    ├── ErrorState.svelte      # Reusable error displays (i18n via Paraglide)
+    ├── LazyChart.svelte       # Intersection Observer lazy loading (i18n via Paraglide)
+    ├── ChartContainer.svelte  # Chart wrapper with export menu
+    ├── ScenarioLegend.svelte  # Interactive comparison legend
     └── EmptyState.svelte      # Reusable empty data states
 ```
 

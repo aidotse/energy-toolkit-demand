@@ -1,8 +1,14 @@
 /**
  * Navigation State Store (Svelte 5 Runes)
  *
- * Global state for page layout navigation.
+ * Global UI state for page layout — panels, menus, and modals.
  * Scenario/parameter state is managed by parameterStore (Strategy 2).
+ * Comparison mode state is managed by scenarioState (scenario.svelte.ts).
+ *
+ * Mutual exclusion: scenarioModal and scenarioDropdown cannot both be open.
+ * Opening one automatically closes the other (see toggle methods).
+ *
+ * Panel state is persisted to localStorage so it survives page reloads.
  */
 
 import { browser } from '$app/environment';
@@ -16,12 +22,11 @@ const getInitialPanelState = (): boolean => {
 
 /**
  * Navigation State Object
- * Handles UI state for navigation, modals, and comparison mode.
+ * Handles UI state for navigation and modals.
+ * Comparison mode is handled by scenarioState — do not duplicate here.
  */
 class NavigationState {
 	panelExpanded = $state(getInitialPanelState());
-	comparisonMode = $state(false);
-	comparisonScenarios = $state<any[]>([]);
 	mobileMenuOpen = $state(false);
 	scenarioModalOpen = $state(false);
 	scenarioDropdownOpen = $state(false);
@@ -49,26 +54,6 @@ class NavigationState {
 		this.scenarioDropdownOpen = !this.scenarioDropdownOpen;
 		if (this.scenarioDropdownOpen) {
 			this.scenarioModalOpen = false; // Close modal if dropdown opens
-		}
-	}
-
-	toggleComparisonMode() {
-		this.comparisonMode = !this.comparisonMode;
-		if (!this.comparisonMode) {
-			this.comparisonScenarios = [];
-		}
-	}
-
-	addToComparison(scenario: any) {
-		if (this.comparisonScenarios.length < 3 && !this.comparisonScenarios.includes(scenario)) {
-			this.comparisonScenarios.push(scenario);
-		}
-	}
-
-	removeFromComparison(scenario: any) {
-		const index = this.comparisonScenarios.indexOf(scenario);
-		if (index > -1) {
-			this.comparisonScenarios.splice(index, 1);
 		}
 	}
 }

@@ -10,15 +10,7 @@
 	import ParameterSlider from './ParameterSlider.svelte';
 	import { RotateCcw } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
-
-	// Segment display names
-	const SEGMENT_LABELS: Record<string, string> = {
-		housing: 'Bostäder',
-		transport: 'Transport',
-		industry: 'Industri',
-		services: 'Service',
-		datacenters: 'Datacenter'
-	};
+	import { SEGMENT_LABELS } from '$lib/chartConfig';
 
 	let {
 		compact = false,

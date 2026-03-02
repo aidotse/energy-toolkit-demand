@@ -66,7 +66,7 @@ data/
    ```bash
    # Run generator first to create Parquet files
    cd ../generator
-   jupyter notebook notebooks/generator_notebook-county.ipynb
+   jupyter notebook notebooks/behovskartan2.ipynb
    ```
 
 3. **Generate static endpoints and globals:**

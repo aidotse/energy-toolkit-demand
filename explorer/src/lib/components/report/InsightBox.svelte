@@ -27,7 +27,7 @@
 	const variantConfig = {
 		insight: {
 			icon: Lightbulb,
-			bgClass: 'bg-[#ededed] dark:bg-gray-800',
+			bgClass: 'bg-page-bg dark:bg-gray-800',
 			borderClass: 'border-gray-300 dark:border-gray-700',
 			iconClass: 'text-gray-900 dark:text-gray-100',
 			titleClass: 'text-gray-900 dark:text-gray-100'

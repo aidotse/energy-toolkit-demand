@@ -11,6 +11,12 @@ import type {
 } from '$lib/dataService';
 
 /**
+ * Default base scenario ID used before config is loaded.
+ * This is overridden once initialize() receives the actual config.
+ */
+export const DEFAULT_BASE_SCENARIO = 'beslutad-policy';
+
+/**
  * Store state interface
  */
 interface ParameterStoreState {
@@ -24,7 +30,7 @@ interface ParameterStoreState {
  */
 function createParameterStore() {
     let state = $state<ParameterStoreState>({
-        baseScenario: 'beslutad-policy',
+        baseScenario: DEFAULT_BASE_SCENARIO,
         parameterValues: {},
         config: null
     });
@@ -78,7 +84,7 @@ function createParameterStore() {
          */
         get isDefaultScenario(): boolean {
             const defaultScenario = state.config?.baseScenarios.find(s => s.default);
-            return state.baseScenario === (defaultScenario?.id || 'beslutad-policy');
+            return state.baseScenario === (defaultScenario?.id || DEFAULT_BASE_SCENARIO);
         },
 
         /**
@@ -101,7 +107,7 @@ function createParameterStore() {
 
             // Set default base scenario
             const defaultScenario = config.baseScenarios.find(s => s.default);
-            state.baseScenario = defaultScenario?.id || config.baseScenarios[0]?.id || 'beslutad-policy';
+            state.baseScenario = defaultScenario?.id || config.baseScenarios[0]?.id || DEFAULT_BASE_SCENARIO;
 
             // Set default parameter values (all 0 = baseline)
             state.parameterValues = { ...config.defaults };
@@ -115,7 +121,7 @@ function createParameterStore() {
         setBaseScenario(scenarioId: string) {
             state.baseScenario = scenarioId;
 
-            const defaultId = state.config?.baseScenarios.find(s => s.default)?.id || 'beslutad-policy';
+            const defaultId = state.config?.baseScenarios.find(s => s.default)?.id || DEFAULT_BASE_SCENARIO;
             if (scenarioId !== defaultId && state.config?.defaults) {
                 state.parameterValues = { ...state.config.defaults };
             }
