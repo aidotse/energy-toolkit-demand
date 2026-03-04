@@ -26,7 +26,7 @@
 		createComparisonMetadata,
 		hexToRgba
 	} from '$lib/comparisonUtils';
-	import { getTimeSeriesAxisConfig } from '$lib/chartConfig';
+	import { getTimeSeriesAxisConfig, CHART_PADDING } from '$lib/chartConfig';
 	import { viz } from '$lib/colors';
 	import type { Snippet } from 'svelte';
 	import * as m from '$paraglide/messages';
@@ -34,6 +34,7 @@
 	let {
 		data: allYearsData = [],
 		geography,
+		segment = 'total',
 		year,
 		aggregation: aggregationInit = 'sum',
 		scenarios: scenariosProp,
@@ -42,15 +43,22 @@
 		exportable = true,
 		description = '',
 		headerControls,
+		baseScenarioOverride,
+		parameterValuesOverride,
 		class: className = '',
-		contentClass = ''
+		contentClass = '',
+		height = 'h-[350px]'
 	}: TimeSeriesChartProps & {
+		segment?: string;
 		displayAxes?: boolean;
 		exportable?: boolean;
 		description?: string;
 		headerControls?: Snippet;
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
 		class?: string;
 		contentClass?: string;
+		height?: string;
 	} = $props();
 
 	// Subscribe to global scenario state
@@ -135,16 +143,17 @@
 		normalizedScenarios.length > 1 ? createComparisonMetadata(normalizedScenarios, comparisonData) : null
 	);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Get current parameter state for reactive fetching (with per-chart overrides)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
 	$effect(() => {
-		// Trigger fetch when scenarios or parameters change
+		// Trigger fetch when scenarios, parameters, or segment change
 		// Include all dependencies to trigger refetch
 		if (normalizedScenarios.length > 0 && geography && aggregation && baseScenario) {
-			// Access parameterValues to create dependency
+			// Access parameterValues and segment to create dependency
 			const _params = parameterValues;
+			const _seg = segment;
 			fetchChartData();
 		}
 	});
@@ -170,9 +179,9 @@
 					resolution: '1Y',
 					aggregation,
 					geography,
-					segment: 'total',
-					baseScenario: parameterStore.baseScenario,
-					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+					segment,
+					baseScenario: baseScenario,
+					parameterValues: parameterValues
 				});
 
 				const data = await fetchDemandData(query);
@@ -187,7 +196,7 @@
 						resolution: '1Y',
 						aggregation,
 						geography,
-						segment: 'total',
+						segment,
 						baseScenario: scenarioId
 					});
 
@@ -269,7 +278,7 @@
 <ChartContainer
 	title={m.yearly_chart_title({ measure: titleMeasure })}
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -278,6 +287,7 @@
 	class={className}
 	{contentClass}
 >
+	<div class={height}>
 	{#if loading}
 		<LoadingSkeleton variant="chart" message={m.loading_timeseries()} />
 	{:else if error}
@@ -290,6 +300,7 @@
             data={chartData}
             x="timestamp"
             y="total"
+            padding={CHART_PADDING.standard}
             xDomain={xMin === xMax ? [xMin,xMax+1] : [xMin,xMax]}
             yDomain={xMin === xMax ? [yMin,yMax*1.1] : [yMin,yMax]}
             grid={false}
@@ -362,6 +373,7 @@
 			data={transformedData}
 			x="timestamp"
 			{series}
+			padding={CHART_PADDING.standard}
 			xDomain={xMin === xMax ? [xMin, xMax + 1] : [xMin, xMax]}
 			yDomain={xMin === xMax ? [yMin, yMax * 1.1] : [yMin, yMax]}
 			grid={false}
@@ -419,5 +431,6 @@
 			/>
 		{/if}
     {/if}
+	</div>
 </ChartContainer>
 

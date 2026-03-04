@@ -41,10 +41,10 @@
 		},
 		info: {
 			icon: Info,
-			bgClass: 'bg-blue-50 dark:bg-blue-900/20',
-			borderClass: 'border-blue-200 dark:border-blue-800',
-			iconClass: 'text-blue-600 dark:text-blue-400',
-			titleClass: 'text-blue-900 dark:text-blue-100'
+			bgClass: 'bg-chart-300/15 dark:bg-chart-900/20',
+			borderClass: 'border-chart-700/30 dark:border-chart-700/50',
+			iconClass: 'text-chart-900 dark:text-chart-300',
+			titleClass: 'text-chart-900 dark:text-chart-100'
 		}
 	};
 

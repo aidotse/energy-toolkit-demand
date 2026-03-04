@@ -5,13 +5,11 @@
 
     let { lower_bound, upper_bound } = $props();
 
-    // Specify demand levels and corresponding colors
-    let demandLevels = [
-        { value: lower_bound, color: viz.mapGradient[0] },
-        { value: lower_bound + (upper_bound - lower_bound) * 0.33, color: viz.mapGradient[1] },
-        { value: lower_bound + (upper_bound - lower_bound) * 0.66, color: viz.mapGradient[2] },
-        { value: upper_bound, color: viz.mapGradient[3] },
-    ];
+    // Demand levels at non-linear stop positions matching mapGradient
+    let demandLevels = viz.mapStops.map((stop, i) => ({
+        value: lower_bound + (upper_bound - lower_bound) * stop,
+        color: viz.mapGradient[i],
+    }));
 </script>
 
 <div class="flex flex-col rounded shadow px-2 lg:px-3 pt-3 pb-2 bg-gray-100 text-gray-content">

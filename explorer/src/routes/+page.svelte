@@ -15,10 +15,12 @@
 
 	let year = $state(data.year);
 	let geography = $state(data.geography);
+	let segments = $state(['total']);
 
 	// Sync to viewStore for chart components in markdown content
 	$effect(() => { viewStore.year = year; });
 	$effect(() => { viewStore.geography = geography; });
+	$effect(() => { viewStore.segment = segments; });
 	$effect(() => { viewStore.pageData = data; });
 
 	// Load markdown content
@@ -37,6 +39,7 @@
 			year={year}
 			onYearChange={(newYear: number) => year = newYear}
 			bind:geography
+			bind:segments
 			yearData={data.geoData}
 			parameterData={data.parameters}
 			scenario={data.scenario}

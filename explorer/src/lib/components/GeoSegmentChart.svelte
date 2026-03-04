@@ -17,7 +17,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { viewStore } from '$lib/stores/viewStore.svelte';
-	import { getSegmentColor, getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
+	import { getSegmentColor, getSegmentLabel, SEGMENT_ORDER, CHART_PADDING } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -25,25 +25,33 @@
 		exportable = true,
 		description = '',
 		headerControls,
-		class: className = ''
+		class: className = '',
+		baseScenarioOverride,
+		parameterValuesOverride,
+		parameterData
 	}: {
 		year?: number;
 		exportable?: boolean;
 		description?: string;
 		headerControls?: Snippet;
 		class?: string;
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
+		parameterData?: { geographies?: any[] };
 	} = $props();
 
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let fetchedData = $state<any[]>([]);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Per-chart scenario/parameter overrides (fall back to global store)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(
+		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined)
+	);
 
-	// Geography lookup from viewStore (set by page loader)
-	const geographies = $derived((viewStore.pageData as any)?.geographies || []);
+	// Geography lookup: prefer prop, fall back to viewStore (set by page loader)
+	const geographies = $derived(parameterData?.geographies || (viewStore.pageData as any)?.geographies || []);
 
 	// Reactive data fetching when parameters change
 	$effect(() => {
@@ -70,8 +78,8 @@
 				aggregation: 'sum',
 				geography: 'all',
 				segment: 'all',
-				baseScenario: parameterStore.baseScenario,
-				parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+				baseScenario,
+				parameterValues
 			});
 
 			const data = await fetchDemandData(query);
@@ -164,7 +172,7 @@
 <ChartContainer
 	title="Sektorernas andel per län"
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={chartData}
@@ -172,7 +180,7 @@
 	{headerControls}
 	class={className}
 >
-	<div class="h-[380px]">
+	<div>
 		{#if loading}
 			<LoadingSkeleton variant="chart" message="Laddar sektoruppdelning per län..." />
 		{:else if error}
@@ -193,7 +201,7 @@
 					x="name"
 					{series}
 					seriesLayout="stack"
-					padding={{ top: 4, bottom: 80, left: 48, right: 4 }}
+					padding={CHART_PADDING.rotatedX}
 					props={{
 						xAxis: {
 							tweened: false,

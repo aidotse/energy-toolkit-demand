@@ -1,6 +1,7 @@
 ---
 title: "Metodik"
 description: "Så bygger vi prognoserna – från Energimyndighetens officiella scenarier till detaljerade timkurvor för varje län, segment och scenario. Hela kedjan är öppen och reproducerbar."
+lastUpdated: "2026-03-03"
 layout: reports
 ---
 

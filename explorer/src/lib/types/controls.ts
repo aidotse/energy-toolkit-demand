@@ -57,10 +57,10 @@ export interface GeographySelectorProps {
 export interface ChartParameters {
 	geography?: string;
 	year?: number;
-	segment?: string;
+	segment?: string | string[];
 	resolution?: string;
-	aggregation?: string;
-	// scenario is always handled globally by scenario selector
+	scenarioId?: string;
+	parameterValues?: Record<string, number>;
 }
 
 /**
@@ -72,5 +72,5 @@ export interface AvailableParameters {
 	geographies?: string[];
 	segments?: string[];
 	resolutions?: string[];
-	aggregations?: string[];
+	scenarios?: Array<{ id: string; name: string; is_default?: boolean }>;
 }

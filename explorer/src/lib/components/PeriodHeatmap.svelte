@@ -29,16 +29,24 @@
 
 	let {
 		geography = 'total',
+		segment = 'total',
 		year = 2025,
 		exportable = true,
 		description = '',
-		class: className = ''
+		headerControls,
+		class: className = '',
+		baseScenarioOverride,
+		parameterValuesOverride
 	}: {
 		geography?: string;
+		segment?: string;
 		year?: number;
 		exportable?: boolean;
 		description?: string;
+		headerControls?: import('svelte').Snippet;
 		class?: string;
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
 	} = $props();
 
 	// State
@@ -70,14 +78,17 @@
 		max: heatmapData.length > 0 ? Math.max(...heatmapData.map(d => d.value)) : 1
 	});
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Per-chart scenario/parameter overrides (fall back to global store)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(
+		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined)
+	);
 
 	// Fetch and aggregate when year/geography/scenario changes
 	$effect(() => {
 		const _baseScenario = baseScenario;
 		const _params = parameterValues;
+		const _seg = segment;
 		if (_baseScenario && year && geography) {
 			fetchHeatmapData();
 		}
@@ -120,18 +131,37 @@
 	}
 
 	/**
-	 * Get heatmap color based on value
+	 * Multi-stop gradient interpolation matching the map color scale.
+	 * Converts hex stops from viz.mapGradient to RGB and interpolates
+	 * between adjacent stops using viz.mapStops positions.
 	 */
-	// Dark endpoint RGB (viz.teal[900] = #004d66 → 0, 77, 102)
-	const DARK = [0, 77, 102] as const;   // viz.teal[900]
-	const LIGHT = [230, 243, 247] as const; // #e6f3f7
+	const GRADIENT_STOPS = viz.mapGradient.map((hex) => {
+		const n = parseInt(hex.slice(1), 16);
+		return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff] as [number, number, number];
+	});
+	const STOP_POSITIONS = viz.mapStops;
 
 	function getHeatmapColor(value: number, min: number, max: number): string {
-		if (max === min) return 'rgb(136, 197, 217)'; // Mid-range color if no variation
-		const t = (value - min) / (max - min); // 0-1 normalized
-		const r = Math.round(LIGHT[0] + t * (DARK[0] - LIGHT[0]));
-		const g = Math.round(LIGHT[1] + t * (DARK[1] - LIGHT[1]));
-		const b = Math.round(LIGHT[2] + t * (DARK[2] - LIGHT[2]));
+		if (max === min) {
+			const mid = GRADIENT_STOPS[Math.floor(GRADIENT_STOPS.length / 2)];
+			return `rgb(${mid[0]}, ${mid[1]}, ${mid[2]})`;
+		}
+		const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+
+		// Find the two adjacent stops
+		let lo = 0;
+		for (let i = 1; i < STOP_POSITIONS.length; i++) {
+			if (STOP_POSITIONS[i] >= t) { lo = i - 1; break; }
+			lo = i - 1;
+		}
+		const hi = Math.min(lo + 1, STOP_POSITIONS.length - 1);
+
+		const range = STOP_POSITIONS[hi] - STOP_POSITIONS[lo];
+		const localT = range === 0 ? 0 : (t - STOP_POSITIONS[lo]) / range;
+
+		const r = Math.round(GRADIENT_STOPS[lo][0] + localT * (GRADIENT_STOPS[hi][0] - GRADIENT_STOPS[lo][0]));
+		const g = Math.round(GRADIENT_STOPS[lo][1] + localT * (GRADIENT_STOPS[hi][1] - GRADIENT_STOPS[lo][1]));
+		const b = Math.round(GRADIENT_STOPS[lo][2] + localT * (GRADIENT_STOPS[hi][2] - GRADIENT_STOPS[lo][2]));
 		return `rgb(${r}, ${g}, ${b})`;
 	}
 
@@ -161,9 +191,9 @@
 				resolution: '1h',
 				aggregation: 'sum',
 				geography: geography,
-				segment: 'total',
-				baseScenario: parameterStore.baseScenario,
-				parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+				segment,
+				baseScenario,
+				parameterValues
 			});
 
 			const data = await fetchDemandData(query);
@@ -199,14 +229,15 @@
 <ChartContainer
 	title="Elbehov per månad och tid på dygnet"
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
 	{exportable}
+	{headerControls}
 	class={className}
 >
-	<div class="h-[450px] flex flex-col items-center justify-center">
+	<div class="flex flex-col items-center justify-center">
 		{#if loading}
 			<LoadingSkeleton variant="chart" message="Laddar dygnsvariation..." />
 		{:else if error}
@@ -217,7 +248,7 @@
 				description="Ingen data finns för valt år"
 			/>
 		{:else}
-			<div class="relative w-full max-w-[500px] mx-auto">
+			<div class="relative w-full max-w-md mx-auto">
 				<svg viewBox="0 0 {width} {height}" class="w-full" role="img" aria-label="Heatmap över elbehov per månad och tid på dygnet">
 					<!-- Column headers -->
 					{#each PERIOD_LABELS as label, i}
@@ -296,11 +327,7 @@
 				<!-- Color scale legend -->
 				<div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-600 dark:text-gray-400">
 					<span>Lägre</span>
-					<div class="flex h-3 w-24">
-						<div class="flex-1 rounded-l" style="background: rgb({LIGHT[0]}, {LIGHT[1]}, {LIGHT[2]});"></div>
-						<div class="flex-1" style="background: rgb(136, 197, 217);"></div>
-						<div class="flex-1 rounded-r" style="background: rgb({DARK[0]}, {DARK[1]}, {DARK[2]});"></div>
-					</div>
+					<div class="h-3 w-24 rounded" style="background: linear-gradient(to right, {viz.mapGradient.join(', ')})"></div>
 					<span>Högre</span>
 				</div>
 			</div>

@@ -1,5 +1,10 @@
 <script lang="ts">
 	import ContentShell from '$lib/components/content/ContentShell.svelte';
+	import ReportHeaderNav from '$lib/components/content/ReportHeaderNav.svelte';
 </script>
 
-<ContentShell slug="reports/flex" backLink="/reports" backLabel="Alla fördjupningar" />
+<ContentShell slug="reports/flex">
+	{#snippet header()}
+		<ReportHeaderNav />
+	{/snippet}
+</ContentShell>

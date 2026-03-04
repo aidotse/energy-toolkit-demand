@@ -8,7 +8,8 @@
 	 * @component
 	 */
 	import { BarChart } from 'layerchart';
-	import { makeDemandQuery } from '$lib/utilities';
+	import { makeDemandQuery, formatNumber } from '$lib/utilities';
+	import { getEnergyPrefix } from '$lib/stores/units.svelte';
 	import { fetchDemandData } from '$lib/dataService';
 	import LoadingSkeleton from '$lib/components/shared/LoadingSkeleton.svelte';
 	import ErrorState from '$lib/components/shared/ErrorState.svelte';
@@ -17,6 +18,7 @@
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import type { GeographicChartProps} from '$lib/types/ChartComponent.interface';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
+	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import {
 		getNormalizedScenarios,
 		assignScenarioColors,
@@ -24,18 +26,30 @@
 		hexToRgba
 	} from '$lib/comparisonUtils';
 	import { viz } from '$lib/colors';
+	import { CHART_PADDING } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
 
 	let {
 		data: yearDataProp = [],
 		parameterData,
 		year,
+		segment = 'total',
 		scenarios: scenariosProp,
 		comparisonMode = false,
 		exportable = true,
 		headerControls,
+		baseScenarioOverride,
+		parameterValuesOverride,
 		class: className = ''
-	}: GeographicChartProps & { parameterData?: any; exportable?: boolean; headerControls?: Snippet; class?: string } = $props();
+	}: GeographicChartProps & {
+		parameterData?: any;
+		exportable?: boolean;
+		headerControls?: Snippet;
+		segment?: string;
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
+		class?: string;
+	} = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -76,7 +90,13 @@
 	// Use fetched data in single scenario mode, prop data otherwise
 	const yearData = $derived(fetchedYearData.length > 0 ? fetchedYearData : yearDataProp);
 
-	// Reactive data fetching when scenarios change
+	// Per-chart scenario/parameter overrides (fall back to global store)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(
+		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? { ...parameterStore.parameterValues } : undefined)
+	);
+
+	// Reactive data fetching when scenarios or filters change
 	$effect(() => {
 		if (normalizedScenarios.length > 0 && year !== undefined) {
 			fetchGeoData();
@@ -94,15 +114,16 @@
 			error = null;
 
 			if (normalizedScenarios.length === 1) {
-				// Single scenario mode - use existing pattern
+				// Single scenario mode
 				const query = makeDemandQuery({
 					start: String(year),
 					end: String(year + 1),
 					resolution: '1Y',
 					aggregation: 'sum',
 					geography: 'all',
-					segment: 'housing',
-					scenarioId: normalizedScenarios[0].id || normalizedScenarios[0].scenario_id || 'default'
+					segment,
+					baseScenario,
+					parameterValues
 				});
 
 				const data = await fetchDemandData(query);
@@ -117,8 +138,9 @@
 						resolution: '1Y',
 						aggregation: 'sum',
 						geography: 'all',
-						segment: 'housing',
-						scenarioId
+						segment,
+						baseScenario: scenarioId,
+						parameterValues
 					});
 
 					const data = await fetchDemandData(query);
@@ -155,14 +177,14 @@
 				const geoLookup = parameterData?.geographies?.find(
 					(g: any) => g.geo_id === d.geography || g.id === d.geography
 				);
-				const name = geoLookup?.geo_name || geoLookup?.name || d.geography;
+				const name = (geoLookup?.geo_name || geoLookup?.name || d.geography).replace(/s? län$/, '');
 				return {
 					...d,
 					total: d.value || d.total || 0,
 					name: name || 'Unknown'
 				};
 			})
-			.filter((d) => d.name && d.name !== 'Unknown' && typeof d.name === 'string') // Ensure name is a valid string
+			.filter((d) => d.name && d.name !== 'Unknown' && d.name !== 'Sverige' && typeof d.name === 'string')
 			.sort((a, b) => b.total - a.total);
 
 		// Final validation - ensure every item has the required properties
@@ -199,11 +221,10 @@
 						const geoLookup = parameterData?.geographies?.find(
 							(g: any) => g.geo_id === geoId || g.id === geoId
 						);
-						const geoName = geoLookup?.geo_name || geoLookup?.name || geoId;
+						const geoName = (geoLookup?.geo_name || geoLookup?.name || geoId).replace(/s? län$/, '');
 
-						// Ensure we have a valid name
-						if (!geoName || typeof geoName !== 'string') {
-							console.warn('[GeoBarChart] Invalid geography name for', geoId, ':', geoName);
+						// Ensure we have a valid name, skip Sverige (total)
+						if (!geoName || typeof geoName !== 'string' || geoName === 'Sverige') {
 							continue;
 						}
 
@@ -290,11 +311,27 @@
 	let exportData = $derived(
 		normalizedScenarios.length === 1 ? chartData : comparisonGeoData
 	);
+
+	// Shared tooltip and highlight props
+	const tooltipProps = {
+		highlight: { area: { fill: 'rgba(0,0,0,0.05)' } },
+		tooltip: {
+			root: {
+				variant: 'none' as const,
+				contained: 'window' as const,
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+			},
+			item: {
+				label: '',
+				format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh')
+			}
+		}
+	};
 </script>
 
 <ChartContainer
 	title="Årlig energiförbrukning per geografi"
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -302,7 +339,7 @@
 	{headerControls}
 	class={className}
 >
-	<div class="h-[300px]">
+	<div class="h-[400px]">
 	{#if loading}
 		<LoadingSkeleton variant="chart" message="Laddar geografisk data..." />
 	{:else if error}
@@ -319,10 +356,12 @@
 				data={chartData}
 				x="name"
 				y="total"
+				padding={CHART_PADDING.rotatedX}
 				props={{
-					xAxis: { tweened: true, tickLabelProps: { rotate: 315, textAnchor: 'end' } },
-					yAxis: { format: 'metric', tweened: true },
-					bars: { tweened: true, radius: 2, stroke: 'none' }
+					xAxis: { tweened: true, tickLabelProps: { rotate: 315, textAnchor: 'end', fontSize: 11 } },
+					yAxis: { format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh').replace(/\.\d+/, ''), tweened: true, tickLabelProps: { fontSize: 11 } },
+					bars: { tweened: true, radius: 2, stroke: 'none', fill: viz.teal[700] },
+					...tooltipProps
 				}}
 			/>
 		{:else}
@@ -358,10 +397,12 @@
 				x="name"
 				{series}
 				seriesLayout="group"
+				padding={CHART_PADDING.rotatedX}
 				groupPadding={0.1}
 				props={{
-					xAxis: { tweened: true, tickLabelProps: { rotate: 315, textAnchor: 'end' } },
-					yAxis: { format: 'metric', tweened: true }
+					xAxis: { tweened: true, tickLabelProps: { rotate: 315, textAnchor: 'end', fontSize: 11 } },
+					yAxis: { format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh').replace(/\.\d+/, ''), tweened: true, tickLabelProps: { fontSize: 11 } },
+					...tooltipProps
 				}}
 			/>
 

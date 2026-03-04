@@ -18,9 +18,9 @@
 
 export const ui = {
 	/** Accent teal used for interactive highlights */
-	highlight: '#46a0c4',
+	highlight: '#1690b8',
 	/** Text-selection background (used at 30 % opacity in app.css) */
-	selection: '#46a0c4',
+	selection: '#1690b8',
 	/** ThemeSwitch sun icon — targets third-party SVG */
 	sunIcon: '#f9ca2d',
 	/** Page background (light mode) */
@@ -32,17 +32,27 @@ export const ui = {
 // ---------------------------------------------------------------------------
 
 export const viz = {
-	/** Sequential teal scale (dark → light) for segment fills and charts */
+	/** Sequential teal scale (dark → light) for chart fills and UI accents */
 	teal: {
 		900: '#004d66',
-		700: '#007399',
+		700: '#1690b8',
 		500: '#46a0c4',
-		300: '#61bbd9',
-		100: '#90d2e8',
+		300: '#7fd4f0',
+		100: '#bfe9f7',
 	},
 
-	/** 4-stop map gradient: light → teal → navy → burgundy */
-	mapGradient: ['#61bbd9', '#007399', '#002a66', '#660042'] as const,
+	/**
+	 * 5-stop map/heatmap gradient: cyan → dark blue → indigo → purple → burgundy.
+	 * Non-linear — blues compressed into the low end for better differentiation
+	 * of typical demand values (2–80 range).
+	 */
+	mapGradient: ['#7fd4f0', '#003f66', '#282658', '#47134d', '#660042'] as const,
+
+	/**
+	 * Non-linear stop positions for mapGradient (0–1).
+	 * Blues occupy the first 20 %, then indigo → burgundy spread across the rest.
+	 */
+	mapStops: [0, 0.2, 0.4, 0.7, 1.0] as const,
 
 	/** Discrete scenario palette for comparison mode */
 	scenario: {
@@ -73,13 +83,13 @@ export const viz = {
 // Derived constants
 // ---------------------------------------------------------------------------
 
-/** Segment name → teal-scale background + contrasting text color */
+/** Segment name → background + contrasting text color */
 export const SEGMENT_COLORS: Record<string, { bg: string; text: string }> = {
-	industry:    { bg: viz.teal[900], text: 'white' },
-	housing:     { bg: viz.teal[700], text: 'white' },
-	services:    { bg: viz.teal[500], text: 'white' },
-	transport:   { bg: viz.teal[300], text: 'black' },
-	datacenters: { bg: viz.teal[100], text: 'black' },
+	industry:    { bg: '#004d66', text: 'white' },
+	housing:     { bg: '#1690b8', text: 'white' },
+	services:    { bg: '#282658', text: 'white' },
+	transport:   { bg: '#7fd4f0', text: 'black' },
+	datacenters: { bg: '#660042', text: 'white' },
 };
 
 /** Ordered scenario-color array for comparison mode */
@@ -100,10 +110,10 @@ export const SCENARIO_COLORS = viz.scenario;
 export const tailwindColors = {
 	chart: viz.teal,
 	map: {
-		light: viz.teal[300],
-		mid: viz.teal[700],
-		dark: viz.mapGradient[2],   // #002a66
-		accent: viz.mapGradient[3], // #660042
+		light: viz.mapGradient[0],  // #7fd4f0
+		mid: viz.mapGradient[1],    // #003f66
+		dark: viz.mapGradient[2],   // #282658
+		accent: viz.mapGradient[4], // #660042
 	},
 	highlight: ui.highlight,
 	'page-bg': ui.pageBg,

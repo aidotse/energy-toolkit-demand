@@ -19,6 +19,7 @@
 	import { viewStore } from '$lib/stores/viewStore.svelte';
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
 	import { SEGMENT_LABELS } from '$lib/chartConfig';
+	import { getSegmentLabel } from '$lib/chartConfig';
 
 	let {
 		chart,
@@ -71,24 +72,36 @@
 		return `i scenariot ${name} med ${clauses.join(', ')}.`;
 	});
 
-	const DESCRIPTIONS: Record<string, (year: number, suffix: string) => string> = {
-		'area-yearly': (y, s) => `Årligt elbehov för Sverige 2025–2050 ${s}`,
-		'sector-pie': (y, s) => `Sektorsfördelning av elbehov år ${y} ${s}`,
-		'geo-segment': (y, s) => `Sektorernas andel av elbehovet per län år ${y} ${s}`,
-		'period-heatmap': (y, s) => `Elbehov fördelat på månad och tid på dygnet år ${y} ${s}`
+	// Geography label for descriptions
+	const geoLabel = $derived(viewStore.geographyName);
+
+	// Segment label for descriptions (only when filtering to a specific segment)
+	const segmentLabel = $derived.by(() => {
+		const seg = viewStore.activeSegment;
+		if (seg === 'total') return '';
+		return `, sektor ${getSegmentLabel(seg).toLowerCase()}`;
+	});
+
+	const DESCRIPTIONS: Record<string, (year: number, geo: string, seg: string, suffix: string) => string> = {
+		'area-yearly': (y, g, seg, s) => `Årligt elbehov för ${g}${seg} 2025–2050 ${s}`,
+		'sector-pie': (y, g, seg, s) => `Sektorsfördelning av elbehov för ${g} år ${y} ${s}`,
+		'geo-segment': (y, g, seg, s) => `Sektorernas andel av elbehovet per län år ${y} ${s}`,
+		'period-heatmap': (y, g, seg, s) => `Elbehov fördelat på månad och tid på dygnet för ${g}${seg} år ${y} ${s}`
 	};
 
-	let description = $derived(DESCRIPTIONS[chart]?.(viewStore.year, scenarioSuffix) ?? '');
+	let description = $derived(DESCRIPTIONS[chart]?.(viewStore.year, geoLabel, segmentLabel, scenarioSuffix) ?? '');
 </script>
 
 <div class="pb-6">
 	{#if chart === 'area-yearly'}
 		<AreaChart
 			geography={viewStore.geography}
+			segment={viewStore.activeSegment}
 			year={viewStore.year}
 			{aggregationInit}
 			exportable={exportable}
 			{description}
+			height="h-[450px]"
 			contentClass="mx-4 sm:mx-8"
 		/>
 	{:else if chart === 'sector-pie'}
@@ -109,6 +122,7 @@
 	{:else if chart === 'period-heatmap'}
 		<PeriodHeatmap
 			geography={viewStore.geography}
+			segment={viewStore.activeSegment}
 			year={viewStore.year}
 			exportable={exportable}
 			{description}

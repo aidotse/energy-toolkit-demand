@@ -37,6 +37,13 @@
 		{ name: m['about_page'](), href: '/about' },
 		{ name: m['data_page'](), href: '/data' }
 	];
+
+	function isActive(item: NavItem, pathname: string): boolean {
+		if (isDropdown(item)) {
+			return item.children.some(c => pathname === c.href);
+		}
+		return item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+	}
 </script>
 
 <!-- Desktop Navigation -->
@@ -51,13 +58,14 @@
 		</a>
 
 		<!-- Center: Navigation Links -->
-		<div class="flex items-center gap-10">
+		<div class="flex items-center gap-10 h-full">
 			{#each navigation as item}
+				{@const active = isActive(item, $page.url.pathname)}
 				{#if isDropdown(item)}
-					<div class="nav-dropdown relative">
+					<div class="nav-dropdown relative h-full flex items-center border-b-[3px] {active ? 'border-chart-600' : 'border-transparent'}">
 						<button
-							class="flex items-center gap-1 text-base font-medium hover:text-primary transition-colors"
-							class:text-primary-600={$page.url.pathname.startsWith('/reports')}
+							class="flex items-center gap-1 text-base font-medium hover:text-chart-700 transition-colors"
+							class:text-chart-700={active}
 						>
 							{item.name}
 							<ChevronDown class="w-4 h-4" />
@@ -69,7 +77,7 @@
 										href={child.href}
 										class="block px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
 										class:font-semibold={$page.url.pathname === child.href}
-										class:text-primary-600={$page.url.pathname === child.href}
+										class:text-chart-700={$page.url.pathname === child.href}
 									>
 										{child.name}
 									</a>
@@ -80,7 +88,8 @@
 				{:else}
 					<a
 						href={item.href}
-						class="text-base font-medium hover:text-primary transition-colors"
+						class="h-full flex items-center text-base font-medium hover:text-chart-700 transition-colors border-b-[3px] {active ? 'border-chart-600' : 'border-transparent'}"
+						class:text-chart-700={active}
 					>
 						{item.name}
 					</a>

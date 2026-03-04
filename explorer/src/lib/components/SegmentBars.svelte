@@ -26,6 +26,7 @@
 		hexToRgba
 	} from '$lib/comparisonUtils';
 	import { viz } from '$lib/colors';
+	import { getSegmentLabel, CHART_PADDING } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -37,8 +38,10 @@
 		exportable = true,
 		description = '',
 		headerControls,
+		baseScenarioOverride,
+		parameterValuesOverride,
 		class: className = ''
-	}: SegmentChartProps & { exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
+	}: SegmentChartProps & { exportable?: boolean; description?: string; headerControls?: Snippet; baseScenarioOverride?: string; parameterValuesOverride?: Record<string, number>; class?: string } = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -84,9 +87,9 @@
 	// Use fetched data if available, otherwise use prop data
 	const yearData = $derived(fetchedYearData.length > 0 ? fetchedYearData : yearDataProp);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Get current parameter state for reactive fetching (with per-chart overrides)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
 	// Reactive data fetching when scenarios or parameters change
 	$effect(() => {
@@ -116,8 +119,8 @@
 					aggregation: 'sum',
 					geography: 'all', // Get all geographies for segment breakdown
 					segment: 'all', // Get all segments for segment breakdown
-					baseScenario: parameterStore.baseScenario,
-					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+					baseScenario: baseScenario,
+					parameterValues: parameterValues
 				});
 
 				const data = await fetchDemandData(query);
@@ -271,12 +274,28 @@
 	let exportData = $derived(
 		normalizedScenarios.length === 1 ? chartData : comparisonSegmentData
 	);
+
+	// Shared tooltip and highlight props (matches Histogram pattern)
+	const tooltipProps = {
+		highlight: { area: { fill: 'rgba(0,0,0,0.05)' } },
+		tooltip: {
+			root: {
+				variant: 'none' as const,
+				contained: 'window' as const,
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+			},
+			item: {
+				label: '',
+				format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh')
+			}
+		}
+	};
 </script>
 
 <ChartContainer
-	title="Sektoruppdelning"
+	title="Energi per sektor"
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -284,7 +303,7 @@
 	{headerControls}
 	class={className}
 >
-	<div class="h-[300px] p-4">
+	<div class="h-[350px]">
 	{#if loading}
 		<LoadingSkeleton variant="chart" message="Laddar sektoruppdelning..." />
 	{:else if error}
@@ -300,10 +319,9 @@
 		/>
 	{:else if normalizedScenarios.length === 1}
 		<!-- Single scenario mode -->
-		<div class="mb-4">
-			<h3 class="text-lg font-medium">Sektoruppdelning</h3>
-			<p class="text-sm text-gray-600">
-				Total: {formatNumber(
+		<div class="flex justify-end mb-2">
+			<p class="text-sm text-gray-500 dark:text-gray-400">
+				Totalt: {formatNumber(
 					segmentData.reduce((sum, item) => sum + item.value, 0),
 					getEnergyPrefix(),
 					'Wh'
@@ -314,24 +332,17 @@
 			data={chartData}
 			x="segment"
 			y="value"
+			padding={CHART_PADDING.standard}
 			props={{
-                xAxis: { tweened: true },
-                yAxis: { format: "metric", tweened: true },
-                bars: {tweened: true, radius: 2, stroke: 'none' },
-            }}
-        />
+				xAxis: { format: (v: string) => getSegmentLabel(v), tickLabelProps: { fontSize: 11 } },
+				yAxis: { format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh').replace(/\.\d+/, ''), tickLabelProps: { fontSize: 11 } },
+				bars: { tweened: true, radius: 2, stroke: 'none', fill: viz.teal[700] },
+				...tooltipProps
+			}}
+		/>
 	{:else if normalizedScenarios.length > 1}
 		<!-- Comparison mode - overlayed bars with transparency -->
-		<div class="mb-4">
-			<h3 class="text-lg font-medium">Sektoruppdelning - Jämförelse</h3>
-		</div>
-		{@const testData = [
-			{ segment: 'Buildings', scenario1: 100, scenario2: 120 },
-			{ segment: 'Transport', scenario1: 50, scenario2: 60 },
-			{ segment: 'Industry', scenario1: 30, scenario2: 40 }
-		]}
-		{@const useTestData = false} <!-- Toggle this to test with hardcoded data -->
-		{@const actualData = useTestData ? testData : comparisonSegmentData}
+		{@const actualData = comparisonSegmentData}
 		{@const hasRequiredFields = actualData.length > 0 &&
 			actualData.every(d => d && d.segment) &&
 			normalizedScenarios.every(s => {
@@ -357,10 +368,12 @@
 				x="segment"
 				{series}
 				seriesLayout="group"
+				padding={CHART_PADDING.standard}
 				groupPadding={0.1}
 				props={{
-					xAxis: { tweened: true },
-					yAxis: { format: 'metric', tweened: true }
+					xAxis: { format: (v: string) => getSegmentLabel(v), tweened: true, tickLabelProps: { fontSize: 11 } },
+					yAxis: { format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh'), tweened: true, tickLabelProps: { fontSize: 11 } },
+					...tooltipProps
 				}}
 			/>
 

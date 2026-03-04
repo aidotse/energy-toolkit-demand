@@ -9,7 +9,8 @@
 	 */
 	import { AreaChart } from 'layerchart';
 	import { fetchDemandData } from '$lib/dataService';
-	import { makeDemandQuery } from '$lib/utilities';
+	import { makeDemandQuery, formatNumber } from '$lib/utilities';
+	import { getPowerPrefix } from '$lib/stores/units.svelte';
 	import LoadingSkeleton from '$lib/components/shared/LoadingSkeleton.svelte';
 	import ErrorState from '$lib/components/shared/ErrorState.svelte';
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
@@ -26,6 +27,7 @@
 		hexToRgba
 	} from '$lib/comparisonUtils';
 	import { viz } from '$lib/colors';
+	import { CHART_PADDING } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -40,8 +42,10 @@
 		exportable = true,
 		description = '',
 		headerControls,
+		baseScenarioOverride,
+		parameterValuesOverride,
 		class: className = ''
-	}: TimeSeriesChartProps & { segment?: string; exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
+	}: TimeSeriesChartProps & { segment?: string; exportable?: boolean; description?: string; headerControls?: Snippet; baseScenarioOverride?: string; parameterValuesOverride?: Record<string, number>; class?: string } = $props();
 
 	// Separate state for fetched data
 	let dayData = $state<any[]>([]);
@@ -118,9 +122,9 @@
 		normalizedScenarios.length > 1 ? createComparisonMetadata(normalizedScenarios, comparisonData) : null
 	);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Get current parameter state for reactive fetching (with per-chart overrides)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
 	// Use prop data if provided (hybrid pattern)
 	$effect(() => {
@@ -155,8 +159,8 @@
 					aggregation,
 					geography,
 					segment: segment || 'housing',
-					baseScenario: parameterStore.baseScenario,
-					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+					baseScenario: baseScenario,
+					parameterValues: parameterValues
 				});
 
 				const data = await fetchDemandData(query);
@@ -215,12 +219,28 @@
 	let exportData = $derived(
 		normalizedScenarios.length === 1 ? chartData : comparisonData
 	);
+
+	// Shared tooltip and highlight props
+	const tooltipProps = {
+		highlight: { area: { fill: 'rgba(0,0,0,0.05)' } },
+		tooltip: {
+			root: {
+				variant: 'none' as const,
+				contained: 'window' as const,
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+			},
+			item: {
+				label: '',
+				format: (v: number) => formatNumber(v, getPowerPrefix(), 'W')
+			}
+		}
+	};
 </script>
 
 <ChartContainer
 	title="Tidslinje"
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -244,8 +264,13 @@
 			data={chartData}
 			x="timestamp"
 			y="total"
+			padding={CHART_PADDING.standard}
 			props={{
-				line: { fill: 'none', stroke: viz.line, strokeWidth: 2 }
+				line: { fill: 'none', stroke: viz.teal[900], strokeWidth: 2 },
+				area: { fill: viz.teal[500], fillOpacity: 0.3 },
+				yAxis: { format: (v: number) => formatNumber(v, getPowerPrefix(), 'W').replace(/\.\d+/, ''), tickLabelProps: { fontSize: 11 } },
+				xAxis: { tickLabelProps: { fontSize: 11 } },
+				...tooltipProps
 			}}
 		/>
 	{:else if normalizedScenarios.length > 1}
@@ -277,6 +302,12 @@
 				data={comparisonData.map((d) => ({ timestamp: d.timestamp, ...d.values }))}
 				x="timestamp"
 				series={areaSeries}
+				padding={CHART_PADDING.standard}
+				props={{
+					yAxis: { format: (v: number) => formatNumber(v, getPowerPrefix(), 'W').replace(/\.\d+/, ''), tickLabelProps: { fontSize: 11 } },
+					xAxis: { tickLabelProps: { fontSize: 11 } },
+					...tooltipProps
+				}}
 			/>
 		{/if}
 

@@ -22,7 +22,7 @@
 		geographies?: string[];
 		geographiesMetadata?: Array<{ id: string; name: string; type?: string }>;
 		onChange: (geography: string) => void;
-		variant?: 'dropdown' | 'pills';
+		variant?: 'dropdown' | 'pills' | 'list';
 		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 	} = $props();
@@ -98,6 +98,23 @@
 			>
 				<MapPin class="w-3.5 h-3.5" />
 				<span>{geographyLabels[geography] || geography}</span>
+			</button>
+		{/each}
+	</div>
+{:else if variant === 'list'}
+	<div class="flex flex-col gap-1 {className}">
+		{#each geographies as geography}
+			<button
+				type="button"
+				onclick={() => handleChange(geography)}
+				class="w-full flex items-center gap-2 rounded-md text-left transition-colors
+					{value === geography
+						? 'bg-chart-700/10 text-chart-900 dark:text-chart-100 font-medium'
+						: 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+					px-2.5 py-1.5 text-xs"
+			>
+				<MapPin class="w-3.5 h-3.5 flex-shrink-0" />
+				<span class="truncate">{geographyLabels[geography] || geography}</span>
 			</button>
 		{/each}
 	</div>

@@ -9,7 +9,7 @@
 	 */
 	import { BarChart } from 'layerchart';
 	import { fetchDemandData, calculateHistogram } from '$lib/dataService';
-	import { makeDemandQuery } from '$lib/utilities';
+	import { makeDemandQuery, formatNumber } from '$lib/utilities';
 	import LoadingSkeleton from '$lib/components/shared/LoadingSkeleton.svelte';
 	import ErrorState from '$lib/components/shared/ErrorState.svelte';
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
@@ -26,6 +26,8 @@
 	} from '$lib/comparisonUtils';
 	import { getDistributionAxisConfig } from '$lib/chartConfig';
 	import { viz } from '$lib/colors';
+	import { CHART_PADDING } from '$lib/chartConfig';
+	import { getPowerPrefix } from '$lib/stores/units.svelte';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -40,8 +42,18 @@
 		exportable = true,
 		description = '',
 		headerControls,
+		baseScenarioOverride,
+		parameterValuesOverride,
 		class: className = ''
-	}: TimeSeriesChartProps & { segment?: string; exportable?: boolean; description?: string; headerControls?: Snippet; class?: string } = $props();
+	}: TimeSeriesChartProps & {
+		segment?: string;
+		exportable?: boolean;
+		description?: string;
+		headerControls?: Snippet;
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
+		class?: string;
+	} = $props();
 
 	// Subscribe to global scenario state
 	const currentScenario = $derived(scenarioState.currentScenario);
@@ -83,9 +95,9 @@
 		selectedScenarioId = selectedScenarioId === scenarioId ? null : scenarioId;
 	}
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Get current parameter state for reactive fetching (with per-chart overrides)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
 	// Use prop data if provided (hybrid pattern)
 	$effect(() => {
@@ -120,8 +132,8 @@
 					aggregation,
 					geography,
 					segment: segment || 'housing',
-					baseScenario: parameterStore.baseScenario,
-					parameterValues: parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined
+					baseScenario: baseScenario,
+					parameterValues: parameterValues
 				});
 
 				const data = await fetchDemandData(query);
@@ -281,12 +293,58 @@
 	let exportData = $derived(
 		normalizedScenarios.length === 1 ? histogramData : comparisonHistogramData
 	);
+
+	/** Format a power value as a rounded whole number with unit (e.g. "16 GW") */
+	function formatPowerRounded(v: any): string {
+		const num = Number(v);
+		if (isNaN(num)) return String(v);
+		return formatNumber(num, getPowerPrefix(), 'W').replace(/\.\d+/, '');
+	}
+
+	// Axis config with rounded x-axis labels and smaller font
+	const axisConfig = $derived.by(() => {
+		const base = getDistributionAxisConfig(true, xDomain);
+		return {
+			...base,
+			xAxis: {
+				...base.xAxis,
+				format: (v: any) => formatPowerRounded(v),
+				tickLabelProps: { fontSize: 11 }
+			},
+			yAxis: {
+				...base.yAxis,
+				format: (v: number) => `${Math.round(v)}h`,
+				tickLabelProps: { fontSize: 11 }
+			}
+		};
+	});
+
+	// Shared tooltip and highlight props
+	const tooltipProps = {
+		highlight: {
+			area: { fill: 'rgba(0,0,0,0.05)' }
+		},
+		tooltip: {
+			header: {
+				format: (v: any) => formatPowerRounded(v)
+			},
+			root: {
+				variant: 'none',
+				contained: 'window',
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+			},
+			item: {
+				label: '',
+				format: (v: number) => `${Math.round(v)} timmar`
+			}
+		}
+	};
 </script>
 
 <ChartContainer
-	title="Histogram över elbehovet"
+	title="Histogram över effektbehovet"
 	{description}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -294,7 +352,7 @@
 	{headerControls}
 	class={className}
 >
-	<div class="h-[300px] ml-8 mb-14 mr-2 mt-1">
+	<div class="h-[300px]">
 		{#if loading}
 			<LoadingSkeleton variant="chart" message="Laddar histogram..." />
 		{:else if error}
@@ -310,10 +368,12 @@
 				data={histogramData}
 				x="x0"
 				y="length"
+				padding={CHART_PADDING.standard}
 				bandPadding={0.2}
 				props={{
-					...getDistributionAxisConfig(true, xDomain),
-					bars: { tweened: true, radius: 2, stroke: 'none' }
+					...axisConfig,
+					bars: { tweened: true, radius: 2, stroke: 'none', fill: viz.teal[700] },
+					...tooltipProps
 				}}
 			/>
 		{:else if normalizedScenarios.length > 1}
@@ -343,9 +403,13 @@
 					x="x0"
 					{series}
 					seriesLayout="group"
+					padding={CHART_PADDING.standard}
 					bandPadding={0.2}
 					groupPadding={0.1}
-					props={getDistributionAxisConfig(true, xDomain)}
+					props={{
+						...axisConfig,
+						...tooltipProps
+					}}
 				/>
 
 				<!-- Scenario Legend -->

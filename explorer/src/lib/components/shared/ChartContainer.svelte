@@ -35,7 +35,7 @@
 		title?: string;
 		description?: string;
 		aspectRatio?: '16/9' | '4/3' | 'square' | 'auto';
-		sizeVariant?: 'compact' | 'standard' | 'full';
+		sizeVariant?: 'compact' | 'standard' | 'full' | 'none';
 		exportable?: boolean;
 		chartData?: any[];
 		metadata?: Partial<ExportMetadata>;
@@ -84,6 +84,7 @@
 
 	// Size variant classes - use container queries for responsive sizing
 	const sizeVariantClasses = {
+		none: '', // Content determines height
 		compact: 'h-[200px] @sm:h-[250px] @md:h-[300px]', // Front page compressed
 		standard: 'h-[300px] @sm:h-[350px] @md:h-[400px] @lg:h-[450px]', // Chart library
 		full: 'h-[400px] @sm:h-[500px] @md:h-[600px] @lg:h-[700px]' // Dedicated pages

@@ -38,7 +38,7 @@
 <style>
 	/* Report section headings — visually match ReportSection component */
 	.report-content :global(h2) {
-		@apply text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3 pt-12 first:pt-0;
+		@apply text-2xl font-bold text-gray-900 dark:text-gray-50 mb-3 pt-12 first:pt-0;
 	}
 
 	/* Subtitle-like text immediately after h2 (rendered as <p> with emphasis) */

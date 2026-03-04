@@ -12,6 +12,7 @@
 		year,
 		onYearChange,
 		geography = $bindable(),
+		segments = $bindable(['total']),
 		scenario,
 		lower_bound,
 		upper_bound,
@@ -25,6 +26,7 @@
 		year: number;
 		onYearChange?: (year: number) => void;
 		geography?: string;
+		segments?: string[];
 		scenario: any;
 		lower_bound: number;
 		upper_bound: number;
@@ -33,8 +35,6 @@
 		fadeLeft?: boolean;
 		class?: string;
 	} = $props();
-
-	let segments = $state(['total']);
 
 	// Local year state for the slider - synced with parent via callback
 	let localYear = $state(year);

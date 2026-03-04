@@ -7,7 +7,7 @@
 	 *
 	 * @component
 	 */
-	import { Home, Factory, Car, Layers } from 'lucide-svelte';
+	import { Home, Factory, Car, Layers, Building2, Server } from 'lucide-svelte';
 
 	let {
 		value,
@@ -37,7 +37,9 @@
 		total: { label: 'Alla', icon: Layers },
 		housing: { label: 'Bostad', icon: Home },
 		transport: { label: 'Transport', icon: Car },
-		industry: { label: 'Industri', icon: Factory }
+		industry: { label: 'Industri', icon: Factory },
+		services: { label: 'Service', icon: Building2 },
+		datacenters: { label: 'Datacenter', icon: Server }
 	};
 
 	function handleChange(newValue: string) {

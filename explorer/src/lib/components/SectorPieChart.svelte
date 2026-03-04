@@ -28,6 +28,7 @@
 	import EmptyState from '$lib/components/shared/EmptyState.svelte';
 	import ChartContainer from '$lib/components/shared/ChartContainer.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
+	import { viewStore } from '$lib/stores/viewStore.svelte';
 	import { getSegmentColor, getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
 	import * as m from '$lib/paraglide/messages';
 	import { viz } from '$lib/colors';
@@ -54,7 +55,9 @@
 		class: className = '',
 		comparisonYear = 2025,
 		enableComparison = false,
-		initialComparisonMode = 'year' as 'year' | 'scenario'
+		initialComparisonMode = 'year' as 'year' | 'scenario',
+		baseScenarioOverride,
+		parameterValuesOverride
 	}: {
 		geography?: string;
 		year?: number;
@@ -65,6 +68,8 @@
 		comparisonYear?: number;
 		enableComparison?: boolean;
 		initialComparisonMode?: 'year' | 'scenario';
+		baseScenarioOverride?: string;
+		parameterValuesOverride?: Record<string, number>;
 	} = $props();
 
 	let leftLoading = $state(false);
@@ -77,9 +82,11 @@
 	let tooltipPosition = $state<{ x: number; y: number } | null>(null);
 	let comparisonMode = $state<'year' | 'scenario'>(initialComparisonMode);
 
-	// Get current parameter state for reactive fetching
-	const baseScenario = $derived(parameterStore.baseScenario);
-	const parameterValues = $derived(parameterStore.parameterValues);
+	// Per-chart scenario/parameter overrides (fall back to global store)
+	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
+	const parameterValues = $derived(
+		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined)
+	);
 
 	// Use shared segment order (re-typed as string[] for indexOf checks)
 	const segmentOrder: string[] = [...SEGMENT_ORDER];
@@ -109,13 +116,17 @@
 	let rightLabel = $derived(comparisonMode === 'year' ? String(year) : m.scenario_with_adjustments());
 
 	// Dynamic description based on comparison mode
-	let effectiveDescription = $derived(
-		showComparison
-			? comparisonMode === 'year'
-				? `Sektorsfördelning ${comparisonYear} jämfört med ${year}`
-				: `Sektorsfördelning: grundscenario jämfört med justerat, år ${year}`
-			: description
-	);
+	const geoName = $derived(viewStore.geographyName);
+	let effectiveDescription = $derived.by(() => {
+		if (!showComparison) return description;
+		const scenarioName = parameterStore.baseScenarios.find(
+			(s) => s.id === parameterStore.baseScenario
+		)?.name || '';
+		if (comparisonMode === 'year') {
+			return `Sektorsfördelning för ${geoName} ${comparisonYear} jämfört med ${year} i scenariot ${scenarioName}.`;
+		}
+		return `Sektorsfördelning för ${geoName}: grundscenario jämfört med justerat, år ${year}.`;
+	});
 
 	async function fetchForYear(targetYear: number, withParams: boolean) {
 		const query = makeDemandQuery({
@@ -125,11 +136,8 @@
 			aggregation: 'sum',
 			geography: 'all',
 			segment: 'all',
-			baseScenario: parameterStore.baseScenario,
-			parameterValues:
-				withParams && parameterStore.isDefaultScenario
-					? parameterStore.parameterValues
-					: undefined
+			baseScenario,
+			parameterValues: withParams ? parameterValues : undefined
 		});
 		return fetchDemandData(query);
 	}
@@ -587,7 +595,7 @@
 <ChartContainer
 	title="Sektoruppdelning"
 	description={effectiveDescription}
-	sizeVariant="standard"
+	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
@@ -595,7 +603,7 @@
 	headerControls={internalHeaderControls}
 	class={className}
 >
-	<div class={showComparison ? 'p-4' : 'h-[480px] p-4'}>
+	<div class="p-4">
 		{#if loading}
 			<LoadingSkeleton variant="chart" message="Laddar sektoruppdelning..." />
 		{:else if error}

@@ -1,6 +1,7 @@
 ---
 title: "Flexibilitet"
 description: "Att flytta el i tid — inte använda mindre, utan fördela jämnare."
+lastUpdated: "2026-03-03"
 layout: reports
 ---
 

@@ -94,7 +94,7 @@ export function getTimeSeriesAxisConfig(
 			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},
 		yAxis: {
-			format: (num) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W'),
+			format: (num) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W').replace(/\.\d+/, ''),
 			tweened: false,
 			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},
@@ -210,7 +210,7 @@ export function getGeographicAxisConfig(displayAxes: boolean = true): StandardAx
 			tweened: false
 		},
 		yAxis: {
-			format: (value) => formatNumber(value, getEnergyPrefix(), 'Wh'),
+			format: (value) => formatNumber(value, getEnergyPrefix(), 'Wh').replace(/\.\d+/, ''),
 			tweened: false
 		},
 		grid: {
@@ -219,6 +219,18 @@ export function getGeographicAxisConfig(displayAxes: boolean = true): StandardAx
 		}
 	};
 }
+
+/**
+ * Standard Layerchart padding for consistent chart margins.
+ * Overrides Layerchart defaults ({ top: 4, left: 20, bottom: 20, right: 4 })
+ * which are too small for formatted axis labels.
+ */
+export const CHART_PADDING = {
+	/** For charts with horizontal x-axis labels */
+	standard: { top: 16, right: 16, bottom: 36, left: 48 },
+	/** For charts with rotated x-axis labels (county names, etc.) */
+	rotatedX: { top: 16, right: 16, bottom: 80, left: 48 },
+} as const;
 
 /**
  * Standard props configuration for bar charts

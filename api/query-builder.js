@@ -70,8 +70,17 @@ function buildStrategy2Query(opts) {
 
   // Sanitize filter values to prevent SQL injection
   const safeGeoFilter = sanitizeSqlValue(geoFilter);
-  const safeSegFilter = sanitizeSqlValue(segFilter);
   const safeBaseScenario = sanitizeSqlValue(baseScenario);
+
+  // Parse comma-separated segment filter (e.g. "housing,transport")
+  let safeSegFilter;
+  let segFilterList = null;
+  if (segFilter.includes(',')) {
+    segFilterList = segFilter.split(',').map(s => sanitizeSqlValue(s.trim()));
+    safeSegFilter = segFilterList.join(',');
+  } else {
+    safeSegFilter = sanitizeSqlValue(segFilter);
+  }
 
   const aggFunc = aggregation === 'sum' ? 'SUM' : aggregation === 'max' ? 'MAX' : 'AVG';
 
@@ -91,8 +100,12 @@ function buildStrategy2Query(opts) {
 
   for (const segment of segments) {
     // Skip if segment filter doesn't match
-    if (safeSegFilter !== 'all' && safeSegFilter !== 'total' && safeSegFilter !== segment) {
-      continue;
+    if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
+      if (segFilterList) {
+        if (!segFilterList.includes(segment)) continue;
+      } else if (safeSegFilter !== segment) {
+        continue;
+      }
     }
 
     // Base parquet path for this segment
@@ -179,7 +192,8 @@ function buildStrategy2Query(opts) {
   }
 
   // Segment handling
-  if (safeSegFilter === 'total') {
+  if (safeSegFilter === 'total' || segFilterList) {
+    // 'total' or comma-separated list: aggregate into single total
     selectExtras.push("'total' AS segment");
   } else if (safeSegFilter === 'all') {
     selectExtras.push('combined.segment AS segment');
@@ -232,8 +246,17 @@ function buildParamAggregatedQuery(opts) {
 
   // Sanitize filter values to prevent SQL injection
   const safeGeoFilter = sanitizeSqlValue(geoFilter);
-  const safeSegFilter = sanitizeSqlValue(segFilter);
   const safeBaseScenario = sanitizeSqlValue(baseScenario);
+
+  // Parse comma-separated segment filter
+  let safeSegFilter;
+  let segFilterList = null;
+  if (segFilter.includes(',')) {
+    segFilterList = segFilter.split(',').map(s => sanitizeSqlValue(s.trim()));
+    safeSegFilter = segFilterList.join(',');
+  } else {
+    safeSegFilter = sanitizeSqlValue(segFilter);
+  }
 
   const paramYearlyPath = path.join(aggregatedDir, 'param_yearly.parquet');
   if (!fs.existsSync(paramYearlyPath)) return null;
@@ -244,7 +267,13 @@ function buildParamAggregatedQuery(opts) {
   const segmentConditions = [];
 
   for (const segment of segments) {
-    if (safeSegFilter !== 'all' && safeSegFilter !== 'total' && safeSegFilter !== segment) continue;
+    if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
+      if (segFilterList) {
+        if (!segFilterList.includes(segment)) continue;
+      } else if (safeSegFilter !== segment) {
+        continue;
+      }
+    }
 
     const growthParam = `${segment}_growth`;
     const flexParam = `${segment}_flex`;
@@ -282,7 +311,7 @@ function buildParamAggregatedQuery(opts) {
     selectExtras.push(`'${safeGeoFilter}' AS geography`);
   }
 
-  if (safeSegFilter === 'total') {
+  if (safeSegFilter === 'total' || segFilterList) {
     selectExtras.push("'total' AS segment");
   } else if (safeSegFilter === 'all') {
     selectExtras.push('segment');

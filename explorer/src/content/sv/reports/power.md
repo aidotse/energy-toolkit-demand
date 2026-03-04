@@ -1,10 +1,9 @@
 ---
 title: "Effekt och energi"
-description: "Elsystemet handlar inte bara om hur mycket el vi använder, utan om när."
+description: "Elsystemet handlar inte bara om hur mycket el vi använder, utan också om när vi använder den. För att förstå framtidens elbehov behöver vi skilja på två grundläggande begrepp: energi och effekt."
+lastUpdated: "2026-03-03"
 layout: reports
 ---
-
-Elsystemet handlar inte bara om *hur mycket* el vi använder, utan också om *när* vi använder den. För att förstå framtidens elbehov behöver vi skilja på två grundläggande begrepp: **energi** och **effekt**.
 
 ## Energi är mängden, effekt är takten
 

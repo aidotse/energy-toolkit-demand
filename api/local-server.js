@@ -323,8 +323,18 @@ api.register('getDemand', async (c, req, res) => {
       if (aggregatedTable && fs.existsSync(aggregatedTable)) {
         console.log('📊 Using pre-aggregated tables');
         const safeGeoFilter = sanitizeSqlValue(geoFilter);
-        const safeSegFilter = sanitizeSqlValue(segFilter);
         const safeBaseScenario = sanitizeSqlValue(baseScenario);
+
+        // Parse comma-separated segment filter
+        let safeSegFilter;
+        let segFilterList = null;
+        if (segFilter.includes(',')) {
+          segFilterList = segFilter.split(',').map(s => sanitizeSqlValue(s.trim()));
+          safeSegFilter = segFilterList.join(',');
+        } else {
+          safeSegFilter = sanitizeSqlValue(segFilter);
+        }
+
         const scenarioName = getScenarioName(safeBaseScenario);
         const wheres = [
           `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
@@ -336,7 +346,11 @@ api.register('getDemand', async (c, req, res) => {
           wheres.push(`geography = '${safeGeoFilter}'`);
         }
         if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
-          wheres.push(`segment = '${safeSegFilter}'`);
+          if (segFilterList) {
+            wheres.push(`segment IN (${segFilterList.map(s => `'${s}'`).join(', ')})`);
+          } else {
+            wheres.push(`segment = '${safeSegFilter}'`);
+          }
         }
 
         const groupBy = ['year'];
@@ -351,7 +365,7 @@ api.register('getDemand', async (c, req, res) => {
           selectExtras.push(`'${safeGeoFilter}' AS geography`);
         }
 
-        if (safeSegFilter === 'total') {
+        if (safeSegFilter === 'total' || segFilterList) {
           selectExtras.push("'total' AS segment");
         } else if (safeSegFilter === 'all') {
           selectExtras.push('segment');
