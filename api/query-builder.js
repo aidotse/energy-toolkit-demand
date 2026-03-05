@@ -192,10 +192,10 @@ function buildStrategy2Query(opts) {
   }
 
   // Segment handling
-  if (safeSegFilter === 'total' || segFilterList) {
-    // 'total' or comma-separated list: aggregate into single total
+  if (safeSegFilter === 'total') {
     selectExtras.push("'total' AS segment");
-  } else if (safeSegFilter === 'all') {
+  } else if (safeSegFilter === 'all' || segFilterList) {
+    // 'all' or comma-separated list: return individual segment rows
     selectExtras.push('combined.segment AS segment');
     groupBy.push('combined.segment');
   } else {
@@ -311,9 +311,9 @@ function buildParamAggregatedQuery(opts) {
     selectExtras.push(`'${safeGeoFilter}' AS geography`);
   }
 
-  if (safeSegFilter === 'total' || segFilterList) {
+  if (safeSegFilter === 'total') {
     selectExtras.push("'total' AS segment");
-  } else if (safeSegFilter === 'all') {
+  } else if (safeSegFilter === 'all' || segFilterList) {
     selectExtras.push('segment');
     groupBy.push('segment');
   } else {

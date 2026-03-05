@@ -70,6 +70,12 @@ export function getGeoLabel(
 /** Get segment suffix for a chart description (empty string for 'total') */
 export function getSegmentSuffix(segment: string): string {
 	if (segment === 'total') return '';
+	// Handle comma-separated segments (e.g. "housing,transport")
+	if (segment.includes(',')) {
+		const labels = segment.split(',').map(s => getSegmentLabel(s.trim()).toLowerCase());
+		if (labels.length === 2) return `, sektorerna ${labels[0]} och ${labels[1]}`;
+		return `, sektorerna ${labels.slice(0, -1).join(', ')} och ${labels[labels.length - 1]}`;
+	}
 	return `, sektor ${getSegmentLabel(segment).toLowerCase()}`;
 }
 

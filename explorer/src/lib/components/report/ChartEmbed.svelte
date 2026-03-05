@@ -75,10 +75,15 @@
 	// Geography label for descriptions
 	const geoLabel = $derived(viewStore.geographyName);
 
-	// Segment label for descriptions (only when filtering to a specific segment)
+	// Segment label for descriptions (handles single, multiple, or total)
 	const segmentLabel = $derived.by(() => {
-		const seg = viewStore.activeSegment;
+		const seg = viewStore.segmentLabel;
 		if (seg === 'total') return '';
+		if (seg.includes(',')) {
+			const labels = seg.split(',').map((s: string) => getSegmentLabel(s.trim()).toLowerCase());
+			if (labels.length === 2) return `, sektorerna ${labels[0]} och ${labels[1]}`;
+			return `, sektorerna ${labels.slice(0, -1).join(', ')} och ${labels[labels.length - 1]}`;
+		}
 		return `, sektor ${getSegmentLabel(seg).toLowerCase()}`;
 	});
 

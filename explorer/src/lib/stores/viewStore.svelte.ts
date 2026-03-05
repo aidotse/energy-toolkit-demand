@@ -42,6 +42,13 @@ function createViewStore() {
 		/** Single segment ID if exactly one non-total selected, else 'total' */
 		get activeSegment(): string {
 			return segment.length === 1 && segment[0] !== 'total' ? segment[0] : 'total';
+		},
+
+		/** Segment string for descriptions: single, comma-separated, or 'total' */
+		get segmentLabel(): string {
+			const filtered = segment.filter(s => s !== 'total');
+			if (filtered.length === 0) return 'total';
+			return filtered.join(',');
 		}
 	};
 }

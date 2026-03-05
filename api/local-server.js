@@ -365,9 +365,9 @@ api.register('getDemand', async (c, req, res) => {
           selectExtras.push(`'${safeGeoFilter}' AS geography`);
         }
 
-        if (safeSegFilter === 'total' || segFilterList) {
+        if (safeSegFilter === 'total') {
           selectExtras.push("'total' AS segment");
-        } else if (safeSegFilter === 'all') {
+        } else if (safeSegFilter === 'all' || segFilterList) {
           selectExtras.push('segment');
           groupBy.push('segment');
         } else {

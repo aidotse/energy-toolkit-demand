@@ -447,6 +447,7 @@
 					<LazyChart height="450px">
 						<GeoSegmentChart
 							year={getEffectiveParams(CHART_IDS.GEO_SEGMENT).year}
+							segment={getActiveSegment(CHART_IDS.GEO_SEGMENT)}
 							baseScenarioOverride={getEffectiveParams(CHART_IDS.GEO_SEGMENT).scenarioId}
 							parameterValuesOverride={getEffectiveParams(CHART_IDS.GEO_SEGMENT).parameterValues}
 							parameterData={{ geographies }}

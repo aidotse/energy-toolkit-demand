@@ -22,6 +22,7 @@
 
 	let {
 		year,
+		segment = 'all',
 		exportable = true,
 		description = '',
 		headerControls,
@@ -31,6 +32,7 @@
 		parameterData
 	}: {
 		year?: number;
+		segment?: string;
 		exportable?: boolean;
 		description?: string;
 		headerControls?: Snippet;
@@ -39,6 +41,12 @@
 		parameterValuesOverride?: Record<string, number>;
 		parameterData?: { geographies?: any[] };
 	} = $props();
+
+	// Parse which segments to display (always fetch all, filter display)
+	const activeSegments = $derived.by(() => {
+		if (!segment || segment === 'all' || segment === 'total') return SEGMENT_ORDER;
+		return segment.split(',').map(s => s.trim()).filter(s => SEGMENT_ORDER.includes(s));
+	});
 
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -107,6 +115,8 @@
 			if (row.geography === '00' || row.geography === 'total' || row.segment === 'total') {
 				continue;
 			}
+			// Skip segments not in the active filter
+			if (!activeSegments.includes(row.segment)) continue;
 
 			if (!geoMap.has(row.geography)) {
 				geoMap.set(row.geography, { total: 0, segments: {} });
@@ -138,10 +148,10 @@
 				total: data.total
 			};
 
-			// Calculate percentage for each segment
-			for (const segment of SEGMENT_ORDER) {
-				const value = data.segments[segment] || 0;
-				entry[segment] = data.total > 0 ? (value / data.total) * 100 : 0;
+			// Calculate percentage for each active segment
+			for (const seg of activeSegments) {
+				const value = data.segments[seg] || 0;
+				entry[seg] = data.total > 0 ? (value / data.total) * 100 : 0;
 			}
 
 			result.push(entry);
@@ -153,12 +163,12 @@
 		return result;
 	});
 
-	// Create series configuration for stacked bars
+	// Create series configuration for stacked bars (only active segments)
 	let series = $derived(
-		SEGMENT_ORDER.map(segment => ({
-			key: segment,
-			color: getSegmentColor(segment).bg,
-			label: getSegmentLabel(segment)
+		activeSegments.map(seg => ({
+			key: seg,
+			color: getSegmentColor(seg).bg,
+			label: getSegmentLabel(seg)
 		}))
 	);
 
@@ -232,14 +242,14 @@
 
 			<!-- Legend -->
 			<div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-sm">
-				{#each SEGMENT_ORDER as segment}
-					{@const colors = getSegmentColor(segment)}
+				{#each activeSegments as seg}
+					{@const colors = getSegmentColor(seg)}
 					<div class="flex items-center gap-1.5">
 						<div
 							class="w-3 h-3 rounded-sm"
 							style="background-color: {colors.bg};"
 						></div>
-						<span class="text-gray-700 dark:text-gray-300">{getSegmentLabel(segment)}</span>
+						<span class="text-gray-700 dark:text-gray-300">{getSegmentLabel(seg)}</span>
 					</div>
 				{/each}
 			</div>

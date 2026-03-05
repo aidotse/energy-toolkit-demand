@@ -55,7 +55,7 @@
 		class: className = '',
 		comparisonYear = 2025,
 		enableComparison = false,
-		initialComparisonMode = 'year' as 'year' | 'scenario',
+		initialComparisonMode = 'year' as 'year' | 'scenario' | 'base',
 		baseScenarioOverride,
 		parameterValuesOverride
 	}: {
@@ -67,7 +67,7 @@
 		class?: string;
 		comparisonYear?: number;
 		enableComparison?: boolean;
-		initialComparisonMode?: 'year' | 'scenario';
+		initialComparisonMode?: 'year' | 'scenario' | 'base';
 		baseScenarioOverride?: string;
 		parameterValuesOverride?: Record<string, number>;
 	} = $props();
@@ -80,13 +80,30 @@
 	let hoveredSegment = $state<string | null>(null);
 	let hoveredPieIndex = $state<number>(-1);
 	let tooltipPosition = $state<{ x: number; y: number } | null>(null);
-	let comparisonMode = $state<'year' | 'scenario'>(initialComparisonMode);
+	let comparisonMode = $state<'year' | 'scenario' | 'base'>(initialComparisonMode);
+
+	// For base scenario comparison: which scenario to compare against
+	let comparisonScenarioId = $state<string>('');
 
 	// Per-chart scenario/parameter overrides (fall back to global store)
 	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
 	const parameterValues = $derived(
 		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined)
 	);
+
+	// Available scenarios for the base comparison dropdown (exclude current)
+	const otherScenarios = $derived(
+		parameterStore.baseScenarios.filter((s) => s.id !== baseScenario)
+	);
+
+	// Auto-select first other scenario when entering base mode or when current changes
+	$effect(() => {
+		if (comparisonMode === 'base' && otherScenarios.length > 0) {
+			if (!comparisonScenarioId || !otherScenarios.find((s) => s.id === comparisonScenarioId)) {
+				comparisonScenarioId = otherScenarios[0].id;
+			}
+		}
+	});
 
 	// Use shared segment order (re-typed as string[] for indexOf checks)
 	const segmentOrder: string[] = [...SEGMENT_ORDER];
@@ -104,16 +121,26 @@
 		enableComparison &&
 			(comparisonMode === 'year'
 				? year !== comparisonYear
-				: parameterStore.hasActiveParameters)
+				: comparisonMode === 'base'
+					? !!comparisonScenarioId
+					: parameterStore.hasActiveParameters)
 	);
 
 	// Labels above each pie (scenario names from config, not hardcoded)
 	let leftLabel = $derived(
 		comparisonMode === 'year'
 			? String(comparisonYear)
-			: parameterStore.defaultScenario?.name || m.scenario_base_label()
+			: comparisonMode === 'base'
+				? parameterStore.baseScenarios.find((s) => s.id === baseScenario)?.name || ''
+				: parameterStore.defaultScenario?.name || m.scenario_base_label()
 	);
-	let rightLabel = $derived(comparisonMode === 'year' ? String(year) : m.scenario_with_adjustments());
+	let rightLabel = $derived(
+		comparisonMode === 'year'
+			? String(year)
+			: comparisonMode === 'base'
+				? parameterStore.baseScenarios.find((s) => s.id === comparisonScenarioId)?.name || ''
+				: m.scenario_with_adjustments()
+	);
 
 	// Dynamic description based on comparison mode
 	const geoName = $derived(viewStore.geographyName);
@@ -125,10 +152,16 @@
 		if (comparisonMode === 'year') {
 			return `Sektorsfördelning för ${geoName} ${comparisonYear} jämfört med ${year} i scenariot ${scenarioName}.`;
 		}
+		if (comparisonMode === 'base') {
+			const otherName = parameterStore.baseScenarios.find(
+				(s) => s.id === comparisonScenarioId
+			)?.name || '';
+			return `Sektorsfördelning för ${geoName} år ${year}: ${scenarioName} jämfört med ${otherName}.`;
+		}
 		return `Sektorsfördelning för ${geoName}: grundscenario jämfört med justerat, år ${year}.`;
 	});
 
-	async function fetchForYear(targetYear: number, withParams: boolean) {
+	async function fetchForYear(targetYear: number, withParams: boolean, scenarioOverride?: string) {
 		const query = makeDemandQuery({
 			start: String(targetYear),
 			end: String(targetYear + 1),
@@ -136,7 +169,7 @@
 			aggregation: 'sum',
 			geography: 'all',
 			segment: 'all',
-			baseScenario,
+			baseScenario: scenarioOverride || baseScenario,
 			parameterValues: withParams ? parameterValues : undefined
 		});
 		return fetchDemandData(query);
@@ -145,6 +178,7 @@
 	// Left pie: stable reference data
 	// - Year mode: comparisonYear baseline (no params) → only refetches when comparisonYear or baseScenario changes
 	// - Scenario mode: current year baseline (no params) → only refetches when year or baseScenario changes
+	// - Base mode: current year with current baseScenario (no params)
 	// - Single mode: current year with params → refetches on any change
 	$effect(() => {
 		if (!baseScenario) return;
@@ -154,6 +188,10 @@
 			fetchLeftPie(comparisonYear, false);
 		} else if (enableComparison && comparisonMode === 'scenario') {
 			// Left = current year baseline. Does NOT read `parameterValues`.
+			if (!year) return;
+			fetchLeftPie(year, false);
+		} else if (enableComparison && comparisonMode === 'base') {
+			// Left = current year, current baseScenario, no params
 			if (!year) return;
 			fetchLeftPie(year, false);
 		} else {
@@ -176,13 +214,22 @@
 				rightRawData = [];
 				return;
 			}
-		} else if (!parameterStore.hasActiveParameters) {
-			rightRawData = [];
-			return;
+			const _params = parameterValues;
+			fetchRightPie(year, true);
+		} else if (comparisonMode === 'base') {
+			if (!comparisonScenarioId) {
+				rightRawData = [];
+				return;
+			}
+			fetchRightPie(year, false, comparisonScenarioId);
+		} else {
+			if (!parameterStore.hasActiveParameters) {
+				rightRawData = [];
+				return;
+			}
+			const _params = parameterValues;
+			fetchRightPie(year, true);
 		}
-
-		const _params = parameterValues;
-		fetchRightPie(year, true);
 	});
 
 	async function fetchLeftPie(targetYear: number, withParams: boolean) {
@@ -200,11 +247,11 @@
 		}
 	}
 
-	async function fetchRightPie(targetYear: number, withParams: boolean) {
+	async function fetchRightPie(targetYear: number, withParams: boolean, scenarioOverride?: string) {
 		try {
 			rightLoading = true;
 			error = null;
-			const data = await fetchForYear(targetYear, withParams);
+			const data = await fetchForYear(targetYear, withParams, scenarioOverride);
 			rightRawData = data;
 		} catch (err: any) {
 			error = err?.message || 'Ett oväntat fel inträffade';
@@ -458,25 +505,45 @@
 
 {#snippet internalHeaderControls()}
 	{#if enableComparison}
-		<div
-			class="inline-flex rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden"
-		>
-			<button
-				class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'year'
-					? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-					: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
-				onclick={() => (comparisonMode = 'year')}
+		<div class="flex items-center gap-2 flex-wrap">
+			<div
+				class="inline-flex rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden"
 			>
-				Jmf. tid
-			</button>
-			<button
-				class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'scenario'
-					? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-					: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
-				onclick={() => (comparisonMode = 'scenario')}
-			>
-				Jmf. scenario
-			</button>
+				<button
+					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'year'
+						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
+					onclick={() => (comparisonMode = 'year')}
+				>
+					Jmf. tid
+				</button>
+				<button
+					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'scenario'
+						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
+					onclick={() => (comparisonMode = 'scenario')}
+				>
+					Jmf. parametrar
+				</button>
+				<button
+					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'base'
+						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
+					onclick={() => (comparisonMode = 'base')}
+				>
+					Jmf. scenarier
+				</button>
+			</div>
+			{#if comparisonMode === 'base' && otherScenarios.length > 0}
+				<select
+					class="text-xs border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+					bind:value={comparisonScenarioId}
+				>
+					{#each otherScenarios as scenario}
+						<option value={scenario.id}>{scenario.name}</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 	{/if}
 	{#if headerControls}
