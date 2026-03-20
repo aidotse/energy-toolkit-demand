@@ -106,7 +106,7 @@
 			{aggregationInit}
 			exportable={exportable}
 			{description}
-			height="h-[450px]"
+			height="h-[280px] sm:h-[350px] lg:h-[450px]"
 			contentClass="mx-4 sm:mx-8"
 		/>
 	{:else if chart === 'sector-pie'}

@@ -20,14 +20,16 @@ function createViewStore() {
 	let geography = $state('total');
 	let segment = $state<string[]>(['total']);
 	let pageData = $state<PageData | null>(null);
+	let initialized = $state(false);
 
 	return {
+		get initialized() { return initialized; },
 		get year() { return year; },
-		set year(v: number) { year = v; },
+		set year(v: number) { year = v; initialized = true; },
 		get geography() { return geography; },
-		set geography(v: string) { geography = v; },
+		set geography(v: string) { geography = v; initialized = true; },
 		get segment() { return segment; },
-		set segment(v: string[]) { segment = v; },
+		set segment(v: string[]) { segment = v; initialized = true; },
 		get pageData() { return pageData; },
 		set pageData(v: PageData | null) { pageData = v; },
 

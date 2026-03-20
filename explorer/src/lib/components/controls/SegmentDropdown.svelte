@@ -63,8 +63,8 @@
 		type="button"
 		onclick={() => expanded = !expanded}
 		class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs rounded-md border
-			border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-			text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+			border-gray-300 bg-white
+			text-gray-900 hover:bg-gray-50 transition-colors"
 	>
 		<span class="truncate">{displayText}</span>
 		<svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-400 transition-transform {expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,14 +74,14 @@
 
 	<!-- Dropdown -->
 	{#if expanded}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-0.5 z-30">
+		<div class="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-0.5 z-30">
 			{#each segments as segment}
 				<button
 					type="button"
 					onclick={() => toggleSegment(segment)}
-					class="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+					class="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-left hover:bg-gray-100 transition-colors"
 				>
-					<span class="w-3.5 h-3.5 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-sm
+					<span class="w-3.5 h-3.5 flex items-center justify-center border border-gray-300 rounded-sm
 						{values.includes(segment) ? 'bg-chart-900 border-chart-900' : ''}">
 						{#if values.includes(segment)}
 							<svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@
 							</svg>
 						{/if}
 					</span>
-					<span class="text-gray-700 dark:text-gray-200">{segmentLabels[segment] || segment}</span>
+					<span class="text-gray-700">{segmentLabels[segment] || segment}</span>
 				</button>
 			{/each}
 		</div>

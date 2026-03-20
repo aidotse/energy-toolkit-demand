@@ -103,7 +103,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
 	<MetricCard
 		value={formatEnergy(totalEnergySelectedYear)}
-		label="Total energi"
+		label="Totalt energibehov"
 		sublabel={`År ${viewStore.year}`}
 		icon={Zap}
 		trend={growthRate >= 0 ? 'up' : 'down'}
@@ -111,7 +111,7 @@
 	/>
 	<MetricCard
 		value={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}%`}
-		label="Tillväxt"
+		label="Ökning i elbehovet"
 		sublabel={`${viewStore.year} jämfört med 2025`}
 		icon={TrendingUp}
 		trend={growthRate >= 0 ? 'up' : 'down'}
@@ -119,7 +119,7 @@
 	/>
 	<MetricCard
 		value={formatPower(peakPower)}
-		label="Maxeffekt"
+		label="Maximalt effektbehov"
 		sublabel={`År ${viewStore.year}`}
 		icon={Activity}
 		trend="up"

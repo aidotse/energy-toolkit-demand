@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, ThemeSwitch } from 'svelte-ux';
+    import { Button } from 'svelte-ux';
     import * as m from '$paraglide/messages';
 
     let {toggleControls = $bindable()} = $props();
@@ -25,6 +25,5 @@
     <slot name="scenario" />
     <div class="absolute bottom-5 left-6 w-[85%] flex justify-between">
         <a href="/demandkit" class="text-sm italic hover:text-primary">{m['toolkit_page']()}</a>
-        <ThemeSwitch />
     </div>
 </nav>

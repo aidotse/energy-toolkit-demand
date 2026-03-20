@@ -55,12 +55,12 @@
 	{#if controlsPosition === 'right'}
 		<div class="absolute z-10 top-20 lg:top-8 left-[50%] right-4 max-w-2xl flex flex-col gap-2 items-start">
 			<!-- Unified controls toolbar -->
-			<div class="w-full flex flex-row items-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-sm">
-				<div class="flex-1 min-w-0 border-r border-gray-200 dark:border-gray-700">
+			<div class="w-full flex flex-row items-center bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
+				<div class="flex-1 min-w-0 border-r border-gray-200">
 					<ScenarioSelectorPill embedded />
 				</div>
-				<div class="flex-1 min-w-0 border-r border-gray-200 dark:border-gray-700">
-					<YearSelect embedded {parameterData} year={localYear} {onYearChange} />
+				<div class="flex-1 min-w-0 border-r border-gray-200">
+					<YearSelect embedded {parameterData} year={localYear} onYearChange={handleYearChange} />
 				</div>
 				<div class="flex-1 min-w-0">
 					<SegmentSelect embedded bind:segments />
@@ -69,12 +69,12 @@
 			<ScenarioVariation />
 		</div>
 	{:else}
-		<div class="absolute z-10 top-20 lg:top-10 left-6 flex flex-col gap-2">
-			<YearSelect {parameterData} year={localYear} {onYearChange} />
+		<div class="absolute z-10 top-14 lg:top-10 left-4 lg:left-6 flex flex-col gap-2">
+			<YearSelect {parameterData} year={localYear} onYearChange={handleYearChange} />
 			<SegmentSelect bind:segments />
 		</div>
 
-		<div class="absolute top-20 lg:top-10 right-6 z-10">
+		<div class="absolute top-4 lg:top-10 right-4 lg:right-6 z-10 max-lg:max-w-[60%]">
 			<ScenarioSelectorPill />
 		</div>
 	{/if}

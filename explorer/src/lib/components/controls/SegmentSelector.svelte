@@ -56,8 +56,8 @@
 	<select
 		value={value}
 		onchange={handleSelectChange}
-		class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-		       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+		class="w-full px-4 py-2 rounded-lg border border-gray-300
+		       bg-white text-gray-900
 		       focus:ring-2 focus:ring-primary focus:border-transparent
 		       {className}"
 	>
@@ -78,7 +78,7 @@
 				class="inline-flex items-center gap-1.5 rounded-full border-2 transition-all
 				       {value === segment
 						? 'border-primary bg-primary text-white shadow-sm'
-						: 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary hover:shadow-sm'}
+						: 'border-gray-300 bg-white text-gray-700 hover:border-primary hover:shadow-sm'}
 				       {pillSizeClasses[size]}
 				       focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 				role="radio"
@@ -106,9 +106,9 @@
 					class="w-4 h-4 text-primary focus:ring-primary focus:ring-2"
 				/>
 				{#if Icon}
-					<Icon class="w-4 h-4 text-gray-600 dark:text-gray-400" />
+					<Icon class="w-4 h-4 text-gray-600" />
 				{/if}
-				<span class="text-sm text-gray-700 dark:text-gray-300">
+				<span class="text-sm text-gray-700">
 					{config?.label || segment}
 				</span>
 			</label>

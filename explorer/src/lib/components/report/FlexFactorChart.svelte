@@ -113,18 +113,18 @@
 	<!-- Legend -->
 	<div class="flex flex-wrap justify-center gap-x-6 gap-y-1 mt-3">
 		{#each curves as curve}
-			<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+			<span class="flex items-center gap-1.5 text-sm text-gray-600">
 				<span class="inline-block w-5 h-0.5 rounded" style="background-color: {curve.color};"></span>
 				{curve.label}
 			</span>
 		{/each}
-		<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+		<span class="flex items-center gap-1.5 text-sm text-gray-600">
 			<span class="inline-block w-5 border-t-2 border-dashed" style="border-color: {viz.axis};"></span>
 			Medelvärde
 		</span>
 	</div>
 
-	<figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+	<figcaption class="text-center text-sm text-gray-500 mt-2">
 		Bostadssegmentets dygnskurva med tre flex-nivåer. Ju lägre flex-faktor, desto närmare medelvärdet hamnar kurvan.
 	</figcaption>
 </figure>

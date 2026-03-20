@@ -37,11 +37,23 @@
 		return labels;
 	});
 
+	// Sort geographies alphabetically by label, with 'total' pinned first
+	const sortedGeographies = $derived.by(() => {
+		const sorted = [...geographies].sort((a, b) => {
+			if (a === 'total') return -1;
+			if (b === 'total') return 1;
+			const labelA = geographyLabels[a] || a;
+			const labelB = geographyLabels[b] || b;
+			return labelA.localeCompare(labelB, 'sv');
+		});
+		return sorted;
+	});
+
 	// Filter geographies by search term
 	const filteredGeographies = $derived.by(() => {
-		if (!search.trim()) return geographies;
+		if (!search.trim()) return sortedGeographies;
 		const q = search.toLowerCase();
-		return geographies.filter((geoId) => {
+		return sortedGeographies.filter((geoId) => {
 			const label = geographyLabels[geoId] || geoId;
 			return label.toLowerCase().includes(q) || geoId.toLowerCase().includes(q);
 		});
@@ -74,8 +86,8 @@
 		type="button"
 		onclick={() => expanded = !expanded}
 		class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs rounded-md border
-			border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-			text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+			border-gray-300 bg-white
+			text-gray-900 hover:bg-gray-50 transition-colors"
 	>
 		<span class="truncate">{getLabel(value)}</span>
 		<svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-400 transition-transform {expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,15 +97,15 @@
 
 	<!-- Dropdown -->
 	{#if expanded}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-30 overflow-hidden">
+		<div class="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-30 overflow-hidden">
 			<!-- Search input -->
-			<div class="p-1.5 border-b border-gray-100 dark:border-gray-700">
+			<div class="p-1.5 border-b border-gray-100">
 				<input
 					type="text"
 					bind:value={search}
 					placeholder="Sök..."
-					class="w-full px-2 py-1 text-xs rounded border-0 bg-gray-50 dark:bg-gray-700
-						text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+					class="w-full px-2 py-1 text-xs rounded border-0 bg-gray-50
+						text-gray-900 placeholder:text-gray-400
 						focus:ring-1 focus:ring-chart-500 outline-none"
 				/>
 			</div>
@@ -106,14 +118,14 @@
 						onclick={() => handleSelect(geoId)}
 						class="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left transition-colors
 							{value === geoId
-								? 'bg-chart-700/10 text-chart-900 dark:text-chart-100 font-medium'
-								: 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}"
+								? 'bg-chart-700/10 text-chart-900 font-medium'
+								: 'text-gray-700 hover:bg-gray-100'}"
 					>
 						<span class="truncate">{getLabel(geoId)}</span>
 					</button>
 				{/each}
 				{#if filteredGeographies.length === 0}
-					<p class="text-xs text-gray-400 dark:text-gray-500 px-2.5 py-2 text-center">
+					<p class="text-xs text-gray-400 px-2.5 py-2 text-center">
 						Ingen match
 					</p>
 				{/if}

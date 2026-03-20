@@ -100,7 +100,7 @@ const app = express();
 // CORS configuration - allow localhost in dev, configurable origins in production
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:5173', 'http://localhost:5174'];
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://192.168.1.72:5173'];
 
 app.use(cors({
   origin: allowedOrigins
@@ -600,7 +600,7 @@ async function warmupCache() {
 }
 
 const port = process.env.PORT || 4010;
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`✅ API server running at http://localhost:${port}`);
   if (strategy2Config) {
     console.log(`📊 Strategy 2 enabled: ${strategy2Config.baseScenarios?.length || 0} base scenarios, ${Object.keys(strategy2Config.parameters || {}).length} parameters`);

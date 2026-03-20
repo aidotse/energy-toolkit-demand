@@ -119,17 +119,17 @@
 
 	<!-- Legend -->
 	<div class="flex flex-wrap justify-center gap-x-6 gap-y-1 mt-3">
-		<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+		<span class="flex items-center gap-1.5 text-sm text-gray-600">
 			<span class="inline-block w-5 h-0.5 rounded" style="background-color: {viz.teal[900]};"></span>
 			Utan flex
 		</span>
-		<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+		<span class="flex items-center gap-1.5 text-sm text-gray-600">
 			<span class="inline-block w-5 h-0.5 rounded" style="background-color: {viz.teal[500]};"></span>
 			Med flex
 		</span>
 	</div>
 
-	<figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+	<figcaption class="text-center text-sm text-gray-500 mt-2">
 		Samma totala energi men utjämnad profil. Flexibilitet sänker toppeffekten utan att minska elförbrukningen.
 	</figcaption>
 </figure>

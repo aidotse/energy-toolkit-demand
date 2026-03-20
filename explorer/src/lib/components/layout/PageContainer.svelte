@@ -18,9 +18,9 @@
 	} = $props();
 </script>
 
-<div class="min-h-screen bg-page-bg dark:bg-gray-900">
-	<div class="{maxWidth} mx-auto px-4 sm:px-6 lg:px-8 py-12 {className}">
-		<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-8 sm:p-10 lg:p-12">
+<div class="min-h-screen bg-white lg:bg-page-bg">
+	<div class="{maxWidth} mx-auto px-0 lg:px-8 pt-12 lg:py-12 {className}">
+		<div class="bg-white lg:rounded-2xl lg:shadow-sm px-3 py-4 sm:p-8 lg:p-12">
 			{@render children()}
 		</div>
 	</div>

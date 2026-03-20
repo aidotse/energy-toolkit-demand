@@ -70,8 +70,8 @@
 	<select
 		value={value}
 		onchange={handleSelectChange}
-		class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-		       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+		class="w-full px-4 py-2 rounded-lg border border-gray-300
+		       bg-white text-gray-900
 		       focus:ring-2 focus:ring-primary focus:border-transparent
 		       {className}"
 	>
@@ -90,7 +90,7 @@
 				class="inline-flex items-center rounded-full border-2 transition-all
 				       {value === aggregation
 						? 'border-primary bg-primary text-white shadow-sm'
-						: 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary hover:shadow-sm'}
+						: 'border-gray-300 bg-white text-gray-700 hover:border-primary hover:shadow-sm'}
 				       {pillSizeClasses[size]}
 				       focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 				role="radio"

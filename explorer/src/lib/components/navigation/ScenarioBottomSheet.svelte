@@ -103,23 +103,23 @@
 		ontouchstart={handleTouchStart}
 		ontouchmove={handleTouchMove}
 		ontouchend={handleTouchEnd}
-		class="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up"
+		class="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up"
 	>
 		<!-- Drag Handle -->
 		<div class="flex items-center justify-center py-3 cursor-grab active:cursor-grabbing">
-			<div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+			<div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
 		</div>
 
 		<!-- Header -->
 		<div
-			class="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700"
+			class="flex items-center justify-between px-6 py-3 border-b border-gray-200"
 		>
 			<div>
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">Scenarioinställningar</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+				<h3 class="text-lg font-semibold text-gray-900">Scenarioinställningar</h3>
+				<p class="text-sm text-gray-500 mt-0.5">
 					{currentBaseLabel}
 					{#if parameterStore.activeParameterCount > 0}
-						<span class="text-primary-600 dark:text-primary-400">
+						<span class="text-primary-600">
 							+{parameterStore.activeParameterCount} justeringar
 						</span>
 					{/if}
@@ -127,7 +127,7 @@
 			</div>
 			<button
 				onclick={() => navigationState.toggleScenarioModal()}
-				class="p-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				class="p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors"
 				aria-label="Stäng"
 			>
 				<X class="w-6 h-6" />

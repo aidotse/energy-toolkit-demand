@@ -89,12 +89,18 @@ export function getTimeSeriesAxisConfig(
 
 	return {
 		xAxis: {
-			format: (value) => String(value),
+			format: (value: number) => String(value),
 			tweened: false,
-			rule: { class: 'stroke-black [stroke-width:1.5px]' }
+			rule: { class: 'stroke-black [stroke-width:1.5px]' },
+			ticks: (scale: { domain(): unknown[] }) => {
+				const domain = scale.domain() as number[];
+				if (!domain || domain.length <= 6) return domain;
+				// Show every 5th year (2025, 2030, 2035, ...) to avoid crowding
+				return domain.filter((v: number) => v % 5 === 0);
+			}
 		},
 		yAxis: {
-			format: (num) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W').replace(/\.\d+/, ''),
+			format: (num: number) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W').replace(/\.\d+/, ''),
 			tweened: false,
 			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},

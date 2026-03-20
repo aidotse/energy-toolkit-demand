@@ -33,19 +33,19 @@
 <style>
 	/* Prose styling — mirrors ReportLayout for consistent markdown rendering */
 	.markdown-content :global(h2) {
-		@apply text-2xl font-bold text-gray-900 dark:text-gray-50 mb-3 mt-10 first:mt-0;
+		@apply text-2xl font-bold text-gray-900 mb-3 mt-10 first:mt-0;
 	}
 
 	.markdown-content :global(h3) {
-		@apply text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-8;
+		@apply text-xl font-semibold text-gray-900 mb-2 mt-8;
 	}
 
 	.markdown-content :global(h4) {
-		@apply text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 mt-6;
+		@apply text-lg font-medium text-gray-900 mb-2 mt-6;
 	}
 
 	.markdown-content :global(p) {
-		@apply text-gray-700 dark:text-gray-300 leading-relaxed mb-4;
+		@apply text-gray-700 leading-relaxed mb-4;
 	}
 
 	.markdown-content :global(ul),
@@ -62,11 +62,11 @@
 	}
 
 	.markdown-content :global(li) {
-		@apply mb-1 text-gray-700 dark:text-gray-300 leading-relaxed;
+		@apply mb-1 text-gray-700 leading-relaxed;
 	}
 
 	.markdown-content :global(strong) {
-		@apply font-semibold text-gray-900 dark:text-gray-100;
+		@apply font-semibold text-gray-900;
 	}
 
 	.markdown-content :global(em) {
@@ -74,15 +74,15 @@
 	}
 
 	.markdown-content :global(a) {
-		@apply text-primary-600 dark:text-primary-400 hover:underline;
+		@apply text-primary-600 hover:underline;
 	}
 
 	.markdown-content :global(blockquote) {
-		@apply border-l-4 border-gray-200 dark:border-gray-700 pl-4 my-4 text-sm text-gray-700 dark:text-gray-300 italic;
+		@apply border-l-4 border-gray-200 pl-4 my-4 text-sm text-gray-700 italic;
 	}
 
 	.markdown-content :global(pre) {
-		@apply bg-gray-100 dark:bg-gray-950 p-4 rounded overflow-x-auto mb-4 text-sm;
+		@apply bg-gray-100 p-4 rounded overflow-x-auto mb-4 text-sm;
 	}
 
 	.markdown-content :global(code) {
@@ -90,10 +90,10 @@
 	}
 
 	.markdown-content :global(:not(pre) > code) {
-		@apply bg-gray-100 dark:bg-gray-950 px-1.5 py-0.5 rounded;
+		@apply bg-gray-100 px-1.5 py-0.5 rounded;
 	}
 
 	.markdown-content :global(hr) {
-		@apply my-12 border-gray-200 dark:border-gray-700;
+		@apply my-12 border-gray-200;
 	}
 </style>

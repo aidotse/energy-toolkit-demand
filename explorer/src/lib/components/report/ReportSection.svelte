@@ -42,18 +42,18 @@
 		<div class="section-header mb-8">
 			{#if id}
 				<a href="#{id}" class="section-anchor">
-					<h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+					<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
 						{title}
 					</h2>
 				</a>
 			{:else}
-				<h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+				<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
 					{title}
 				</h2>
 			{/if}
 
 			{#if subtitle}
-				<p class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl">
+				<p class="text-lg text-gray-600 max-w-3xl">
 					{subtitle}
 				</p>
 			{/if}
@@ -72,7 +72,7 @@
 
 	/* Card style for design system alignment */
 	.card-style {
-		@apply rounded shadow-sm border border-gray-200 dark:border-gray-700;
+		@apply rounded shadow-sm border border-gray-200;
 	}
 
 	/* Anchor link styling */
@@ -81,7 +81,7 @@
 	}
 
 	.section-anchor:hover h2 {
-		@apply text-primary-600 dark:text-primary-400;
+		@apply text-primary-600;
 		@apply transition-colors duration-200;
 	}
 

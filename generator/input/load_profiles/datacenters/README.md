@@ -203,51 +203,38 @@ Data centers exhibit a **fundamentally different** load pattern compared to othe
 
 ---
 
-## Part 2: Empirical Data - Swedish Data Center (2024)
+## Part 2: Empirical Data — Airon (2025)
 
-### 2.1 Facility Description
+### 2.1 Data Source
 
-- **Location:** Sweden (Nordic climate)
-- **Cooling type:** 100% air-cooled (planned future: 80/20 water/air hybrid)
-- **Behind-the-meter solar:** 77 kWp (excluded from measurements)
-- **Cooling system:** Multiple smaller compressors starting in steps as needed
+- **Provider:** Airon (datacenter company)
+- **Files:** `Airon effektprofiler.xlsx` (Excel with daily power data) and `Effektprofiler AI Sweden.pdf` (documentation)
+- **Data type:** Daily total power for 365 days (2025), plus daily PUE values
+- **Model:** 1 MW reserved blocks, 90% usable capacity
 
-### 2.2 Operator Insights (Direct Quotes)
+### 2.2 Datacenter Types in Data
 
-| Quote (Swedish) | Translation | Implication |
-|-----------------|-------------|-------------|
-| "Det är inte mycket variation, lasten ligger mer eller mindre konstant" | "There is not much variation, the load is more or less constant" | IT load is baseload |
-| "Kylningen är hela skillnaden" | "Cooling is the entire difference" | All variation comes from cooling |
-| "På dygnet skiljer det bara några procent mellan natt och dag (när vi kör helt på frikyla)" | "During the day it differs only a few percent between night and day (when we run entirely on free cooling)" | Winter profile is flat |
-| "Från maj till september kör vi kompressorer på dagen" | "From May to September we run compressors during the day" | Summer daytime = compressor period |
-| "Vi har många mindre kompressorer som startar i steg vid behov" | "We have many smaller compressors that start in steps as needed" | Stepped compressor cycling visible in data |
+| Type | Cooling | Utilization | Notes |
+|------|---------|-------------|-------|
+| **Colocation** | Air-cooled / Liquid-cooled | 70% | Tenant-controlled loads |
+| **Hyperscale** | Liquid-cooled | 100% | Self-controlled loads |
+| **Hyperscale (DR)** | Liquid-cooled | 100% | 0.5MW fixed + 0.5MW flex (demand response) |
 
-### 2.3 Visual Data Analysis (Time-Series Charts)
+**Selected for profile: Hyperscale liquid-cooled** — modern standard, 100% utilization. The PDF notes that "very few high-density GPU datacenters are built with air cooling today."
 
-**Image 1: Annual Pattern (Dec 2023 - Jan 2025)**
-- Green fill: IT baseline (constant)
-- Yellow fill: Cooling load (variable)
-- Pattern: Flat Dec-Apr and Nov-Dec; elevated May-Oct
-- Peak summer load: ~2-2.5x winter baseline
-- Clear seasonal "hump" centered on July
+### 2.3 Key Observations from Data
 
-**Image 2: Winter Day (January 8, 2024)**
-- Profile: Remarkably flat, ±3-5% variation
-- One spike ~09:30-10:30 (identified as batch training job between checkpoints)
-- Interpretation: Pure IT load with minimal cooling parasitic
+- **IT load:** Constant 0.72 MW per 1 MW reserved (row 27)
+- **Liquid-cooled PUE:** Range 1.10–1.25 (much lower than air-cooled 1.22–1.60)
+- **Total power (IT + cooling):** Range 0.80–0.90 MW per 1 MW reserved
+- **Seasonal ratio (Jul/Jan):** ~1.07x (liquid cooling dramatically reduces seasonal swing vs air-cooled ~3.3x)
+- **Summer hourly peak/min:** ~1.09x (vs air-cooled ~2.5x)
 
-**Image 3: Transition Day (October 9, 2024)**
-- Step-up at ~06:00
-- Compressors start ~09:00-10:00
-- Peak at ~11:30-12:30
-- Step-down at ~18:00
-- Pattern: Follows outdoor temperature curve
+### 2.4 Fall Cooling Anomaly
 
-**Image 4: Midsummer (June 22-23, 2024)**
-- Compressor cycling even at night
-- Peak midday 12:00-15:00
-- Roughly 3x baseline load during peak cycling
-- Classic temperature-following pattern
+Airon warned: *"kylning baseras på våra verkliga värden, här ska den återgå till baseline efter sommaren, så ni kan behöva kompensera för det"*
+
+The raw data shows cooling **not returning to baseline** after summer — months 9-12 have elevated PUE compared to the symmetric expectation. This is a measurement artifact from the specific year. **Compensation:** Fall months (Aug-Dec) are mirrored from the spring ramp-up (Jun-Feb) to create a symmetric seasonal curve around the July peak.
 
 ---
 
@@ -255,127 +242,66 @@ Data centers exhibit a **fundamentally different** load pattern compared to othe
 
 ### 3.1 Monthly Seasonal Multipliers
 
-**Methodology:**
-1. Winter months (Sep-May): Full free cooling, multiplier = baseline (~0.58)
-2. Summer months (Jun-Aug): Heavy compressor cooling (~3x baseline)
-3. Abrupt transition between seasons (not gradual)
+**Methodology (Airon-derived):**
+1. Extract daily total power (IT + cooling) from Airon Hyperscale liquid-cooled data (365 days)
+2. Group by month, compute monthly averages
+3. Mirror spring ramp-up (Jan→Jul) onto fall (Jul→Dec) to compensate fall anomaly
 4. Normalize to annual sum = 12.00
 
-**Key parameters:**
-- Free cooling threshold: ~15-18°C outdoor temperature
-- Summer/winter ratio: **~3.3x** (based on empirical Swedish data showing ~2.5-3x average, peaks to ~4x)
-- Abrupt transition: Compressor cooling starts in June, ends in August
+**Key parameters (liquid-cooled):**
+- Seasonal ratio (Jul/Jan): **~1.07x** (liquid cooling is far more efficient than air)
+- Summer months (from PUE threshold): **Apr–Oct** (derived from compensated data)
+- Gradual transition (not abrupt like the old air-cooled model)
 
-**Multipliers (Normalized to sum=12.00):**
+**Multipliers are generated dynamically** by `create_datacenter_profile.ipynb` from the Excel data. The exact values depend on the Airon input data. Approximate values (sum = 12.00):
 
-| Month | Multiplier | Cooling Mode |
-|-------|-----------|--------------|
-| January | 0.65 | Full free cooling (baseline) |
-| February | 0.65 | Full free cooling |
-| March | 0.65 | Full free cooling |
-| April | 0.65 | Full free cooling |
-| May | 0.65 | Full free cooling |
-| June | 2.00 | **Abrupt start** - Heavy compressor use |
-| July | 2.15 | **Peak month** |
-| August | 2.00 | Heavy compressor use |
-| September | 0.65 | **Abrupt return** to free cooling |
-| October | 0.65 | Full free cooling |
-| November | 0.65 | Full free cooling |
-| December | 0.65 | Full free cooling |
-
-**Validation:**
-- Sum = 12.00 ✓ (9×0.65 + 2.00 + 2.15 + 2.00 = 5.85 + 6.15 = 12.00)
-- Summer/winter ratio: **3.3x** (July/January = 2.15/0.65)
-- Abrupt transitions in June and September
-- Consistent with empirical chart showing summer peak ~2.5-3x winter baseline
+| Month | ~Multiplier | Notes |
+|-------|------------|-------|
+| Jan–Mar | ~0.97 | Winter baseline (free cooling) |
+| Apr–Jun | ~1.01–1.03 | Spring ramp-up |
+| July | ~1.04 | Peak month |
+| Aug–Oct | ~1.03–1.01 | Fall (mirrored from spring) |
+| Nov–Dec | ~0.97 | Return to baseline |
 
 ### 3.2 Weekly Multipliers
 
-**Methodology:**
-- Data centers operate 24/7/365 with no weekend reduction
-- Unlike rail (1.28 weekday/weekend ratio) or EV (1.16 ratio)
-- Industry sources confirm high load factor with flat weekly profile
-
-**Multipliers:**
-
-| Day | Multiplier |
-|-----|-----------|
-| Monday | 1.00 |
-| Tuesday | 1.00 |
-| Wednesday | 1.00 |
-| Thursday | 1.00 |
-| Friday | 1.00 |
-| Saturday | 1.00 |
-| Sunday | 1.00 |
-
-**Sum = 7.00** ✓
+All 1.00 — data centers operate 24/7/365 with no weekend reduction.
 
 ### 3.3 Hourly (Daily) Multipliers
 
-**Two seasonal patterns required:**
+**Two seasonal patterns:**
 
-#### Winter Profile (September - May)
+#### Winter Profile (months outside summer set)
 
-When outdoor temp < ~15°C, full free cooling with **completely flat profile**:
+Completely flat: all hours = 1.00. Free cooling means no hourly variation.
 
-| Hour | Multiplier |
-|------|-----------|
-| 00-23 (all) | **1.00** |
+#### Summer Profile (months in summer set)
 
-**Peak/minimum ratio: 1.00** (completely flat - pure IT baseload with no cooling variation)
+Cosine bell curve calibrated from liquid-cooled PUE swing:
+- Peak at hour 13 (afternoon warmest), trough at hour 1 (night coolest)
+- **Peak/min ratio: ~1.09x** (very modest — liquid cooling dramatically reduces hourly swing vs old air-cooled 2.5x)
+- Normalized to sum = 24.00
 
-#### Summer Profile (June - August)
-
-Large temperature-following swing with compressor cycling. Daily swing is ~50-60% of maximum:
-
-| Hour | Multiplier | Description |
-|------|-----------|-------------|
-| 00:00 | 0.70 | Night - minimal compressors |
-| 01:00 | 0.67 | Night |
-| 02:00 | 0.65 | Night minimum |
-| 03:00 | 0.65 | **Minimum** - coolest outdoor temp |
-| 04:00 | 0.65 | Minimum |
-| 05:00 | 0.70 | Pre-dawn |
-| 06:00 | 0.80 | Dawn, temps rising |
-| 07:00 | 0.92 | Morning ramp |
-| 08:00 | 1.05 | Compressors ramping up |
-| 09:00 | 1.20 | Warming rapidly |
-| 10:00 | 1.35 | Late morning |
-| 11:00 | 1.48 | Approaching peak |
-| 12:00 | 1.56 | Solar noon |
-| 13:00 | 1.60 | **Peak - warmest hour** |
-| 14:00 | 1.56 | Afternoon peak |
-| 15:00 | 1.48 | Afternoon decline starts |
-| 16:00 | 1.35 | Cooling begins |
-| 17:00 | 1.20 | Evening transition |
-| 18:00 | 1.05 | Compressors reducing |
-| 19:00 | 0.92 | Evening cooling |
-| 20:00 | 0.82 | Night transition |
-| 21:00 | 0.76 | Night mode |
-| 22:00 | 0.73 | Night mode |
-| 23:00 | 0.70 | Night mode |
-
-**Sum = 24.00** ✓
-**Peak/minimum ratio: ~2.5** (13:00 vs 03:00)
+The amplitude is derived from the day-to-day PUE variation in the Airon data (p5/p95 of summer months), converted from air-cooled to liquid-cooled PUE using the scaling formula from the Excel sheet.
 
 ---
 
 ## Part 4: Key Characteristics Summary
 
-### 4.1 Load Profile Fingerprint
+### 4.1 Load Profile Fingerprint (Liquid-Cooled Hyperscale)
 
 | Characteristic | Value | Source |
 |---------------|-------|--------|
 | Annual load factor | 85-90% | Industry standard |
-| Seasonal ratio (July/Jan) | **~3.3x** | Swedish empirical data |
+| Seasonal ratio (July/Jan) | **~1.07x** | Airon liquid-cooled data |
 | Weekly variation | None | Industry standard |
-| Daily variation (winter) | **0%** (flat) | Empirical data |
-| Daily variation (summer) | **±60%** (0.65→1.60) | Empirical data |
-| Summer hourly peak/min | **~2.5x** | Temperature-following |
-| Peak hour | 13:00-14:00 | Temperature-following |
+| Daily variation (winter) | **0%** (flat) | Free cooling months |
+| Daily variation (summer) | **~±4.5%** | Calibrated from LC PUE |
+| Summer hourly peak/min | **~1.09x** | Liquid-cooled PUE swing |
+| Peak hour | 13:00 | Temperature-following |
 | Peak month | July | Cooling demand |
-| Cooling share of total | 30-40% | Industry sources |
-| Transition | **Abrupt** (Jun start, Aug end) | Swedish empirical data |
+| Cooling share of total | ~10-20% (LC) | Airon data (PUE 1.1–1.25) |
+| Transition | **Gradual** (Apr–Oct) | Derived from PUE threshold |
 
 ### 4.2 Counter-Cyclical Nature
 
@@ -499,11 +425,11 @@ For scenario analysis, key parameters to vary:
 11. Arxiv. "Electricity Price-Aware Scheduling of Data Center Cooling." 2508.03160, 2025.
 
 ### Empirical Data
-12. Operational Swedish data center (air-cooled), 2024 measurement campaign.
+12. Airon effektprofiler (2025) — daily power data and PUE for liquid-cooled hyperscale datacenters.
 
 ---
 
-*Document version: 1.1*
+*Document version: 2.0*
 *Created: November 2025*
-*Updated: November 2025 - Corrected multipliers based on empirical data (3.3x seasonal ratio, 2.5x summer daily swing, flat winter)*
+*Updated: March 2026 — Switched from synthetic air-cooled patterns to Airon real data (liquid-cooled hyperscale). Seasonal ratio reduced from 3.3x to 1.07x, hourly swing from 2.5x to 1.09x.*
 *Purpose: Load curve modeling for Swedish electricity system analysis*

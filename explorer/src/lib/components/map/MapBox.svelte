@@ -11,17 +11,9 @@
     import { SWEDEN_BOUNDS, FIT_BOUNDS_OPTIONS } from '$lib/mapConfig';
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { parameterStore } from '$lib/stores/parameterStore.svelte';
-    import { getSettings } from 'svelte-ux';
     import { viz } from '$lib/colors';
 
-    // Get svelte-ux theme store
-    const { currentTheme } = getSettings();
-
-    // Mapbox style URLs for light and dark themes
-    const MAPBOX_STYLES = {
-        light: import.meta.env.VITE_MAPBOX_STYLE_LIGHT || 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq',
-        dark: 'mapbox://styles/mapbox/dark-v11'
-    };
+    const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE_LIGHT || 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq';
 
     let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'], fadeLeft = false } = $props();
 
@@ -31,7 +23,6 @@
     let mapLoaded = $state(false);
     let hoveredFeatureId = $state(null);
     let fetchedYearData = $state<any[]>([]);
-    let currentMapTheme = $state<'light' | 'dark'>('light');
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -280,13 +271,11 @@
         map = new mapboxgl.Map({
             container: mapContainer,
             accessToken: import.meta.env.VITE_MAPBOX_TOKEN,
-            style: MAPBOX_STYLES[$currentTheme.dark ? 'dark' : 'light'],
+            style: MAPBOX_STYLE,
             bounds: SWEDEN_BOUNDS,
             fitBoundsOptions: { ...FIT_BOUNDS_OPTIONS, padding: getFitPadding() },
             attributionControl: false // Hide Mapbox logo and info button
         });
-
-        currentMapTheme = $currentTheme.dark ? 'dark' : 'light';
 
         popup = new mapboxgl.Popup({
             closeButton: false,
@@ -409,116 +398,6 @@
                     popup.setDOMContent(createPopupContent(feature.properties, true));
                 }
             }
-        }
-    });
-
-    // Switch map style when theme changes
-    $effect(() => {
-        if (!map || !mapLoaded) return;
-
-        const newTheme = $currentTheme.dark ? 'dark' : 'light';
-
-        // Only change if theme actually changed
-        if (newTheme !== currentMapTheme) {
-            const newStyle = MAPBOX_STYLES[newTheme];
-            map.once('styledata', () => {
-                // Re-add data layers after style loads
-                if (geojsonData && yearData && year) {
-                    map.addSource('counties', {
-                        type: 'geojson',
-                        data: mergedData,
-                    });
-
-                    map.addLayer({
-                        id: 'county-fill',
-                        type: 'fill',
-                        source: 'counties',
-                        paint: {
-                            'fill-color': [
-                                'interpolate',
-                                ['linear'],
-                                ['get', 'total'],
-                                lower_bound + (upper_bound - lower_bound) * viz.mapStops[0], viz.mapGradient[0],
-                                lower_bound + (upper_bound - lower_bound) * viz.mapStops[1], viz.mapGradient[1],
-                                lower_bound + (upper_bound - lower_bound) * viz.mapStops[2], viz.mapGradient[2],
-                                lower_bound + (upper_bound - lower_bound) * viz.mapStops[3], viz.mapGradient[3],
-                                lower_bound + (upper_bound - lower_bound) * viz.mapStops[4], viz.mapGradient[4],
-                            ],
-                            'fill-opacity': 0.7,
-                        },
-                    });
-
-                    map.addLayer({
-                        id: 'county-hover',
-                        type: 'fill',
-                        source: 'counties',
-                        layout: {},
-                        paint: {
-                            'fill-color': '#ffffff',
-                            'fill-opacity': [
-                                'case',
-                                ['boolean', ['feature-state', 'hover'], false],
-                                0.4,
-                                0
-                            ]
-                        }
-                    });
-
-                    map.addLayer({
-                        id: 'county-border',
-                        type: 'line',
-                        source: 'counties',
-                        paint: { 'line-color': '#000000', 'line-width': 1, 'line-opacity': 0.33 },
-                    });
-
-                    // Re-attach event listeners after style change
-                    map.on('mouseenter', 'county-fill', (e) => {
-                        if (!stickyPopup && e.features.length > 0) {
-                            const feature = e.features[0];
-                            openPopup(e.lngLat, feature.properties);
-                        }
-                        map.getCanvas().style.cursor = 'pointer';
-                    });
-
-                    map.on('mousemove', 'county-fill', (e) => {
-                        const id = e.features[0].id;
-
-                        if (hoveredFeatureId !== null && hoveredFeatureId !== id) {
-                            map.setFeatureState({ source: 'counties', id: hoveredFeatureId }, { hover: false });
-                        }
-
-                        hoveredFeatureId = id;
-                        map.setFeatureState({ source: 'counties', id }, { hover: true });
-
-                        if (!stickyPopup) {
-                            openPopup(e.lngLat, e.features[0].properties);
-                        }
-                    });
-
-                    map.on('mouseleave', 'county-fill', () => {
-                        if (!stickyPopup) {
-                            closePopup();
-                        }
-                        if (hoveredFeatureId !== null) {
-                            map.setFeatureState({ source: 'counties', id: hoveredFeatureId }, { hover: false });
-                        }
-                        hoveredFeatureId = null;
-
-                        map.getCanvas().style.cursor = '';
-                    });
-
-                    map.on('click', 'county-fill', (e) => {
-                        const properties = e.features[0].properties;
-                        geography = properties.geo_id;
-                        openPopup(e.lngLat, properties, true);
-                    });
-
-                    // Update current theme tracking
-                    currentMapTheme = newTheme;
-                }
-            });
-
-            map.setStyle(newStyle);
         }
     });
 

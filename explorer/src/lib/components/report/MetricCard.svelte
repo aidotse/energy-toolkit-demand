@@ -45,7 +45,7 @@
 </script>
 
 <div
-	class="metric-card rounded-lg p-4 {className}"
+	class="metric-card rounded-lg p-4 pb-6 {className}"
 	style="background-color: {viz.teal[900]};"
 >
 	<!-- Icon (optional) -->
@@ -72,15 +72,15 @@
 		</div>
 	{/if}
 
-	<!-- Trend indicator (optional) -->
-	{#if trend && trendLabel}
+	<!-- Trend indicator (optional) — commented out until meaningful content for all cards -->
+	<!-- {#if trend && trendLabel}
 		<div class="metric-trend mt-2 pt-2 border-t border-white/20">
 			<span class="text-[10px] font-medium {trendColors[trend]}">
 				{#if trend === 'up'}↑{:else if trend === 'down'}↓{:else}→{/if}
 				{trendLabel}
 			</span>
 		</div>
-	{/if}
+	{/if} -->
 </div>
 
 <style>

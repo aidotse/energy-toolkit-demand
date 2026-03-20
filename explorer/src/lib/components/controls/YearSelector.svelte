@@ -49,8 +49,8 @@
 	<select
 		value={value}
 		onchange={handleChange}
-		class="w-full rounded-lg border border-gray-300 dark:border-gray-600
-		       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+		class="w-full rounded-lg border border-gray-300
+		       bg-white text-gray-900
 		       focus:ring-2 focus:ring-primary focus:border-transparent
 		       {sizeClasses[size]} {className}"
 	>
@@ -68,10 +68,10 @@
 			value={value}
 			oninput={handleChange}
 			class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
-			       dark:bg-gray-700
+			      
 			       accent-primary"
 		/>
-		<div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+		<div class="flex justify-between text-xs text-gray-600">
 			<span>{minYear}</span>
 			<span class="font-semibold text-primary">{value}</span>
 			<span>{maxYear}</span>

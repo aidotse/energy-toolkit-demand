@@ -78,3 +78,21 @@ class ChartParametersStore {
 }
 
 export const chartParametersStore = new ChartParametersStore();
+
+/**
+ * Charts Global Store
+ *
+ * Persists the charts page's global parameters (geography, year, segment, resolution)
+ * across SPA navigation. Separate from per-chart overrides above.
+ */
+function createChartsGlobalStore() {
+	let params = $state<ChartParameters | null>(null);
+
+	return {
+		get params() { return params; },
+		set params(v: ChartParameters | null) { params = v; },
+		get initialized() { return params !== null; }
+	};
+}
+
+export const chartsGlobalStore = createChartsGlobalStore();

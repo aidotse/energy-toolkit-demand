@@ -37,16 +37,16 @@
 	}
 </script>
 
-<div class="report-map-layout min-h-screen bg-gray-50 dark:bg-gray-900">
+<div class="report-map-layout min-h-screen bg-gray-50">
 	<!-- Hero Section (Full Width) -->
 	<div
-		class="hero-section bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-950 text-white py-12 md:py-16"
+		class="hero-section bg-gradient-to-br from-primary-600 to-primary-800 text-white py-12 md:py-16"
 	>
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
 				Sveriges framtida elbehov
 			</h1>
-			<p class="text-lg md:text-xl text-primary-100 dark:text-primary-200">
+			<p class="text-lg md:text-xl text-primary-100">
 				Prognoser och scenarier 2025–2050
 			</p>
 		</div>
@@ -60,7 +60,7 @@
 				<!-- Executive Summary -->
 				<section>
 					<div class="mb-6 max-w-3xl">
-						<p class="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+						<p class="text-base leading-relaxed text-gray-700">
 							Det råder idag en bred konsensus om att vårt elbehov kommer öka markant i
 							framtiden. Detta verktyg visualiserar och förklarar olika scenarier för Sveriges
 							framtida elbehov baserat på historisk data och antaganden om elektrifiering,
@@ -121,10 +121,10 @@
 
 				<!-- Time Evolution -->
 				<section id="time-evolution">
-					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
 						Hur utvecklas elbehovet över tid?
 					</h2>
-					<p class="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-3xl">
+					<p class="text-base text-gray-600 mb-6 max-w-3xl">
 						Historisk trend och framtidsprojektioner visar en tydlig ökning driven av
 						elektrifiering av transporter och industri.
 					</p>
@@ -142,7 +142,7 @@
 									class="h-full"
 								/>
 							</div>
-							<p class="text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
+							<p class="text-sm text-gray-600 max-w-3xl">
 								<strong>Figur 1:</strong> Årligt elbehov för Sverige 2025–2050. Kurvan visar en
 								tydlig uppåtgående trend med en acceleration efter 2030.
 							</p>
@@ -161,7 +161,7 @@
 									class="h-full"
 								/>
 							</div>
-							<p class="text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
+							<p class="text-sm text-gray-600 max-w-3xl">
 								<strong>Figur 2:</strong> Dagligt mönster för ett typiskt år visar variationer i
 								elbehov över dygnet och mellan säsonger.
 							</p>
@@ -185,17 +185,17 @@
 
 				<!-- Segmental Drivers -->
 				<section id="segmental-drivers">
-					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
 						Vad driver förändringen?
 					</h2>
-					<p class="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-3xl">
+					<p class="text-base text-gray-600 mb-6 max-w-3xl">
 						Olika sektorer bidrar olika mycket till den ökade elefterfrågan.
 					</p>
 
 					<div class="space-y-6">
 						<!-- Text content -->
 						<div class="space-y-3">
-							<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+							<p class="text-gray-700 leading-relaxed">
 								Elektrifieringen av Sverige sker i olika takt inom olika sektorer. <strong
 									>Bostäder och service</strong
 								>
@@ -203,7 +203,7 @@
 								<strong>transport</strong> och <strong>industri</strong> som driver de största förändringarna
 								framåt.
 							</p>
-							<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+							<p class="text-gray-700 leading-relaxed">
 								Transport elektrifieras snabbast, med elbilar som blir dominant efter 2035. Industrin
 								omställer gradvis till elektrifierade processer, särskilt stålproduktion och
 								petrokemi.
@@ -221,7 +221,7 @@
 									class="h-full"
 								/>
 							</div>
-							<p class="text-sm text-gray-600 dark:text-gray-400">
+							<p class="text-sm text-gray-600">
 								<strong>Figur 3:</strong> Sektorsfördelning av elbehov år {year}.
 							</p>
 						</div>
@@ -242,10 +242,10 @@
 
 				<!-- Flexibility & Power -->
 				<section id="flexibility">
-					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
 						När behövs elen?
 					</h2>
-					<p class="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-3xl">
+					<p class="text-base text-gray-600 mb-6 max-w-3xl">
 						Effektbehov varierar kraftigt över dygnet och året, vilket kräver flexibilitet i
 						elsystemet.
 					</p>
@@ -263,7 +263,7 @@
 									class="h-full"
 								/>
 							</div>
-							<p class="text-sm text-gray-600 dark:text-gray-400">
+							<p class="text-sm text-gray-600">
 								<strong>Figur 4:</strong> Fördelning av timeffekt under året. Visar hur ofta olika
 								effektnivåer förekommer.
 							</p>
@@ -288,10 +288,10 @@
 
 				<!-- Conclusions -->
 				<section id="conclusions">
-					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+					<h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
 						Vad betyder detta?
 					</h2>
-					<p class="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-3xl">
+					<p class="text-base text-gray-600 mb-6 max-w-3xl">
 						Sammanfattning och implikationer för Sveriges elsystem
 					</p>
 
@@ -322,8 +322,8 @@
 							{/snippet}
 						</InsightBox>
 
-						<div class="prose prose-lg dark:prose-invert max-w-3xl text-gray-700 dark:text-gray-300">
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
+						<div class="prose prose-lg max-w-3xl text-gray-700">
+							<h3 class="text-xl font-semibold text-gray-900 mb-2">
 								Implikationer för elnätet
 							</h3>
 							<p>
@@ -332,7 +332,7 @@
 								de stora variationerna i effektbehov.
 							</p>
 
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2 mt-6">
+							<h3 class="text-xl font-semibold text-gray-900 mb-2 mt-6">
 								Nästa steg
 							</h3>
 							<p>
@@ -349,7 +349,7 @@
 								</a>
 								<a
 									href="/about"
-									class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-primary-600 dark:hover:border-primary-400 rounded-lg font-medium transition-colors"
+									class="px-6 py-3 border-2 border-gray-300 hover:border-primary-600 rounded-lg font-medium transition-colors"
 								>
 									Läs mer om metoden
 								</a>
@@ -362,7 +362,7 @@
 			<!-- Right Column: Fixed Map (1/3 width) -->
 			<div class="lg:col-span-1">
 				<div class="lg:sticky lg:top-8">
-					<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+					<div class="bg-white rounded-lg shadow-lg p-4">
 						<Map
 							geojsonData={data.geojson}
 							year={year}

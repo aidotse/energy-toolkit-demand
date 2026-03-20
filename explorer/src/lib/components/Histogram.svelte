@@ -331,7 +331,7 @@
 			root: {
 				variant: 'none',
 				contained: 'window',
-				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 border border-gray-200 backdrop-blur-sm'
 			},
 			item: {
 				label: '',

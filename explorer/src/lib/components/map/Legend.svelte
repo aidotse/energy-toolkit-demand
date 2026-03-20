@@ -20,7 +20,7 @@
     <div class="flex flex-row justify-between w-full">
         {#each demandLevels as level}
             <div class="flex flex-col items-center text-[10px] lg:text-xs px-2">
-                <span>{formatNumber(level.value, getEnergyPrefix(), 'Wh')}</span>
+                <span>{formatNumber(level.value, getEnergyPrefix(), 'Wh', 0)}</span>
             </div>
         {/each}
     </div>

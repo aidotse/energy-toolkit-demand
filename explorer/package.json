@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "login": "aws sso login --profile AWSAdministratorAccess-600627346413",
-    "dev": "vite dev",
+    "dev": "vite dev --host",
     "dev:api": "vite dev --mode production",
     "build": "vite build",
     "preview": "vite preview",

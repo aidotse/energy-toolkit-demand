@@ -42,28 +42,28 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<div class="min-h-screen bg-gray-50">
 	<!-- Main content container -->
 	<div class="flex flex-col lg:flex-row">
 		<!-- Left Column: Scrollable Card Content (3/5 width) -->
 		<main class="flex-1 lg:w-3/5 overflow-y-auto p-4 sm:p-6 lg:p-8">
 			<div class="max-w-4xl mx-auto space-y-6">
 			<!-- Title Card -->
-			<div class="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-950 text-white rounded-xl shadow-lg p-6 sm:p-8">
+			<div class="bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-xl shadow-lg p-6 sm:p-8">
 				<h1 class="text-3xl md:text-4xl font-bold mb-3">
 					Sveriges framtida elbehov
 				</h1>
-				<p class="text-lg text-primary-100 dark:text-primary-200">
+				<p class="text-lg text-primary-100">
 					Prognoser och scenarier 2025–2050
 				</p>
 			</div>
 
 			<!-- Executive Summary Card -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-4">
+			<div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+				<h2 class="text-2xl font-bold text-gray-900 mb-4">
 					Sammanfattning
 				</h2>
-				<p class="text-base leading-relaxed text-gray-700 dark:text-gray-300 mb-6">
+				<p class="text-base leading-relaxed text-gray-700 mb-6">
 					Det råder idag en bred konsensus om att vårt elbehov kommer öka markant i
 					framtiden. Detta verktyg visualiserar och förklarar olika scenarier för Sveriges
 					framtida elbehov baserat på historisk data och antaganden om elektrifiering,
@@ -122,11 +122,11 @@
 			</HighlightCard>
 
 			<!-- Time Evolution Card -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+			<div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+				<h2 class="text-2xl font-bold text-gray-900 mb-2">
 					Hur utvecklas elbehovet över tid?
 				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
+				<p class="text-base text-gray-600 mb-6">
 					Historisk trend och framtidsprojektioner visar en tydlig ökning driven av
 					elektrifiering av transporter och industri.
 				</p>
@@ -144,7 +144,7 @@
 								class="h-full"
 							/>
 						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-gray-600">
 							<strong>Figur 1:</strong> Årligt elbehov för Sverige 2025–2050. Kurvan visar en
 							tydlig uppåtgående trend med en acceleration efter 2030.
 						</p>
@@ -163,14 +163,14 @@
 								class="h-full"
 							/>
 						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-gray-600">
 							<strong>Figur 2:</strong> Dagligt mönster för ett typiskt år visar variationer i
 							elbehov över dygnet och mellan säsonger.
 						</p>
 					</div>
 
 					<!-- Insight -->
-					<InsightBox title="Nyckelinsikt: Elektrifiering driver tillväxten">
+					<InsightBox title="Elektrifiering driver tillväxten">
 						{#snippet children()}
 							<p>
 								Den största ökningen av elbehov kommer från <strong
@@ -186,18 +186,18 @@
 			</div>
 
 			<!-- Sectoral Drivers Card -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+			<div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+				<h2 class="text-2xl font-bold text-gray-900 mb-2">
 					Vad driver förändringen?
 				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
+				<p class="text-base text-gray-600 mb-6">
 					Olika sektorer bidrar olika mycket till den ökade elefterfrågan.
 				</p>
 
 				<div class="space-y-6">
 					<!-- Text content -->
 					<div class="space-y-3">
-						<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+						<p class="text-gray-700 leading-relaxed">
 							Elektrifieringen av Sverige sker i olika takt inom olika sektorer. <strong
 								>Bostäder och service</strong
 							>
@@ -205,7 +205,7 @@
 							<strong>transport</strong> och <strong>industri</strong> som driver de största förändringarna
 							framåt.
 						</p>
-						<p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+						<p class="text-gray-700 leading-relaxed">
 							Transport elektrifieras snabbast, med elbilar som blir dominant efter 2035. Industrin
 							omställer gradvis till elektrifierade processer, särskilt stålproduktion och
 							petrokemi.
@@ -223,7 +223,7 @@
 								class="h-full"
 							/>
 						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-gray-600">
 							<strong>Figur 3:</strong> Sektorsfördelning av elbehov år {year}.
 						</p>
 					</div>
@@ -243,11 +243,11 @@
 			</div>
 
 			<!-- Flexibility & Power Card -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+			<div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+				<h2 class="text-2xl font-bold text-gray-900 mb-2">
 					När behövs elen?
 				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
+				<p class="text-base text-gray-600 mb-6">
 					Effektbehov varierar kraftigt över dygnet och året, vilket kräver flexibilitet i
 					elsystemet.
 				</p>
@@ -265,7 +265,7 @@
 								class="h-full"
 							/>
 						</div>
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-gray-600">
 							<strong>Figur 4:</strong> Fördelning av timeffekt under året. Visar hur ofta olika
 							effektnivåer förekommer.
 						</p>
@@ -289,11 +289,11 @@
 			</div>
 
 			<!-- Conclusions Card -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+			<div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+				<h2 class="text-2xl font-bold text-gray-900 mb-2">
 					Vad betyder detta?
 				</h2>
-				<p class="text-base text-gray-600 dark:text-gray-400 mb-6">
+				<p class="text-base text-gray-600 mb-6">
 					Sammanfattning och implikationer för Sveriges elsystem
 				</p>
 
@@ -326,10 +326,10 @@
 
 					<div class="space-y-4">
 						<div>
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
+							<h3 class="text-xl font-semibold text-gray-900 mb-2">
 								Implikationer för elnätet
 							</h3>
-							<p class="text-gray-700 dark:text-gray-300">
+							<p class="text-gray-700">
 								Denna utveckling innebär stora investeringsbehov i både produktionskapacitet och
 								överföringsnät. Särskilt viktigt är att bygga ut flexibla resurser som kan hantera
 								de stora variationerna i effektbehov.
@@ -337,10 +337,10 @@
 						</div>
 
 						<div>
-							<h3 class="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
+							<h3 class="text-xl font-semibold text-gray-900 mb-2">
 								Nästa steg
 							</h3>
-							<p class="text-gray-700 dark:text-gray-300 mb-4">
+							<p class="text-gray-700 mb-4">
 								Utforska olika scenarier i verktyget för att se hur olika antaganden påverkar
 								resultaten. Jämför scenarier för att förstå osäkerhetsspannet.
 							</p>
@@ -354,7 +354,7 @@
 								</a>
 								<a
 									href="/about"
-									class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 hover:border-primary-600 dark:hover:border-primary-400 rounded-lg font-medium transition-colors"
+									class="px-6 py-3 border-2 border-gray-300 hover:border-primary-600 rounded-lg font-medium transition-colors"
 								>
 									Läs mer om metoden
 								</a>

@@ -19,17 +19,17 @@
 	const next = $derived(reports[(currentIndex + 1) % reports.length]);
 </script>
 
-<nav class="flex items-center justify-between mb-6" aria-label="Navigera mellan fördjupningar">
+<nav class="flex items-center justify-center lg:justify-between gap-4 mb-6" aria-label="Navigera mellan fördjupningar">
 	<a
 		href={prev.href}
-		class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+		class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors"
 	>
 		<ChevronLeft class="w-4 h-4" />
 		<span>Fördjupning: {prev.title}</span>
 	</a>
 	<a
 		href={next.href}
-		class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+		class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors"
 	>
 		<span>Fördjupning: {next.title}</span>
 		<ChevronRight class="w-4 h-4" />

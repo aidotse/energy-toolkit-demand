@@ -47,7 +47,7 @@
 	<div class="space-y-4" class:space-y-3={compact}>
 		<!-- Base Scenario Selector -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+			<label class="block text-xs font-medium text-gray-600">
 				Basscenario
 			</label>
 			<div class="flex flex-col gap-1">
@@ -56,8 +56,8 @@
 						onclick={() => handleBaseScenarioChange(scenario.id)}
 						class="w-full px-3 py-2 text-left text-sm rounded-md transition-colors
 							{parameterStore.baseScenario === scenario.id
-							? 'bg-chart-100 dark:bg-chart-900 text-chart-900 dark:text-chart-100 font-medium'
-							: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-750'}"
+							? 'bg-chart-100 text-chart-900 font-medium'
+							: 'bg-gray-50 text-gray-700 hover:bg-gray-100'}"
 					>
 						{scenario.name}
 						{#if scenario.default}
@@ -71,15 +71,15 @@
 		<!-- Parameter Section - Only show for default scenario -->
 		{#if parameterStore.isDefaultScenario}
 			<!-- Divider -->
-			<hr class="border-gray-200 dark:border-gray-700" />
+			<hr class="border-gray-200" />
 
 			<!-- Parameter Groups -->
 			<div class="space-y-2">
 				<div class="flex items-center justify-between">
-					<label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+					<label class="block text-xs font-medium text-gray-600">
 						Parametrar
 						{#if parameterStore.activeParameterCount > 0}
-							<span class="ml-1 px-1.5 py-0.5 bg-chart-100 dark:bg-chart-900 text-chart-900 dark:text-chart-100 rounded text-xs">
+							<span class="ml-1 px-1.5 py-0.5 bg-chart-100 text-chart-900 rounded text-xs">
 								{parameterStore.activeParameterCount}
 							</span>
 						{/if}
@@ -87,7 +87,7 @@
 					{#if showReset && parameterStore.hasActiveParameters}
 						<button
 							onclick={() => parameterStore.resetToBaseline()}
-							class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
+							class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
 							title="Återställ alla parametrar"
 						>
 							<RotateCcw class="w-3 h-3" />
@@ -101,7 +101,7 @@
 						<div class="space-y-2">
 							<!-- Segment Label -->
 							<div class="flex items-center gap-2">
-								<span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+								<span class="text-xs font-medium text-gray-500">
 									{SEGMENT_LABELS[segment] || segment}
 								</span>
 								{#if params.some(p => parameterStore.getParameterValue(p.name) > 0)}
@@ -120,10 +120,10 @@
 										<!-- Default slider component -->
 										<div class="space-y-1">
 											<div class="flex items-center justify-between text-xs">
-												<span class="text-gray-600 dark:text-gray-400">
+												<span class="text-gray-600">
 													{getParamTypeLabel(param.name)}
 												</span>
-												<span class="font-medium text-gray-900 dark:text-gray-100">
+												<span class="font-medium text-gray-900">
 													{getParameterLabel(param, currentValue)}
 												</span>
 											</div>
@@ -144,8 +144,8 @@
 
 			<!-- Active Parameters Summary -->
 			{#if showSummary && parameterStore.hasActiveParameters}
-				<div class="p-2 bg-chart-100/50 dark:bg-chart-900/30 rounded-md">
-					<p class="text-xs text-chart-900 dark:text-chart-100">
+				<div class="p-2 bg-chart-100/50 rounded-md">
+					<p class="text-xs text-chart-900">
 						<strong>Aktiva:</strong>
 						{#each Object.entries(parameterStore.parameterValues).filter(([_, v]) => v > 0) as [name, index], i}
 							{@const param = parameterStore.getParameter(name)}
@@ -159,15 +159,15 @@
 			{/if}
 		{:else}
 			<!-- Message when non-default scenario is selected -->
-			<div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-				<p class="text-xs text-gray-500 dark:text-gray-400">
+			<div class="p-3 bg-gray-50 rounded-md">
+				<p class="text-xs text-gray-500">
 					Parametrar kan endast justeras för <strong>{parameterStore.defaultScenario?.name || 'Beslutad Policy'}</strong>-scenariot.
 				</p>
 			</div>
 		{/if}
 	</div>
 {:else}
-	<div class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+	<div class="text-sm text-gray-500 py-4 text-center">
 		Laddar parametrar...
 	</div>
 {/if}

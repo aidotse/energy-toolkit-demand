@@ -15,7 +15,7 @@
 </script>
 
 <div
-	class="sticky top-14 z-40 bg-gray-50 dark:bg-gray-800 border-b border-gray-200/10 transition-all duration-300 {navigationState.panelExpanded
+	class="sticky top-14 z-40 bg-gray-50 border-b border-gray-200/10 transition-all duration-300 {navigationState.panelExpanded
 		? 'h-32'
 		: 'h-8'}"
 >
@@ -24,12 +24,12 @@
 			<!-- Expanded State: Full Parameter Controls -->
 			<div class="px-6 py-4 h-full">
 				<div class="flex items-center justify-between mb-3">
-					<h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+					<h2 class="text-sm font-semibold text-gray-700">
 						Scenario Selection
 					</h2>
 					<button
 						onclick={() => navigationState.togglePanel()}
-						class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+						class="p-1 rounded hover:bg-gray-200 transition-colors"
 						aria-label="Collapse panel"
 					>
 						<ChevronUp class="w-5 h-5" />
@@ -39,7 +39,7 @@
 				<!-- Parameter Controls Placeholder -->
 				<div class="space-y-2">
 					<div class="flex items-center gap-2">
-						<span class="text-xs uppercase font-medium text-gray-600 dark:text-gray-400">
+						<span class="text-xs uppercase font-medium text-gray-600">
 							Current:
 						</span>
 						<div
@@ -50,7 +50,7 @@
 					</div>
 
 					<!-- Placeholder for parameter chips -->
-					<div class="text-xs text-gray-500 dark:text-gray-400">
+					<div class="text-xs text-gray-500">
 						Scenario controls coming soon...
 					</div>
 				</div>
@@ -59,9 +59,9 @@
 			<!-- Collapsed State: Just Scenario Name + Expand Icon -->
 			<button
 				onclick={() => navigationState.togglePanel()}
-				class="flex items-center justify-between px-6 h-full w-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+				class="flex items-center justify-between px-6 h-full w-full hover:bg-gray-100 transition-colors"
 			>
-				<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+				<span class="text-sm font-medium text-gray-700">
 					{currentScenarioName}
 				</span>
 				<ChevronDown class="w-5 h-5 text-gray-500" />

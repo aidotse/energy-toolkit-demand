@@ -41,12 +41,53 @@
 		}
 	});
 
-	// Initialize svelte-ux settings with theme support
+	// Initialize svelte-ux settings
 	settings({
 		themes: {
 			light: ['light'],
-			dark: ['dark']
 		}
+	});
+
+	// Touch-friendly tooltips: on touch devices, prevent pointerleave from
+	// hiding the tooltip immediately (so user can read it after lifting finger).
+	// Tooltip hides when tapping outside the chart area.
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+
+		let isTouchDevice = false;
+
+		function onTouchStart() {
+			isTouchDevice = true;
+		}
+
+		function onPointerLeave(e: PointerEvent) {
+			if (!isTouchDevice || e.pointerType !== 'touch') return;
+			const target = e.target as HTMLElement;
+			if (!target?.closest?.('.TooltipContext')) return;
+			// Prevent layerchart from hiding tooltip on finger lift
+			e.stopPropagation();
+		}
+
+		function onPointerDown(e: PointerEvent) {
+			if (!isTouchDevice || e.pointerType !== 'touch') return;
+			const target = e.target as HTMLElement;
+			// If tapping outside a chart, clear any visible tooltips
+			if (!target?.closest?.('.TooltipContext')) {
+				document.querySelectorAll('.TooltipContext').forEach((el) => {
+					el.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+				});
+			}
+		}
+
+		document.addEventListener('touchstart', onTouchStart, { once: true, passive: true });
+		document.addEventListener('pointerleave', onPointerLeave, true); // capture phase
+		document.addEventListener('pointerdown', onPointerDown, { passive: true });
+
+		return () => {
+			document.removeEventListener('touchstart', onTouchStart);
+			document.removeEventListener('pointerleave', onPointerLeave, true);
+			document.removeEventListener('pointerdown', onPointerDown);
+		};
 	});
 </script>
 
@@ -55,7 +96,7 @@
 	<TopNavigationBar />
 
 	<!-- Main Content Area -->
-	<div class="pt-14">
+	<div class="pt-0 lg:pt-14">
 		{@render children()}
 	</div>
 </ParaglideJS>

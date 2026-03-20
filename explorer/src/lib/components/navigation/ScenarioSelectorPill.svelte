@@ -48,7 +48,7 @@
 	class="
 		inline-flex items-center gap-2
 		py-2 h-9
-		{embedded ? 'px-3 w-full bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-lg' : 'px-4 max-w-[300px] rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-primary hover:shadow-sm'}
+		{embedded ? 'px-3 w-full bg-transparent hover:bg-gray-100 rounded-l-lg' : 'px-4 max-w-[300px] rounded-full border border-gray-300 bg-white hover:border-primary hover:shadow-sm'}
 		transition-all duration-200
 		text-sm font-medium
 		whitespace-nowrap

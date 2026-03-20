@@ -71,7 +71,7 @@
 		{@const tooltip = getParameterTooltip(scenario)}
 
 		<button
-			class="legend-item flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+			class="legend-item flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
 			title={tooltip}
 			onmouseenter={() => onHover?.(scenarioId)}
 			onmouseleave={() => onHover?.(null)}
@@ -85,13 +85,13 @@
 
 			<!-- Scenario name -->
 			<div class="legend-label flex items-center gap-2">
-				<span class="text-sm font-medium text-gray-900 dark:text-white">
+				<span class="text-sm font-medium text-gray-900">
 					Scenario {index + 1}
 				</span>
 
 				<!-- Difference indicators -->
 				{#if showDifferences && !isBaseline && absoluteDiff !== undefined}
-					<span class="text-xs text-gray-600 dark:text-gray-400">
+					<span class="text-xs text-gray-600">
 						({formatPercentageDiff(percentageDiff || 0)})
 					</span>
 				{/if}

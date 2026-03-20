@@ -48,8 +48,8 @@
 
 			<!-- Text -->
 			<div class="pt-1.5 pb-1">
-				<p class="font-semibold text-gray-900 dark:text-gray-100 leading-tight">{step.title}</p>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{step.desc}</p>
+				<p class="font-semibold text-gray-900 leading-tight">{step.title}</p>
+				<p class="text-sm text-gray-500 mt-1">{step.desc}</p>
 			</div>
 		</div>
 	{/each}

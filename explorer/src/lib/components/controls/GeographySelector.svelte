@@ -70,8 +70,8 @@
 	<select
 		value={value}
 		onchange={handleSelectChange}
-		class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
-		       bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+		class="w-full px-4 py-2 rounded-lg border border-gray-300
+		       bg-white text-gray-900
 		       focus:ring-2 focus:ring-primary focus:border-transparent
 		       {className}"
 	>
@@ -90,7 +90,7 @@
 				class="inline-flex items-center gap-1.5 rounded-full border-2 transition-all
 				       {value === geography
 						? 'border-primary bg-primary text-white shadow-sm'
-						: 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary hover:shadow-sm'}
+						: 'border-gray-300 bg-white text-gray-700 hover:border-primary hover:shadow-sm'}
 				       {pillSizeClasses[size]}
 				       focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 				role="radio"
@@ -109,8 +109,8 @@
 				onclick={() => handleChange(geography)}
 				class="w-full flex items-center gap-2 rounded-md text-left transition-colors
 					{value === geography
-						? 'bg-chart-700/10 text-chart-900 dark:text-chart-100 font-medium'
-						: 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+						? 'bg-chart-700/10 text-chart-900 font-medium'
+						: 'text-gray-700 hover:bg-gray-100'}
 					px-2.5 py-1.5 text-xs"
 			>
 				<MapPin class="w-3.5 h-3.5 flex-shrink-0" />

@@ -1,7 +1,8 @@
 export const formatNumber = (
     num: number,
     inputPrefix: string,
-    unit: string
+    unit: string,
+    maxDecimals?: number
 ): string => {
     const prefixes = ['', 'k', 'M', 'G', 'T', 'P', 'E'];
     const inputIndex = prefixes.indexOf(inputPrefix);
@@ -20,7 +21,10 @@ export const formatNumber = (
     }
 
     // Format the number with up to two decimal places
-    const formattedNum = num.toFixed(num < 10 ? 2 : num < 100 ? 1 : 0);
+    const decimals = maxDecimals !== undefined
+        ? maxDecimals
+        : (num < 10 ? 2 : num < 100 ? 1 : 0);
+    const formattedNum = num.toFixed(decimals);
 
     // Return the formatted number with the correct output prefix and unit
     return `${formattedNum} ${prefixes[outputIndex]}${unit}`;

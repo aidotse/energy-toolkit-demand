@@ -63,7 +63,7 @@
 
 </script>
 
-<div class="flex flex-col {embedded ? 'w-full' : 'w-40 2xl:w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-sm'} pt-1 px-3 pb-2">
+<div class="flex flex-col {embedded ? 'w-full' : 'w-40 2xl:w-72 bg-white/90 backdrop-blur-sm rounded-full shadow-sm'} pt-1 px-3 pb-2">
     <div class="relative h-7">
         <input
             bind:this={sliderRef}

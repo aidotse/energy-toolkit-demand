@@ -61,8 +61,8 @@
 <div class="space-y-1">
 	{#if !compact}
 		<div class="flex items-center justify-between text-xs">
-			<span class="text-gray-600 dark:text-gray-400">{parameter.description || parameter.name}</span>
-			<span class="font-medium text-gray-900 dark:text-gray-100">{currentLabel}</span>
+			<span class="text-gray-600">{parameter.description || parameter.name}</span>
+			<span class="font-medium text-gray-900">{currentLabel}</span>
 		</div>
 	{/if}
 
@@ -72,7 +72,7 @@
 		max={sortedValues.length - 1}
 		value={sliderPosition}
 		onchange={handleInput}
-		class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer parameter-slider"
+		class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer parameter-slider"
 	/>
 
 	{#if !compact}
@@ -81,7 +81,6 @@
 				<span
 					class:font-medium={val.index === value}
 					class:text-chart-700={val.index === value}
-					class:dark:text-chart-300={val.index === value}
 				>
 					{val.label}
 				</span>

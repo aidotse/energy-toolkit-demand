@@ -71,18 +71,18 @@
 {#if navigationState.scenarioDropdownOpen}
 	<div
 		bind:this={dropdownRef}
-		class="fixed top-32 lg:top-36 right-4 lg:right-auto lg:left-2/3 w-[320px] max-w-[90vw] max-h-[70vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden flex flex-col"
+		class="fixed top-32 lg:top-36 right-4 lg:right-auto lg:left-2/3 w-[320px] max-w-[90vw] max-h-[70vh] bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden flex flex-col"
 	>
 		<!-- Header -->
 		<div
-			class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+			class="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50"
 		>
 			<div>
-				<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Scenarioinställningar</h3>
-				<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+				<h3 class="text-sm font-semibold text-gray-900">Scenarioinställningar</h3>
+				<p class="text-xs text-gray-500 mt-0.5">
 					{currentBaseLabel}
 					{#if parameterStore.activeParameterCount > 0}
-						<span class="text-primary-600 dark:text-primary-400">
+						<span class="text-primary-600">
 							+{parameterStore.activeParameterCount} justeringar
 						</span>
 					{/if}
@@ -90,7 +90,7 @@
 			</div>
 			<button
 				onclick={() => navigationState.toggleScenarioDropdown()}
-				class="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+				class="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
 				aria-label="Stäng"
 			>
 				<X class="w-4 h-4" />

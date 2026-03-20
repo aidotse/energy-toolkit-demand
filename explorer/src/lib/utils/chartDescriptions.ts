@@ -89,10 +89,12 @@ export const CHART_DESCRIPTIONS: Record<
 	'sector-pie': (y, g, seg, s) => `Sektorsfördelning av elbehov för ${g} år ${y} ${s}`,
 	'segment-arc': (y, g, seg, s) => `Sektorsfördelning av elbehov för ${g} år ${y} ${s}`,
 	'geo-segment': (y, g, seg, s) => `Sektorernas andel av elbehovet per län år ${y} ${s}`,
-	'geo-bar': (y, g, seg, s) => `Elbehov per region år ${y} ${s}`,
+	'geo-bar': (y, g, seg, s) => `Elbehov per region${seg} år ${y} ${s}`,
 	'period-heatmap': (y, g, seg, s) =>
-		`Elbehov fördelat på månad och tid på dygnet för ${g}${seg} år ${y} ${s}`,
+		`Visar genomsnittlig effekt (GW) per månad och tid på dygnet för ${g}${seg} år ${y} ${s}`,
 	timeline: (y, g, seg, s) => `Elbehov över tid för ${g}${seg} år ${y} ${s}`,
-	histogram: (y, g, seg, s) => `Effektbehov fördelat över året för ${g}${seg} år ${y} ${s}`,
+	histogram: (y, g, seg, s) => `Visar hur många timmar per år som effektbehovet ligger på en given nivå för ${g}${seg} år ${y} — illustrerar hur ofta efterfrågan är hög respektive låg. ${s}`,
+	'stacked-sector': (y, g, seg, s) => `Elbehov per sektor över tid för ${g} 2025–2050 ${s}`,
+	'weekly-profile': (y, g, seg, s) => `Genomsnittlig veckobelastning per månad för ${g}${seg} år ${y} ${s}`,
 	map: (y, g, seg, s) => `Geografisk fördelning av elbehov år ${y} ${s}`,
 };

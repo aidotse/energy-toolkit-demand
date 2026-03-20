@@ -1,18 +1,18 @@
 ---
 title: "Metodik"
-description: "Så bygger vi prognoserna – från Energimyndighetens officiella scenarier till detaljerade timkurvor för varje län, segment och scenario. Hela kedjan är öppen och reproducerbar."
+description: "Så bygger vi scenarierna – från Energimyndighetens långsiktiga scenarier till detaljerade timkurvor för varje län, segment och scenario. Hela kedjan är öppen och reproducerbar."
 lastUpdated: "2026-03-03"
 layout: reports
 ---
 
-Prognoserna bygger på en kedja i fem steg. Varje steg förädlar data från det
-föregående — från grova femårsprognoser till detaljerade timvärden som kan utforskas
+Scenarierna bygger på en kedja i fem steg. Varje steg förädlar data från det
+föregående — från grova femårsscenarier till detaljerade timvärden som kan utforskas
 per län, segment och scenario.
 
 ::MethodologySteps{}
 
 :::InsightBox{variant="insight" title="Nyckelprincipen"}
-Alla prognoser utgår från Energimyndighetens officiella scenarier. Vi lägger inte till egna
+Alla scenarier utgår från Energimyndighetens långsiktiga scenarier. Vi lägger inte till egna
 antaganden om energiutvecklingen — vi förädlar befintlig data till högre tidsupplösning och
 gör den möjlig att utforska interaktivt.
 :::
@@ -64,11 +64,14 @@ och förbrukningsmönster:
 
 #### Regional upplösning
 
-Prognoserna finns för alla 21 svenska län samt ett aggregerat riksvärde. Den regionala
+Scenarierna finns för alla 21 svenska län samt ett aggregerat riksvärde. Den regionala
 fördelningen varierar efter sektor: industrins placering bygger på befintliga
 industrianläggningar, bostäder och service fördelas efter befolkningsunderlag,
 datacenter efter inventering av planerade och befintliga anläggningar, och transport
-efter regionala elektrifieringsprognoser.
+efter regionala elektrifieringsscenarier.
+
+Läs mer om den regionala nedbrytningen på Energimyndighetens sida
+[Framtida elbehov i ditt län](https://www.energimyndigheten.se/framtida-elbehov-i-ditt-lan/).
 
 ## Steg 2: Från femårsdata till årsdata
 
@@ -192,7 +195,7 @@ effekttoppar.
 
 :::InsightBox{variant="info" title="Parametrarna ändrar inte basantagandena"}
 Tillväxt- och flexparametrarna appliceras ovanpå Energimyndighetens scenarier.
-De ersätter aldrig grundprognosen — de låter dig utforska hur resultat påverkas av
+De ersätter aldrig grundscenariot — de låter dig utforska hur resultat påverkas av
 rimliga avvikelser från baslinjen.
 :::
 <!-- -->
@@ -232,6 +235,6 @@ för att bevara realistiska mönster.
 
 :::InsightBox{variant="insight" title="Transparens genom hela kedjan"}
 All kod, alla datakällor och alla antaganden är öppna. Varje steg kan granskas,
-ifrågasättas och förbättras. Det är en medveten designprincip — prognoser som inte
+ifrågasättas och förbättras. Det är en medveten designprincip — scenarier som inte
 kan förklaras bör inte användas för beslut.
 :::

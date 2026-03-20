@@ -28,7 +28,7 @@
 
 <div class="space-y-2">
 	<!-- Group Label -->
-	<label class="text-xs uppercase font-medium text-gray-600 dark:text-gray-400">
+	<label class="text-xs uppercase font-medium text-gray-600">
 		{label}
 	</label>
 

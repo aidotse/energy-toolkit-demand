@@ -1,0 +1,1104 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Demand Toolkit API",
+    "version": "0.0.5",
+    "description": "# Demand Toolkit API\n\nThe Demand Toolkit API provides access to demand forecasting data across multiple\ntemporal resolutions and geographic boundaries. This API serves as the data layer\nfor the complete Demand Toolkit framework, which includes:\n\n- **Python Generator**: Creates demand forecasts and scenarios\n- **Node.js API**: Serves forecasting data (this API)\n- **Svelte Explorer**: Interactive web interface for data exploration\n\n## Key Features\n\n- **Multi-format Output**: JSON and GeoJSON support for geographic data\n- **Temporal Flexibility**: Hourly to yearly resolution support\n- **Scenario Management**: Multiple forecasting scenarios with parameter combinations\n- **Geographic Boundaries**: Configurable geographic divisions (counties, municipalities, etc.)\n- **Parameter Validation**: All parameters are validated against available data\n\n## Getting Started\n\n1. Use **GET /config** to understand the dataset configuration\n2. Use **GET /parameters** to discover valid parameter combinations\n3. Use **GET /scenarios** to explore available forecasting scenarios\n4. Use **GET /geographies** to get geographic boundary data\n\nAll legal values for query-field variants are retrieved via **GET /parameters**.\n",
+    "contact": {
+      "name": "Demand Toolkit Team",
+      "url": "https://github.com/aidotse/behovskartan"
+    },
+    "license": {
+      "name": "ISC",
+      "url": "https://opensource.org/licenses/ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{domain}/{stage}",
+      "variables": {
+        "domain": {
+          "default": "placeholder.example.com",
+          "description": "Public hostname or proxy base path"
+        },
+        "stage": {
+          "default": "dev",
+          "enum": [
+            "dev",
+            "staging",
+            "prod"
+          ]
+        }
+      }
+    }
+  ],
+  "components": {
+    "parameters": {
+      "period": {
+        "name": "period",
+        "in": "query",
+        "required": true,
+        "description": "Time period specification for the query",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "description": "Start date/time (ISO 8601 format)",
+              "example": "2025-01-01"
+            },
+            "end": {
+              "type": "string",
+              "description": "End date/time (ISO 8601 format)",
+              "example": "2026-01-01"
+            },
+            "resolution": {
+              "type": "string",
+              "enum": [
+                "1h",
+                "1d",
+                "1w",
+                "1M",
+                "1Y"
+              ],
+              "description": "Temporal resolution",
+              "example": "1h"
+            },
+            "aggregation": {
+              "type": "string",
+              "enum": [
+                "sum",
+                "mean"
+              ],
+              "description": "Aggregation method",
+              "example": "sum"
+            }
+          },
+          "required": [
+            "start",
+            "end",
+            "resolution",
+            "aggregation"
+          ]
+        }
+      },
+      "geography": {
+        "name": "geography",
+        "in": "query",
+        "required": true,
+        "description": "Geographic boundary identifier",
+        "schema": {
+          "type": "string",
+          "example": "all"
+        }
+      },
+      "segment": {
+        "name": "segment",
+        "in": "query",
+        "required": true,
+        "description": "Demand segment identifier",
+        "schema": {
+          "type": "string",
+          "example": "all"
+        }
+      },
+      "scenarioId": {
+        "name": "scenarioId",
+        "in": "query",
+        "required": false,
+        "description": "Scenario identifier for forecasting",
+        "schema": {
+          "type": "string",
+          "example": "default"
+        }
+      },
+      "responseFormat": {
+        "name": "format",
+        "in": "query",
+        "required": false,
+        "description": "Response format",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv"
+          ],
+          "default": "json"
+        }
+      },
+      "geoFormat": {
+        "name": "format",
+        "in": "query",
+        "required": false,
+        "description": "Geographic data response format",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "geojson"
+          ],
+          "default": "json"
+        }
+      },
+      "baseScenario": {
+        "name": "baseScenario",
+        "in": "query",
+        "required": false,
+        "description": "Base scenario identifier for Strategy 2",
+        "schema": {
+          "type": "string",
+          "example": "beslutad-policy"
+        }
+      },
+      "housing_growth": {
+        "name": "housing_growth",
+        "in": "query",
+        "required": false,
+        "description": "Housing growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "default": 0
+        }
+      },
+      "housing_flex": {
+        "name": "housing_flex",
+        "in": "query",
+        "required": false,
+        "description": "Housing flexibility parameter index (0=none)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        }
+      },
+      "transport_growth": {
+        "name": "transport_growth",
+        "in": "query",
+        "required": false,
+        "description": "Transport growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "default": 0
+        }
+      },
+      "transport_flex": {
+        "name": "transport_flex",
+        "in": "query",
+        "required": false,
+        "description": "Transport flexibility parameter index (0=none)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        }
+      },
+      "industry_growth": {
+        "name": "industry_growth",
+        "in": "query",
+        "required": false,
+        "description": "Industry growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "default": 0
+        }
+      },
+      "industry_flex": {
+        "name": "industry_flex",
+        "in": "query",
+        "required": false,
+        "description": "Industry flexibility parameter index (0=none)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        }
+      },
+      "services_growth": {
+        "name": "services_growth",
+        "in": "query",
+        "required": false,
+        "description": "Services growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "default": 0
+        }
+      },
+      "services_flex": {
+        "name": "services_flex",
+        "in": "query",
+        "required": false,
+        "description": "Services flexibility parameter index (0=none)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        }
+      },
+      "datacenters_growth": {
+        "name": "datacenters_growth",
+        "in": "query",
+        "required": false,
+        "description": "Datacenters growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "default": 0
+        }
+      },
+      "datacenters_flex": {
+        "name": "datacenters_flex",
+        "in": "query",
+        "required": false,
+        "description": "Datacenters flexibility parameter index (0=none)",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        }
+      }
+    },
+    "schemas": {
+      "GeoFeatureCollection": {
+        "type": "object",
+        "required": [
+          "type",
+          "features"
+        ],
+        "properties": {
+          "type": {
+            "const": "FeatureCollection"
+          },
+          "features": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "DemandRow": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "value": {
+            "type": "number"
+          },
+          "geography": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "scenario_id": {
+            "type": "string"
+          },
+          "timestamp_year": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "timestamp",
+          "value",
+          "geography",
+          "segment",
+          "scenario_id"
+        ],
+        "patternProperties": {
+          "^scenario_[a-z0-9_]+$": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "responses": {
+      "InvalidCombination": {
+        "description": "Invalid or unknown combination of scenario / filter parameters.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "error",
+                "hint"
+              ],
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid scenario and/or filter combination"
+                },
+                "hint": {
+                  "type": "string",
+                  "example": "See GET /scenarios and GET /aggregations for valid options"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/geographies": {
+      "get": {
+        "operationId": "getGeographies",
+        "summary": "Get geographic boundaries and metadata",
+        "description": "Returns a list of geographic boundaries available in the dataset. This endpoint\nsupports both JSON format (for metadata) and GeoJSON format (for spatial data\nincluding geometry definitions).\n\n**Use Cases:**\n- Get list of available geographic divisions (counties, municipalities, etc.)\n- Retrieve geographic metadata (names, IDs, types)\n- Download GeoJSON for mapping and visualization\n- Understand the geographic scope of the demand forecasting dataset\n\nThe response format is determined by the `format` query parameter.\n",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Geographic data response format",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "geojson"
+              ],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geographic boundaries and metadata. Response format depends on the `format` parameter:\n- `json` (default): Array of geography metadata objects\n- `geojson`: GeoJSON FeatureCollection with geometry data\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Unique identifier for the geographic boundary",
+                        "example": "SE-AB"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Human-readable name of the geographic area",
+                        "example": "Stockholms län"
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "Type of geographic division",
+                        "example": "county"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type"
+                    ]
+                  }
+                },
+                "examples": {
+                  "counties": {
+                    "summary": "Swedish counties",
+                    "value": [
+                      {
+                        "id": "SE-AB",
+                        "name": "Stockholms län",
+                        "type": "county"
+                      },
+                      {
+                        "id": "SE-C",
+                        "name": "Gävleborgs län",
+                        "type": "county"
+                      }
+                    ]
+                  }
+                }
+              },
+              "application/geo+json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "features"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "FeatureCollection"
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  }
+                },
+                "examples": {
+                  "geojson": {
+                    "summary": "GeoJSON with county boundaries",
+                    "value": {
+                      "type": "FeatureCollection",
+                      "features": [
+                        {
+                          "type": "Feature",
+                          "properties": {
+                            "id": "SE-AB",
+                            "name": "Stockholms län",
+                            "type": "county"
+                          },
+                          "geometry": {
+                            "type": "MultiPolygon",
+                            "coordinates": [
+                              [
+                                [
+                                  18,
+                                  59
+                                ],
+                                [
+                                  18.1,
+                                  59
+                                ],
+                                [
+                                  18.1,
+                                  59.1
+                                ],
+                                [
+                                  18,
+                                  59.1
+                                ],
+                                [
+                                  18,
+                                  59
+                                ]
+                              ]
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "operationId": "getConfig",
+        "summary": "Data-generator configuration",
+        "responses": {
+          "200": {
+            "description": "JSON document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scenarios": {
+      "get": {
+        "operationId": "getScenarios",
+        "summary": "Enumerated list of valid scenario permutations",
+        "responses": {
+          "200": {
+            "description": "JSON array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parameters": {
+      "get": {
+        "operationId": "getParameters",
+        "summary": "Lookup tables for every query-field",
+        "responses": {
+          "200": {
+            "description": "JSON document of arrays",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aggregations": {
+      "get": {
+        "operationId": "getAggregations",
+        "summary": "Available resolution-aggregation combinations",
+        "responses": {
+          "200": {
+            "description": "JSON array of aggregation options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "description": "List of available resolution-aggregation combinations",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "resolution",
+                      "aggregation"
+                    ],
+                    "properties": {
+                      "resolution": {
+                        "type": "string",
+                        "description": "Time resolution (e.g. \"1h\", \"1d\", \"1ME\", \"1YE\")"
+                      },
+                      "aggregation": {
+                        "description": "Either a single aggregation method, or multiple methods supported at that resolution.\n",
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/globals": {
+      "get": {
+        "operationId": "getGlobals",
+        "summary": "Global statistics and bounds for data visualization",
+        "description": "Returns pre-computed global statistics including minimum and maximum values\nacross different aggregation levels. These bounds are optimized for different\nvisualization contexts (maps, sector charts, national time series).\n\n**Use Cases:**\n- Map color scaling: Use `bounds.map_yearly_geography` for yearly geography totals\n- Sector charts: Use `bounds.sector_yearly` for yearly segment totals\n- National time series: Use `bounds.national_yearly` for yearly national totals\n- Raw data analysis: Use `bounds.raw` for hourly data points\n\n**Data Structure:**\nThe API provides both legacy top-level bounds (for backward compatibility) and\naggregation-specific bounds under the `bounds` object. The nested structure at\n`/data/base/` and `/data/scenarios/` is queried via DuckDB to compute\nrealistic bounds for each aggregation level.\n\nStatistics are computed during API generation from all Parquet files using DuckDB.\n",
+        "responses": {
+          "200": {
+            "description": "Global statistics with aggregation-specific bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lower_bound": {
+                      "type": "number",
+                      "description": "Legacy minimum value (raw data) - for backward compatibility",
+                      "example": -20.41
+                    },
+                    "upper_bound": {
+                      "type": "number",
+                      "description": "Legacy maximum value (raw data) - for backward compatibility",
+                      "example": 12497.73
+                    },
+                    "computed_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Timestamp when statistics were computed",
+                      "example": "2025-01-01T00:00:00Z"
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "properties": {
+                        "total_records": {
+                          "type": "integer",
+                          "description": "Total number of hourly records analyzed",
+                          "example": 14357952
+                        },
+                        "mean_value": {
+                          "type": "number",
+                          "description": "Average value across raw hourly data",
+                          "example": 500.25
+                        }
+                      },
+                      "description": "Statistical metadata about raw data"
+                    },
+                    "bounds": {
+                      "type": "object",
+                      "description": "Aggregation-specific bounds for different visualization contexts",
+                      "properties": {
+                        "raw": {
+                          "type": "object",
+                          "description": "Bounds for raw hourly data points",
+                          "properties": {
+                            "lower_bound": {
+                              "type": "number",
+                              "example": -20.41
+                            },
+                            "upper_bound": {
+                              "type": "number",
+                              "example": 12497.73
+                            },
+                            "description": {
+                              "type": "string",
+                              "example": "Raw data points (hourly values)"
+                            }
+                          }
+                        },
+                        "map_yearly_geography": {
+                          "type": "object",
+                          "description": "Bounds for yearly totals per geography (optimal for map color scaling)",
+                          "properties": {
+                            "lower_bound": {
+                              "type": "number",
+                              "example": 50000000
+                            },
+                            "upper_bound": {
+                              "type": "number",
+                              "example": 30000000000
+                            },
+                            "description": {
+                              "type": "string",
+                              "example": "Yearly totals per geography (for map color scaling)"
+                            }
+                          }
+                        },
+                        "sector_yearly": {
+                          "type": "object",
+                          "description": "Bounds for yearly totals per sector (optimal for sector charts)",
+                          "properties": {
+                            "lower_bound": {
+                              "type": "number",
+                              "example": 10000000000
+                            },
+                            "upper_bound": {
+                              "type": "number",
+                              "example": 100000000000
+                            },
+                            "description": {
+                              "type": "string",
+                              "example": "Yearly totals per sector (for sector charts)"
+                            }
+                          }
+                        },
+                        "national_yearly": {
+                          "type": "object",
+                          "description": "Bounds for yearly national totals (optimal for time series)",
+                          "properties": {
+                            "lower_bound": {
+                              "type": "number",
+                              "example": 100000000000
+                            },
+                            "upper_bound": {
+                              "type": "number",
+                              "example": 500000000000
+                            },
+                            "description": {
+                              "type": "string",
+                              "example": "Yearly national totals (for time series)"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "lower_bound",
+                    "upper_bound",
+                    "computed_at",
+                    "bounds"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demand": {
+      "get": {
+        "operationId": "getDemand",
+        "summary": "Demand time‐series at arbitrary resolution",
+        "description": "Returns demand time-series data with flexible aggregation and filtering options.\nThis endpoint uses DuckDB to query Parquet files stored in a nested directory structure.\n\n**Data Structure:**\nThe API queries data from two directories:\n- `/data/base/` - Base scenario files (e.g., `base/current-policy/data.parquet`)\n- `/data/scenarios/` - Parametric scenarios (e.g., `scenarios/housing_electrification=2/.../data.parquet`)\n\n**Query Performance:**\n- Uses DuckDB for efficient Parquet scanning with predicate pushdown\n- Pre-aggregated tables available for common yearly queries (50-100x faster)\n- UNION queries combine base and scenario data with schema normalization\n\n**Aggregation Behavior:**\n- `geography='all'`: Returns separate rows per geography (GROUP BY geography)\n- `geography='total'`: Returns single row with sum across all geographies\n- `geography='01'`: Returns single row for specific geography\n- Same pattern applies to `segment` parameter\n- `scenarioId='all'`: Returns separate rows per scenario\n\n**Resolution Support:**\n- `1h` - Hourly data (raw timestamps)\n- `1d` - Daily aggregates (DATE_TRUNC to day)\n- `1w` - Weekly aggregates (DATE_TRUNC to week)\n- `1M` - Monthly aggregates (DATE_TRUNC to month)\n- `1Y` - Yearly aggregates (DATE_TRUNC to year)\n\n**Response Format:**\nEach row contains:\n- `period`: ISO 8601 timestamp (start of aggregation period)\n- `value`: Aggregated value (sum or mean based on aggregation parameter)\n- `geography`: Geography ID or 'total'\n- `segment`: Segment name or 'total'\n- `scenario_id`: Scenario identifier\n",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "description": "Time period specification for the query",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "description": "Start date/time (ISO 8601 format)",
+                  "example": "2025-01-01"
+                },
+                "end": {
+                  "type": "string",
+                  "description": "End date/time (ISO 8601 format)",
+                  "example": "2026-01-01"
+                },
+                "resolution": {
+                  "type": "string",
+                  "enum": [
+                    "1h",
+                    "1d",
+                    "1w",
+                    "1M",
+                    "1Y"
+                  ],
+                  "description": "Temporal resolution",
+                  "example": "1h"
+                },
+                "aggregation": {
+                  "type": "string",
+                  "enum": [
+                    "sum",
+                    "mean"
+                  ],
+                  "description": "Aggregation method",
+                  "example": "sum"
+                }
+              },
+              "required": [
+                "start",
+                "end",
+                "resolution",
+                "aggregation"
+              ]
+            }
+          },
+          {
+            "name": "geography",
+            "in": "query",
+            "required": true,
+            "description": "Geographic boundary identifier",
+            "schema": {
+              "type": "string",
+              "example": "all"
+            }
+          },
+          {
+            "name": "segment",
+            "in": "query",
+            "required": true,
+            "description": "Demand segment identifier",
+            "schema": {
+              "type": "string",
+              "example": "all"
+            }
+          },
+          {
+            "name": "scenarioId",
+            "in": "query",
+            "required": false,
+            "description": "Scenario identifier for forecasting",
+            "schema": {
+              "type": "string",
+              "example": "default"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Response format",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "baseScenario",
+            "in": "query",
+            "required": false,
+            "description": "Base scenario identifier for Strategy 2",
+            "schema": {
+              "type": "string",
+              "example": "beslutad-policy"
+            }
+          },
+          {
+            "name": "housing_growth",
+            "in": "query",
+            "required": false,
+            "description": "Housing growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 0
+            }
+          },
+          {
+            "name": "housing_flex",
+            "in": "query",
+            "required": false,
+            "description": "Housing flexibility parameter index (0=none)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0
+            }
+          },
+          {
+            "name": "transport_growth",
+            "in": "query",
+            "required": false,
+            "description": "Transport growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 0
+            }
+          },
+          {
+            "name": "transport_flex",
+            "in": "query",
+            "required": false,
+            "description": "Transport flexibility parameter index (0=none)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0
+            }
+          },
+          {
+            "name": "industry_growth",
+            "in": "query",
+            "required": false,
+            "description": "Industry growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 0
+            }
+          },
+          {
+            "name": "industry_flex",
+            "in": "query",
+            "required": false,
+            "description": "Industry flexibility parameter index (0=none)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0
+            }
+          },
+          {
+            "name": "services_growth",
+            "in": "query",
+            "required": false,
+            "description": "Services growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 0
+            }
+          },
+          {
+            "name": "services_flex",
+            "in": "query",
+            "required": false,
+            "description": "Services flexibility parameter index (0=none)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0
+            }
+          },
+          {
+            "name": "datacenters_growth",
+            "in": "query",
+            "required": false,
+            "description": "Datacenters growth parameter index (0=baseline, 1=-15%, 2=-10%, 3=-5%, 4=+5%, 5=+10%, 6=+15%)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "default": 0
+            }
+          },
+          {
+            "name": "datacenters_flex",
+            "in": "query",
+            "required": false,
+            "description": "Datacenters flexibility parameter index (0=none)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Time‐series response with aggregated demand data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "geography": {
+                        "type": "string"
+                      },
+                      "segment": {
+                        "type": "string"
+                      },
+                      "scenario_id": {
+                        "type": "string"
+                      },
+                      "timestamp_year": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "timestamp",
+                      "value",
+                      "geography",
+                      "segment",
+                      "scenario_id"
+                    ],
+                    "patternProperties": {
+                      "^scenario_[a-z0-9_]+$": {
+                        "oneOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "examples": {
+                  "yearly_national": {
+                    "summary": "Yearly national totals",
+                    "value": [
+                      {
+                        "period": "2030-01-01T00:00:00Z",
+                        "value": 158031200000,
+                        "geography": "total",
+                        "segment": "total",
+                        "scenario_id": "default"
+                      },
+                      {
+                        "period": "2031-01-01T00:00:00Z",
+                        "value": 161209300000,
+                        "geography": "total",
+                        "segment": "total",
+                        "scenario_id": "default"
+                      }
+                    ]
+                  },
+                  "geography_breakdown": {
+                    "summary": "Geography breakdown for specific year",
+                    "value": [
+                      {
+                        "period": "2030-01-01T00:00:00Z",
+                        "value": 18848740000,
+                        "geography": "01",
+                        "segment": "total",
+                        "scenario_id": "default"
+                      },
+                      {
+                        "period": "2030-01-01T00:00:00Z",
+                        "value": 4922399000,
+                        "geography": "03",
+                        "segment": "total",
+                        "scenario_id": "default"
+                      }
+                    ]
+                  },
+                  "hourly_data": {
+                    "summary": "Hourly data for specific geography",
+                    "value": [
+                      {
+                        "period": "2030-01-01T00:00:00Z",
+                        "value": 661.05,
+                        "geography": "01",
+                        "segment": "housing",
+                        "scenario_id": "default"
+                      },
+                      {
+                        "period": "2030-01-01T01:00:00Z",
+                        "value": 651.64,
+                        "geography": "01",
+                        "segment": "housing",
+                        "scenario_id": "default"
+                      }
+                    ]
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "example": "period,geography,segment,scenario_id,value\n2030-01-01T00:00:00Z,total,total,default,158031200000\n2031-01-01T00:00:00Z,total,total,default,161209300000\n"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

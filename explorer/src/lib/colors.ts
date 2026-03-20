@@ -21,9 +21,7 @@ export const ui = {
 	highlight: '#1690b8',
 	/** Text-selection background (used at 30 % opacity in app.css) */
 	selection: '#1690b8',
-	/** ThemeSwitch sun icon — targets third-party SVG */
-	sunIcon: '#f9ca2d',
-	/** Page background (light mode) */
+/** Page background (light mode) */
 	pageBg: '#ededed',
 } as const;
 

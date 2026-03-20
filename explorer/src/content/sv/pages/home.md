@@ -1,64 +1,85 @@
 ---
 title: Sveriges framtida elbehov
-description: Det här verktyget ger en samlad bild av Sveriges förväntade elbehov fram till år 2050. Det omfattar bostäder, transport, industri och andra samhällssektorer som tillsammans formar framtidens elförbrukning. Genom att utforska olika scenarier kan du se hur olika antaganden om elektrifiering, teknikutveckling och samhällsförändringar påverkar det totala elbehovet. Verktyget visar både hur mycket el som kommer att behövas och när den behövs som mest under året.
+description: Hur mycket el kommer Sverige att behöva år 2050 — och var och
+  när behövs den? Det här verktyget visualiserar framtidens elanvändning
+  uppdelat på regioner, sektorer och tid. Utforska olika scenarier för att
+  se hur elektrifiering, industriomställning och ny teknik förändrar bilden.
 ---
 
 ::HomeMetrics{}
 
-## Växande elbehov
-
-Sveriges elbehov förväntas öka betydligt under de kommande decennierna. Denna utveckling
-drivs av en bred elektrifiering av samhället där fossila bränslen successivt fasas ut
-och ersätts med el. Transportsektorn ställer om till eldrift, industrin elektrifierar
-sina processer och nya användningsområden för el tillkommer. Förändringen accelererar
-efter 2030 när elektrifieringen når allt fler sektorer och tekniker mognar.
+::HomeDynamicText{}
 
 ::ChartEmbed{chart="area-yearly" aggregationInit="sum" exportable={false}}
 
-## Vad driver förändringen?
+:::InsightBox{title="Ny el till nya behov"}
+I scenarierna kommer nästan hela ökningen från sektorer som idag knappt
+använder el. Det handlar inte om mer el till samma saker — utan om att
+transporter, industri och datacenter kan tillkomma som stora nya elanvändare.
+:::
+<!-- -->
 
-Förändringen av Sveriges elbehov drivs av flera samverkande faktorer. Transportsektorn
-genomgår en omfattande elektrifiering där personbilar, lastbilar och bussar övergår
-till eldrift. Industrin ställer om från fossila bränslen till el för att nå klimatmål,
-vilket inkluderar både befintliga processer och helt nya industriella satsningar.
-Bostäder och lokaler behåller en stabil bas men påverkas av värmepumpar och ökad
-digitalisering. Sammantaget bidrar alla sektorer till den växande efterfrågan på el.
+## Vilka sektorer driver förändringen?
+
+Idag dominerar bostäder och service elanvändningen. I scenarierna går
+transportsektorn — personbilar, lastbilar, bussar — från marginell
+elanvändning till att kunna stå för en betydande andel. Industrin
+elektrifierar processer som tidigare drevs av fossila bränslen, och
+datacenter kan växa som en helt ny kategori.
+
+Bostädernas absoluta elanvändning bedöms vara relativt stabil. Deras
+*andel* av den totala förbrukningen kan däremot minska, i takt med att
+andra sektorer växer snabbare.
 
 ::ChartEmbed{chart="sector-pie" enableComparison={true} exportable={false}}
 
-Fördelningen mellan sektorer varierar kraftigt mellan olika län. I storstadsregioner
-dominerar bostäder och service, medan industritäta län som Norrbotten och Västernorrland
-har en betydligt högre andel industriell elanvändning. Denna geografiska ojämnhet innebär
-att olika delar av landet har olika utmaningar när elbehovet växer. Använd kartan för
-att utforska hur sektorernas fördelning skiljer sig åt mellan länen.
+:::InsightBox{title="Bostäderna driver inte ökningen"}
+Trots värmepumpar och ökad digitalisering pekar scenarierna på att
+bostadssektorn inte är den som driver det växande elbehovet. Det är
+snarare transporter och industri som kan stå för de stora volymökningarna.
+:::
+<!-- -->
+
+## Regional variation
+
+Sektorsfördelningen varierar kraftigt mellan länen. I Stockholm och
+Västra Götaland dominerar bostäder och service. I Norrbotten och
+Västernorrland utgör industrin en övervägande del. Det innebär att
+olika regioner kan möta helt olika utmaningar om elbehovet växer.
+Utforska kartan för att se ditt län.
 
 ::ChartEmbed{chart="geo-segment" exportable={false}}
 
+:::InsightBox{title="Ojämn geografi"}
+Norra Sverige har produktionsöverskott men kan komma att möta stor ny
+efterfrågan från datacenter och grön industri. Södra Sverige har redan
+idag kapacitetsutmaningar — och det är där merparten av befolkningen bor.
+:::
+<!-- -->
+
 ## När behövs elen?
 
-Elbehovet varierar kraftigt över dygnet och året. Under vintermånaderna är efterfrågan
-som störst, drivet av uppvärmning och belysning. Vardagar har tydliga toppar på morgonen
-och kvällen när hushåll och arbetsplatser är som mest aktiva. Att förstå dessa mönster
-är avgörande för att planera elnätet och säkerställa att produktionen möter behovet
-även under de mest krävande timmarna.
+Total årsförbrukning berättar bara halva historien. Lika viktigt är
+*när* elen behövs. Skillnaderna kan vara stora: en kall vintermorgon kan
+effektbehovet vara flera gånger högre än en sommarnatt.
 
-Flexibilitet spelar en viktig roll för att hantera variationen i elbehovet. Genom att
-flytta förbrukning från höglasttimmar till perioder med lägre efterfrågan kan topparna
-jämnas ut. Exempel på flexibla laster är laddning av elbilar, uppvärmning av byggnader
-med värmepumpar och industriella processer som kan schemaläggas. Med ökad flexibilitet
-minskar behovet av dyr reservkapacitet och elnätet kan utnyttjas mer effektivt.
+Värmekurvan i diagrammet nedan visar dessa mönster. Vintern har tydliga
+toppar morgon och kväll — drivet av uppvärmning, belysning och
+matlagning. Sommaren är jämnare och lägre. Det är vintertopparna som
+tenderar att dimensionera elnätet, inte sommarens lugna profil.
 
 ::ChartEmbed{chart="period-heatmap" exportable={false}}
 
-## Flexibilitet i behovet
+::HomePeakInsight{}
 
-En del av elbehovet kan flyttas i tid utan att påverka slutanvändaren. Laddning av
-elbilar, uppvärmning med värmepumpar och vissa industriprocesser kan schemaläggas till
-timmar med lägre efterfrågan. Denna flexibilitet minskar belastningen under topptimmar
-och gör det möjligt att bättre utnyttja förnybara energikällor när de producerar som mest.
+## Flexibilitet kan jämna ut topparna
 
-:::InsightBox{title="Nyckelinsikt: Elektrifiering driver tillväxten"}
-Den största ökningen av elbehov kommer från **elektrifiering av transporter**
-(personbilar och tung trafik) samt **industriell omställning** mot fossilfria processer.
-Detta sker främst efter 2030.
-:::
+En del av elbehovet kan potentiellt flyttas i tid utan att påverka
+slutanvändaren. Elbilsladdning kan styras till natten. Värmepumpar kan
+förvärma hus under timmar med lägre efterfrågan. Vissa industriprocesser
+kan schemaläggas flexibelt.
+
+Om denna flexibilitet utnyttjas skulle gapet mellan topp och dal kunna
+minska. Det kan innebära att elnätet dimensioneras smalare, att mindre
+reservkapacitet behövs och att förnybar el i högre grad kan användas när
+den produceras som mest — inte bara när den efterfrågas som mest.

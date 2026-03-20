@@ -31,6 +31,8 @@ const COMPONENTS = {
 	LoadProfileChart: '$lib/components/report/LoadProfileChart.svelte',
 	GrowthLevelGrid: '$lib/components/report/GrowthLevelGrid.svelte',
 	HomeMetrics: '$lib/components/report/HomeMetrics.svelte',
+	HomeDynamicText: '$lib/components/report/HomeDynamicText.svelte',
+	HomePeakInsight: '$lib/components/report/HomePeakInsight.svelte',
 	ChartEmbed: '$lib/components/report/ChartEmbed.svelte',
 	PowerConceptChart: '$lib/components/report/PowerConceptChart.svelte',
 	FlexIllustrationChart: '$lib/components/report/FlexIllustrationChart.svelte',

@@ -38,36 +38,36 @@
 	// Variant configurations
 	const variantConfig = {
 		default: {
-			bgGradient: 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900',
-			border: 'border-gray-300 dark:border-gray-600',
-			iconBg: 'bg-gray-200 dark:bg-gray-700',
-			iconColor: 'text-gray-700 dark:text-gray-300',
-			titleColor: 'text-gray-900 dark:text-gray-50',
-			linkColor: 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+			bgGradient: 'from-gray-50 to-gray-100',
+			border: 'border-gray-300',
+			iconBg: 'bg-gray-200',
+			iconColor: 'text-gray-700',
+			titleColor: 'text-gray-900',
+			linkColor: 'text-gray-700 hover:text-gray-900'
 		},
 		primary: {
-			bgGradient: 'from-primary-50/30 to-primary-100/40 dark:from-primary-900/10 dark:to-primary-900/20',
-			border: 'border-primary-200 dark:border-primary-800',
-			iconBg: 'bg-primary-100/50 dark:bg-primary-900/20',
-			iconColor: 'text-primary-600 dark:text-primary-400',
-			titleColor: 'text-primary-700 dark:text-primary-400',
-			linkColor: 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+			bgGradient: 'from-primary-50/30 to-primary-100/40',
+			border: 'border-primary-200',
+			iconBg: 'bg-primary-100/50',
+			iconColor: 'text-primary-600',
+			titleColor: 'text-primary-700',
+			linkColor: 'text-primary-600 hover:text-primary-700'
 		},
 		success: {
-			bgGradient: 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/30',
-			border: 'border-green-300 dark:border-green-700',
-			iconBg: 'bg-green-100 dark:bg-green-900/30',
-			iconColor: 'text-green-600 dark:text-green-400',
-			titleColor: 'text-gray-900 dark:text-gray-50',
-			linkColor: 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300'
+			bgGradient: 'from-green-50 to-green-100',
+			border: 'border-green-300',
+			iconBg: 'bg-green-100',
+			iconColor: 'text-green-600',
+			titleColor: 'text-gray-900',
+			linkColor: 'text-green-600 hover:text-green-700'
 		},
 		warning: {
-			bgGradient: 'from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/30',
-			border: 'border-amber-300 dark:border-amber-700',
-			iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-			iconColor: 'text-amber-600 dark:text-amber-400',
-			titleColor: 'text-gray-900 dark:text-gray-50',
-			linkColor: 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
+			bgGradient: 'from-amber-50 to-amber-100',
+			border: 'border-amber-300',
+			iconBg: 'bg-amber-100',
+			iconColor: 'text-amber-600',
+			titleColor: 'text-gray-900',
+			linkColor: 'text-amber-600 hover:text-amber-700'
 		}
 	};
 
@@ -90,7 +90,7 @@
 	</div>
 
 	<!-- Content -->
-	<div class="content text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+	<div class="content text-sm text-gray-700 leading-relaxed mb-4">
 		{@render children()}
 	</div>
 
@@ -125,6 +125,6 @@
 	}
 
 	.content :global(strong) {
-		@apply font-semibold text-gray-900 dark:text-gray-100;
+		@apply font-semibold text-gray-900;
 	}
 </style>

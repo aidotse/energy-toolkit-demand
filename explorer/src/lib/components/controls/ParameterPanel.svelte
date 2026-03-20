@@ -59,14 +59,14 @@
 	<div class="space-y-4">
 		<!-- Header -->
 		<div class="flex items-center justify-between">
-			<h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+			<h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
 				<Sliders class="w-4 h-4" />
 				Scenarioparametrar
 			</h3>
 			{#if parameterStore.hasActiveParameters}
 				<button
 					onclick={() => parameterStore.resetToBaseline()}
-					class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
+					class="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
 					title="Återställ alla parametrar"
 				>
 					<RotateCcw class="w-3 h-3" />
@@ -77,13 +77,13 @@
 
 		<!-- Base Scenario Selector -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+			<label class="block text-xs font-medium text-gray-600">
 				Basscenario
 			</label>
 			<select
 				value={parameterStore.baseScenario}
 				onchange={handleBaseScenarioChange}
-				class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+				class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 			>
 				{#each parameterStore.baseScenarios as scenario}
 					<option value={scenario.id}>
@@ -96,10 +96,10 @@
 
 		<!-- Parameter Groups by Segment -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+			<label class="block text-xs font-medium text-gray-600">
 				Justeringar per sektor
 				{#if parameterStore.activeParameterCount > 0}
-					<span class="ml-1 px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded text-xs">
+					<span class="ml-1 px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-xs">
 						{parameterStore.activeParameterCount} aktiva
 					</span>
 				{/if}
@@ -107,13 +107,13 @@
 
 			<div class="space-y-1">
 				{#each Object.entries(parameterStore.parametersBySegment) as [segment, params]}
-					<div class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+					<div class="border border-gray-200 rounded-md overflow-hidden">
 						<!-- Segment Header -->
 						<button
 							onclick={() => toggleSegment(segment)}
-							class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+							class="w-full px-3 py-2 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
 						>
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+							<span class="text-sm font-medium text-gray-700">
 								{SEGMENT_LABELS[segment] || segment}
 							</span>
 							<div class="flex items-center gap-2">
@@ -130,15 +130,15 @@
 
 						<!-- Parameter Controls -->
 						{#if expandedSegments[segment]}
-							<div class="px-3 py-2 space-y-3 bg-white dark:bg-gray-800">
+							<div class="px-3 py-2 space-y-3 bg-white">
 								{#each params as param}
 									{@const currentValue = parameterStore.getParameterValue(param.name)}
 									<div class="space-y-1">
 										<div class="flex items-center justify-between">
-											<label class="text-xs text-gray-600 dark:text-gray-400">
+											<label class="text-xs text-gray-600">
 												{getParamLabel(param)}
 											</label>
-											<span class="text-xs font-medium text-gray-900 dark:text-gray-100">
+											<span class="text-xs font-medium text-gray-900">
 												{getParameterLabel(param, currentValue)}
 											</span>
 										</div>
@@ -148,7 +148,7 @@
 											max={param.values.length - 1}
 											value={currentValue}
 											oninput={(e) => handleParameterChange(param.name, e)}
-											class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
+											class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
 										/>
 										<div class="flex justify-between text-[10px] text-gray-400">
 											{#each param.values as value}
@@ -168,8 +168,8 @@
 
 		<!-- Active Parameters Summary -->
 		{#if parameterStore.hasActiveParameters}
-			<div class="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-md">
-				<p class="text-xs text-primary-700 dark:text-primary-300">
+			<div class="p-2 bg-primary-50 rounded-md">
+				<p class="text-xs text-primary-700">
 					<strong>Aktiva justeringar:</strong>
 					{#each Object.entries(parameterStore.parameterValues).filter(([_, v]) => v > 0) as [name, index], i}
 						{@const param = parameterStore.getParameter(name)}
@@ -183,7 +183,7 @@
 		{/if}
 	</div>
 {:else}
-	<div class="text-sm text-gray-500 dark:text-gray-400">
+	<div class="text-sm text-gray-500">
 		Laddar parametrar...
 	</div>
 {/if}

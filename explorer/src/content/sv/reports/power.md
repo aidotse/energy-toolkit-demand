@@ -102,7 +102,7 @@ Skillnaden kan vara betydande. Om toppeffekten kan sänkas med till exempel 10�
 - Hundratals kilometer elnät som inte behöver förstärkas
 - Miljarder kronor i sparade investeringar
 
-Men flex är inte gratis. Det kräver smart styrning, digitalisering, prissignaler som når ut till användarna, och att det finns kapacitet att flytta last (batterier, varmvattenberedare, flexibla processer). Hur stor flexibiliteten faktiskt kan bli är en öppen fråga — och en av de viktigaste osäkerheterna i alla prognoser av framtidens elbehov.
+Men flex är inte gratis. Det kräver smart styrning, digitalisering, prissignaler som når ut till användarna, och att det finns kapacitet att flytta last (batterier, varmvattenberedare, flexibla processer). Hur stor flexibiliteten faktiskt kan bli är en öppen fråga — och en av de viktigaste osäkerheterna i alla scenarier för framtidens elbehov.
 
 :::InsightBox{variant="insight" title="Flex förändrar behovet av ny kapacitet"}
 I den här applikationen kan du jämföra scenarier med olika nivåer av flexibilitet. Scenarierna med hög flex har samma totala energibehov men avsevärt lägre toppeffekt — vilket minskar behovet av nya nätinvesteringar och reservkraft.

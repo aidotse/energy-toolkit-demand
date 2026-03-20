@@ -162,12 +162,12 @@
 		<div class="chart-header flex items-center justify-between gap-4 mb-3">
 			<div class="flex-1 min-w-0">
 				{#if title}
-					<h3 class="text-sm font-medium text-gray-900 dark:text-white flex-shrink-0">
+					<h3 class="text-sm font-medium text-gray-900 flex-shrink-0">
 						{title}
 					</h3>
 				{/if}
 				{#if description}
-					<p class="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-prose">
+					<p class="text-xs text-gray-600 mt-1 max-w-prose">
 						{description}
 					</p>
 				{/if}
@@ -181,7 +181,7 @@
 				{#if exportable}
 					<div class="export-menu relative">
 						<button
-							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 							onclick={() => (menuOpen = !menuOpen)}
 							title="Exportera diagram"
 							aria-label="Export chart"
@@ -190,23 +190,23 @@
 						</button>
 
 					{#if menuOpen}
-						<div class="absolute right-0 top-10 z-50 min-w-[200px] bg-white dark:bg-gray-800 rounded shadow-sm border border-gray-200 dark:border-gray-700 py-1">
+						<div class="absolute right-0 top-10 z-50 min-w-[200px] bg-white rounded shadow-sm border border-gray-200 py-1">
 							<button
-								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
 								onclick={handleExportPNG}
 							>
 								<Download size={16} />
 								Export PNG (1920x1080)
 							</button>
 							<button
-								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2"
 								onclick={handleExportSVG}
 							>
 								<Download size={16} />
 								Export SVG (Vector)
 							</button>
 							<button
-								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 								onclick={handleExportCSV}
 								disabled={!chartData || chartData.length === 0}
 							>
@@ -214,7 +214,7 @@
 								Export Data (CSV)
 							</button>
 							<button
-								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+								class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 								onclick={handleExportJSON}
 								disabled={!chartData || chartData.length === 0}
 							>

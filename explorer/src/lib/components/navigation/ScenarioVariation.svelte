@@ -55,7 +55,7 @@
 </script>
 
 {#if visible}
-	<div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-sm px-3 py-1 text-xs text-gray-700 dark:text-gray-300 max-w-full">
+	<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm px-3 py-1 text-xs text-gray-700 max-w-full">
 		{variationText}
 	</div>
 {/if}

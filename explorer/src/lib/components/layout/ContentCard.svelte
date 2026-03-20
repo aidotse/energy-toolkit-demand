@@ -36,18 +36,18 @@
 </script>
 
 <div
-	class="border-b border-gray-200 dark:border-gray-700 last:border-b-0 {paddingClasses} transition-all duration-200 {hoverClasses} {className}"
+	class="border-b border-gray-200 last:border-b-0 {paddingClasses} transition-all duration-200 {hoverClasses} {className}"
 >
 	{#if title}
 		<div class="mb-6">
 			<div class="flex items-center gap-3 mb-2">
 				{#if Icon}
-					<Icon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
+					<Icon class="w-6 h-6 text-primary-600" />
 				{/if}
-				<h2 class="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+				<h2 class="text-2xl font-bold text-gray-900">{title}</h2>
 			</div>
 			{#if description}
-				<p class="text-base text-gray-600 dark:text-gray-400">{description}</p>
+				<p class="text-base text-gray-600">{description}</p>
 			{/if}
 		</div>
 	{/if}

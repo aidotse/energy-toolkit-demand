@@ -282,7 +282,7 @@
 			root: {
 				variant: 'none' as const,
 				contained: 'window' as const,
-				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 border border-gray-200 backdrop-blur-sm'
 			},
 			item: {
 				label: '',
@@ -320,7 +320,7 @@
 	{:else if normalizedScenarios.length === 1}
 		<!-- Single scenario mode -->
 		<div class="flex justify-end mb-2">
-			<p class="text-sm text-gray-500 dark:text-gray-400">
+			<p class="text-sm text-gray-500">
 				Totalt: {formatNumber(
 					segmentData.reduce((sum, item) => sum + item.value, 0),
 					getEnergyPrefix(),

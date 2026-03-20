@@ -89,10 +89,10 @@
 		<line x1={xScale(0, 0)} y1={yScale(flatValue)} x2={xScale(23, 0)} y2={yScale(flatValue)} stroke={viz.teal[900]} stroke-width="2" />
 
 		<!-- 100 MW label -->
-		<text x={xScale(11.5, 0)} y={yScale(flatValue) - 8} text-anchor="middle" class="fill-gray-700 dark:fill-gray-300" font-size="11" font-weight="600">100 MW</text>
+		<text x={xScale(11.5, 0)} y={yScale(flatValue) - 8} text-anchor="middle" class="fill-gray-700" font-size="11" font-weight="600">100 MW</text>
 
 		<!-- Title -->
-		<text x={pad.left + plotW / 2} y={12} text-anchor="middle" class="fill-gray-600 dark:fill-gray-400" font-size="12" font-weight="600">Jämn last</text>
+		<text x={pad.left + plotW / 2} y={12} text-anchor="middle" class="fill-gray-600" font-size="12" font-weight="600">Jämn last</text>
 
 		<!-- X-axis labels -->
 		{#each xTicks as hr}
@@ -100,7 +100,7 @@
 		{/each}
 
 		<!-- Energy label -->
-		<text x={xScale(11.5, 0)} y={yScale(50)} text-anchor="middle" class="fill-chart-900 dark:fill-chart-500" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
+		<text x={xScale(11.5, 0)} y={yScale(50)} text-anchor="middle" class="fill-chart-900" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
 
 
 		<!-- RIGHT PANEL: Peaked profile -->
@@ -120,7 +120,7 @@
 		<text x={rightOffset + panelW - pad.right + 2} y={yScale(peakMax) + 4} text-anchor="start" fill={viz.emphasis} font-size="10" font-weight="600">{peakMax} MW</text>
 
 		<!-- Title -->
-		<text x={rightOffset + pad.left + plotW / 2} y={12} text-anchor="middle" class="fill-gray-600 dark:fill-gray-400" font-size="12" font-weight="600">Ojämn last</text>
+		<text x={rightOffset + pad.left + plotW / 2} y={12} text-anchor="middle" class="fill-gray-600" font-size="12" font-weight="600">Ojämn last</text>
 
 		<!-- X-axis labels -->
 		{#each xTicks as hr}
@@ -128,10 +128,10 @@
 		{/each}
 
 		<!-- Energy label -->
-		<text x={xScale(11.5, rightOffset)} y={yScale(50)} text-anchor="middle" class="fill-chart-900 dark:fill-chart-500" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
+		<text x={xScale(11.5, rightOffset)} y={yScale(50)} text-anchor="middle" class="fill-chart-900" font-size="13" font-weight="700" opacity="0.7">2 400 MWh</text>
 	</svg>
 
-	<figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+	<figcaption class="text-center text-sm text-gray-500 mt-2">
 		Samma totala energi (yta under kurvan) men olika effektprofiler. Den ojämna lasten kräver högre kapacitet i elnätet.
 	</figcaption>
 </figure>

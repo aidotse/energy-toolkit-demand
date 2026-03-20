@@ -205,7 +205,7 @@
 				description="Ingen data finns för valt år"
 			/>
 		{:else}
-			<div class="h-[400px] overflow-visible">
+			<div class="h-[280px] sm:h-[350px] lg:h-[400px] overflow-visible">
 				<BarChart
 					data={chartData}
 					x="name"
@@ -215,7 +215,7 @@
 					props={{
 						xAxis: {
 							tweened: false,
-							tickLabelProps: { rotate: 315, textAnchor: 'end', fontSize: 11 }
+							tickLabelProps: { rotate: 315, textAnchor: 'end', fontSize: 9 }
 						},
 						yAxis: {
 							tweened: false,
@@ -230,7 +230,7 @@
 							root: {
 								variant: 'none',
 								contained: 'window',
-								class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 backdrop-blur-sm'
+								class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 border border-gray-200 backdrop-blur-sm'
 							},
 							item: {
 								format: (v: number) => `${Math.round(v)}%`
@@ -249,7 +249,7 @@
 							class="w-3 h-3 rounded-sm"
 							style="background-color: {colors.bg};"
 						></div>
-						<span class="text-gray-700 dark:text-gray-300">{getSegmentLabel(seg)}</span>
+						<span class="text-gray-700">{getSegmentLabel(seg)}</span>
 					</div>
 				{/each}
 			</div>

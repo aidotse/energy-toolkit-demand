@@ -6,11 +6,13 @@
   "main": "setup-project.js",
   "workspaces": [
     "api",
-    "explorer"
+    "explorer",
+    "site"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "setup": "node setup/index.js"
+    "setup": "node setup/index.js",
+    "bundle:api": "node api/bundle-openapi.js"
   },
   "author": "Viktor Bengtsson",
   "license": "ISC",

@@ -7,14 +7,17 @@
 	import SectorPieChart from '$lib/components/SectorPieChart.svelte';
 	import PeriodHeatmap from '$lib/components/PeriodHeatmap.svelte';
 	import GeoSegmentChart from '$lib/components/GeoSegmentChart.svelte';
+	import StackedSectorChart from '$lib/components/StackedSectorChart.svelte';
+	import MonthlyWeekProfile from '$lib/components/MonthlyWeekProfile.svelte';
 	import Map from '$lib/components/map/Map.svelte';
 	import ChartFilterPanel from '$lib/components/controls/ChartFilterPanel.svelte';
 	import LazyChart from '$lib/components/shared/LazyChart.svelte';
-	import { chartParametersStore } from '$lib/stores/chartParameters.svelte';
+	import { chartParametersStore, chartsGlobalStore } from '$lib/stores/chartParameters.svelte';
+	import { viewStore } from '$lib/stores/viewStore.svelte';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { getStrategy2Config } from '$lib/dataService';
-	import { SlidersHorizontal, X } from 'lucide-svelte';
+	import { SlidersHorizontal, X, ArrowDownToLine } from 'lucide-svelte';
 	import {
 		buildScenarioSuffix,
 		getGeoLabel,
@@ -34,13 +37,38 @@
 		parameterStore.initialize(strategy2Config);
 	});
 
-	// Global parameters (defaults for all charts)
-	let globalParameters = $state<ChartParameters>({
-		geography: data.geography,
-		year: data.year,
-		segment: data.segment,
-		resolution: '1h'
+	// Global parameters (defaults for all charts, persisted across navigation)
+	let globalParameters = $state<ChartParameters>(
+		chartsGlobalStore.initialized
+			? chartsGlobalStore.params!
+			: {
+				geography: data.geography,
+				year: data.year,
+				segment: data.segment,
+				resolution: '1h'
+			}
+	);
+
+	// Sync global parameters back to store for persistence
+	$effect(() => {
+		chartsGlobalStore.params = { ...globalParameters };
 	});
+
+	// Import parameter selections from the frontpage (viewStore)
+	// Sets per-chart overrides on all charts (same as "Tillämpa på alla")
+	function importFromFrontpage() {
+		const imported: ChartParameters = {
+			year: viewStore.year,
+			geography: viewStore.geography,
+			segment: viewStore.activeSegment
+		};
+		for (const chartId of ALL_CHART_IDS) {
+			chartParametersStore.clearChart(chartId);
+			for (const [key, value] of Object.entries(imported)) {
+				chartParametersStore.setParameter(chartId, key as keyof ChartParameters, value);
+			}
+		}
+	}
 
 	// Get default scenario if scenarioState is not initialized
 	const scenario = $derived(
@@ -76,6 +104,8 @@
 		PERIOD_HEATMAP: 'period-heatmap',
 		GEO_BAR: 'geo-bar',
 		GEO_SEGMENT: 'geo-segment',
+		STACKED_SECTOR: 'stacked-sector',
+		WEEKLY_PROFILE: 'weekly-profile',
 		MAP: 'map'
 	};
 
@@ -85,9 +115,11 @@
 		[CHART_IDS.HISTOGRAM]: 'Histogram över effektbehovet',
 		[CHART_IDS.SEGMENT_ARC]: 'Energi per sektor',
 		[CHART_IDS.SECTOR_PIE]: 'Sektoruppdelning',
-		[CHART_IDS.PERIOD_HEATMAP]: 'Elbehov per månad och tid på dygnet',
+		[CHART_IDS.PERIOD_HEATMAP]: 'Effektbehov per månad och tid på dygnet',
 		[CHART_IDS.GEO_BAR]: 'Energiförbrukning per geografi',
 		[CHART_IDS.GEO_SEGMENT]: 'Sektorernas andel per län',
+		[CHART_IDS.STACKED_SECTOR]: 'Sektorer över tid',
+		[CHART_IDS.WEEKLY_PROFILE]: 'Veckobelastning per månad',
 		[CHART_IDS.MAP]: 'Karta'
 	};
 
@@ -203,20 +235,34 @@
 			return 'bg-chart-700 text-white';
 		}
 		if (hasOverrides(chartId)) {
-			return 'bg-chart-700/10 text-chart-900 dark:text-chart-100';
+			return 'bg-chart-700/10 text-chart-900';
 		}
-		return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+		return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
 	}
 </script>
 
+<svelte:head>
+	<title>Grafer — Behovskartan</title>
+</svelte:head>
+
 <!-- Custom layout — sidebar positioned outside the content card flow -->
-<div class="min-h-screen bg-page-bg dark:bg-gray-900 overflow-x-clip">
-	<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+<div class="min-h-screen bg-white lg:bg-page-bg overflow-x-clip">
+	<div class="max-w-6xl mx-auto px-0 lg:px-8 pt-12 lg:py-12 relative">
 
 		<!-- Page header card -->
-		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sm:p-8 mb-6">
-			<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">Grafer</h1>
-			<p class="text-base text-gray-600 dark:text-gray-400">Utforska prognosdata genom interaktiva diagram. Filtrera, jämför och exportera för användning i rapporter och presentationer.</p>
+		<div class="bg-white lg:rounded-xl lg:shadow-sm px-4 py-4 sm:p-8 mb-4 lg:mb-6">
+			<h1 class="text-3xl font-bold text-gray-900 mb-2">Grafer</h1>
+			<p class="text-base text-gray-600">Utforska prognosdata genom interaktiva diagram. Filtrera, jämför och exportera för användning i rapporter och presentationer.</p>
+			<p class="lg:hidden text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3">Den här sidan fungerar bäst på en större skärm.</p>
+			{#if viewStore.initialized}
+				<button
+					onclick={importFromFrontpage}
+					class="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg bg-chart-700/10 text-chart-900 hover:bg-chart-700/20 text-sm font-medium transition-colors"
+				>
+					<ArrowDownToLine class="w-4 h-4" />
+					Importera val från startsidan ({viewStore.geographyName}, {viewStore.year})
+				</button>
+			{/if}
 		</div>
 
 				<!-- Dashboard Grid -->
@@ -224,7 +270,7 @@
 
 					<!-- Row 1: AreaChart (3/5) + SegmentBars (2/5) -->
 					<div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-						<div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+						<div class="lg:col-span-3 bg-white rounded-xl shadow-sm p-6">
 							<LazyChart height="350px">
 								<AreaChart
 									geography={getEffectiveParams(CHART_IDS.AREA_CHART).geography}
@@ -251,7 +297,7 @@
 								</AreaChart>
 							</LazyChart>
 						</div>
-						<div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+						<div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
 							<LazyChart height="350px">
 								<SegmentBars
 									geography={getEffectiveParams(CHART_IDS.SEGMENT_ARC).geography}
@@ -279,9 +325,34 @@
 						</div>
 					</div>
 
+					<!-- Row 1b: Stacked Sector Chart (full width) -->
+					<div class="bg-white rounded-xl shadow-sm p-6">
+					<LazyChart height="350px">
+						<StackedSectorChart
+							geography={getEffectiveParams(CHART_IDS.STACKED_SECTOR).geography}
+							baseScenarioOverride={getEffectiveParams(CHART_IDS.STACKED_SECTOR).scenarioId}
+							parameterValuesOverride={getEffectiveParams(CHART_IDS.STACKED_SECTOR).parameterValues}
+							description={getDescription(CHART_IDS.STACKED_SECTOR)}
+							class="w-full"
+						>
+							{#snippet headerControls()}
+								<button
+									onclick={() => toggleFilter(CHART_IDS.STACKED_SECTOR)}
+									class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.STACKED_SECTOR)}"
+								>
+									<SlidersHorizontal class="w-3.5 h-3.5" />
+									{#if hasOverrides(CHART_IDS.STACKED_SECTOR)}
+										<span>{overrideCount(CHART_IDS.STACKED_SECTOR)}</span>
+									{/if}
+								</button>
+							{/snippet}
+						</StackedSectorChart>
+					</LazyChart>
+					</div>
+
 					<!-- Row 2: SectorPieChart (1/2) + PeriodHeatmap (1/2) -->
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-						<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+						<div class="bg-white rounded-xl shadow-sm p-6">
 							<LazyChart height="500px">
 								<SectorPieChart
 									geography={getEffectiveParams(CHART_IDS.SECTOR_PIE).geography}
@@ -305,7 +376,7 @@
 								</SectorPieChart>
 							</LazyChart>
 						</div>
-						<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+						<div class="bg-white rounded-xl shadow-sm p-6">
 							<LazyChart height="500px">
 								<PeriodHeatmap
 									geography={getEffectiveParams(CHART_IDS.PERIOD_HEATMAP).geography}
@@ -332,8 +403,35 @@
 						</div>
 					</div>
 
+					<!-- Row 2b: MonthlyWeekProfile (full width) -->
+					<div class="bg-white rounded-xl shadow-sm p-6">
+					<LazyChart height="400px">
+						<MonthlyWeekProfile
+							geography={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).geography}
+							year={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).year}
+							segment={getActiveSegment(CHART_IDS.WEEKLY_PROFILE)}
+							baseScenarioOverride={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).scenarioId}
+							parameterValuesOverride={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).parameterValues}
+							description={getDescription(CHART_IDS.WEEKLY_PROFILE)}
+							class="w-full"
+						>
+							{#snippet headerControls()}
+								<button
+									onclick={() => toggleFilter(CHART_IDS.WEEKLY_PROFILE)}
+									class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.WEEKLY_PROFILE)}"
+								>
+									<SlidersHorizontal class="w-3.5 h-3.5" />
+									{#if hasOverrides(CHART_IDS.WEEKLY_PROFILE)}
+										<span>{overrideCount(CHART_IDS.WEEKLY_PROFILE)}</span>
+									{/if}
+								</button>
+							{/snippet}
+						</MonthlyWeekProfile>
+					</LazyChart>
+					</div>
+
 					<!-- Row 3: TimeLine (full width) -->
-					<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+					<div class="bg-white rounded-xl shadow-sm p-6">
 					<LazyChart height="350px">
 						<TimeLine
 							geography={getEffectiveParams(CHART_IDS.TIMELINE).geography}
@@ -345,6 +443,7 @@
 							scenarios={scenarioState.comparisonScenarios}
 							comparisonMode={scenarioState.comparisonMode}
 							description={getDescription(CHART_IDS.TIMELINE)}
+							brushable={true}
 							class="w-full"
 						>
 							{#snippet headerControls()}
@@ -363,7 +462,7 @@
 					</div>
 
 					<!-- Row 4: Histogram (full width) -->
-					<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+					<div class="bg-white rounded-xl shadow-sm p-6">
 					<LazyChart height="350px">
 						<Histogram
 							geography={getEffectiveParams(CHART_IDS.HISTOGRAM).geography}
@@ -395,7 +494,7 @@
 
 					<!-- Row 5: Map (half) -->
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-						<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+						<div class="bg-white rounded-xl shadow-sm p-6">
 							<div class="rounded overflow-hidden">
 								<div class="h-[500px]">
 									<Map
@@ -414,7 +513,7 @@
 					</div>
 
 					<!-- Row 6: GeoBarChart (full width) -->
-					<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+					<div class="bg-white rounded-xl shadow-sm p-6">
 					<LazyChart height="350px">
 								<GeoBarChart
 									year={getEffectiveParams(CHART_IDS.GEO_BAR).year || 2030}
@@ -443,7 +542,7 @@
 					</div>
 
 					<!-- Row 7: GeoSegmentChart (full width) -->
-					<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+					<div class="bg-white rounded-xl shadow-sm p-6">
 					<LazyChart height="450px">
 						<GeoSegmentChart
 							year={getEffectiveParams(CHART_IDS.GEO_SEGMENT).year}
@@ -474,7 +573,7 @@
 		<!-- Filter Sidebar (desktop) — fixed to viewport, aligned with content card top -->
 		{#if activeFilterChart}
 			<aside class="hidden lg:block fixed top-[6.5rem] right-6 2xl:right-auto 2xl:left-[calc(50%+37rem)] w-80 z-40 animate-slide-in">
-				<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
+				<div class="bg-white rounded-2xl shadow-lg p-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
 					<ChartFilterPanel
 						chartId={activeFilterChart}
 						chartTitle={CHART_TITLES[activeFilterChart] || 'Filter'}
@@ -509,24 +608,24 @@
 		role="dialog"
 		aria-label="Filter"
 		tabindex="-1"
-		class="lg:hidden fixed bottom-0 left-0 right-0 max-h-[85vh] bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up"
+		class="lg:hidden fixed bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up"
 	>
 		<!-- Drag Handle -->
 		<div class="flex items-center justify-center py-3 cursor-grab active:cursor-grabbing">
-			<div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+			<div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
 		</div>
 
 		<!-- Header -->
-		<div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+		<div class="flex items-center justify-between px-6 py-3 border-b border-gray-200">
 			<div>
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filter</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+				<h3 class="text-lg font-semibold text-gray-900">Filter</h3>
+				<p class="text-sm text-gray-500 mt-0.5">
 					{CHART_TITLES[activeFilterChart] || ''}
 				</p>
 			</div>
 			<button
 				onclick={() => activeFilterChart = null}
-				class="p-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				class="p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors"
 				aria-label="Stäng"
 			>
 				<X class="w-6 h-6" />

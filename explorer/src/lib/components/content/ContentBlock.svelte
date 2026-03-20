@@ -21,7 +21,7 @@
 </script>
 
 <div class="content-block {maxWidth === 'full' ? 'w-full' : `max-w-${maxWidth}`} {className}">
-	<div class="prose prose-slate dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-a:text-primary-600 hover:prose-a:text-primary-700 prose-code:text-primary-600 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+	<div class="prose prose-slate prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-a:text-primary-600 hover:prose-a:text-primary-700 prose-code:text-primary-600 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
 		{@render children()}
 	</div>
 </div>
@@ -76,7 +76,7 @@
 	}
 
 	.content-block :global(pre) {
-		@apply bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4;
+		@apply bg-gray-100 p-4 rounded-lg overflow-x-auto my-4;
 	}
 
 	.content-block :global(pre code) {
@@ -88,10 +88,10 @@
 	}
 
 	.content-block :global(th) {
-		@apply bg-gray-100 dark:bg-gray-800 font-semibold p-2 text-left border-b-2 border-gray-300 dark:border-gray-600;
+		@apply bg-gray-100 font-semibold p-2 text-left border-b-2 border-gray-300;
 	}
 
 	.content-block :global(td) {
-		@apply p-2 border-b border-gray-200 dark:border-gray-700;
+		@apply p-2 border-b border-gray-200;
 	}
 </style>

@@ -13,20 +13,6 @@
     color: inherit;
 }
 
-/* ThemeSwitch sun icon color - targets third-party SVG (ui.sunIcon from $lib/colors) */
-.grid.grid-cols-1.grid-rows-1 svg:last-child {
-    color: #f9ca2d !important;
-}
-
-/* This is a fix to the ThemeSwitch component*/
-input[type="checkbox"].peer {
-    appearance: none; /* Ensure appearance is reset */
-    height: 0; /* Ensure height doesn't contribute to layout */
-    margin: 0; /* Prevent margin artifacts */
-    padding: 0; /* Prevent padding artifacts */
-    border: none; /* Remove any default border */
-    box-shadow: none; /* Remove shadow that might cause a line */
-}
 
 @layer utilities {
     /* Hide scrollbar for Chrome, Safari and Opera */
@@ -38,4 +24,11 @@ input[type="checkbox"].peer {
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
   }
+}
+
+/* Prevent iOS text selection on chart interactions */
+.TooltipContext {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }

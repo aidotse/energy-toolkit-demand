@@ -37,7 +37,7 @@
 		transition-all duration-200
 		{selected
 		? 'border-primary bg-primary text-white'
-		: 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}
+		: 'border-gray-300 bg-white text-gray-700'}
 		{!disabled && !selected
 		? 'hover:border-primary hover:shadow-sm active:scale-98'
 		: ''}

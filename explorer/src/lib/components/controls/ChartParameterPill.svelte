@@ -92,7 +92,7 @@
 		class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
 		       {hasOverrides
 			? 'bg-primary text-white shadow-sm hover:shadow-md'
-			: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}
+			: 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
 		       focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 		title={hasOverrides ? `Diagramparametrar (${overrideCount} anpassade)` : 'Diagramparametrar'}
 		aria-label="Chart parameters"
@@ -107,17 +107,17 @@
 
 	{#if open}
 		<div
-			class="absolute right-0 top-full mt-2 w-80 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+			class="absolute right-0 top-full mt-2 w-80 p-4 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
 		>
 		<div class="flex items-center justify-between mb-4">
-			<h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+			<h3 class="text-sm font-semibold text-gray-900">
 				Diagramparametrar
 			</h3>
 			{#if hasOverrides}
 				<button
 					type="button"
 					onclick={handleReset}
-					class="text-xs text-gray-600 dark:text-gray-400 hover:text-primary hover:underline"
+					class="text-xs text-gray-600 hover:text-primary hover:underline"
 				>
 					Återställ
 				</button>
@@ -127,7 +127,7 @@
 		<div class="space-y-4">
 			{#if supportedParameters.includes('geography')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label class="block text-xs font-medium text-gray-700 mb-1">
 						Geografi
 						{#if chartOverrides.geography !== undefined}
 							<span class="ml-1 text-primary">●</span>
@@ -146,7 +146,7 @@
 
 			{#if supportedParameters.includes('year')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label class="block text-xs font-medium text-gray-700 mb-1">
 						År
 						{#if chartOverrides.year !== undefined}
 							<span class="ml-1 text-primary">●</span>
@@ -164,7 +164,7 @@
 
 			{#if supportedParameters.includes('segment')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label class="block text-xs font-medium text-gray-700 mb-1">
 						Segment
 						{#if chartOverrides.segment !== undefined}
 							<span class="ml-1 text-primary">●</span>
@@ -182,7 +182,7 @@
 
 			{#if supportedParameters.includes('resolution')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label class="block text-xs font-medium text-gray-700 mb-1">
 						Upplösning
 						{#if chartOverrides.resolution !== undefined}
 							<span class="ml-1 text-primary">●</span>
@@ -200,7 +200,7 @@
 
 			{#if supportedParameters.includes('aggregation')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label class="block text-xs font-medium text-gray-700 mb-1">
 						Aggregering
 						{#if chartOverrides.aggregation !== undefined}
 							<span class="ml-1 text-primary">●</span>
@@ -218,11 +218,11 @@
 			{/if}
 		</div>
 
-			<div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+			<div class="mt-4 pt-4 border-t border-gray-200">
 				<button
 					type="button"
 					onclick={() => (open = false)}
-					class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+					class="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
 				>
 					Stäng
 				</button>

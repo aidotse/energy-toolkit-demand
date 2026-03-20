@@ -39,28 +39,35 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{content?.metadata?.title ? `${content.metadata.title} — Behovskartan` : 'Behovskartan'}</title>
+	{#if content?.metadata?.description}
+		<meta name="description" content={content.metadata.description} />
+	{/if}
+</svelte:head>
+
 <PageContainer>
 	{#if loading}
 		<div class="animate-pulse space-y-4">
-			<div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-			<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-			<div class="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+			<div class="h-8 bg-gray-200 rounded w-1/3"></div>
+			<div class="h-4 bg-gray-200 rounded w-2/3"></div>
+			<div class="h-64 bg-gray-200 rounded"></div>
 		</div>
 	{:else if error}
-		<p class="text-red-600 dark:text-red-400">Content not found: {slug}</p>
+		<p class="text-red-600">Content not found: {slug}</p>
 	{:else if content}
 		{#if header}
 			{@render header()}
 		{/if}
 
-		<div class="px-6 sm:px-12 lg:px-20 pt-8">
+		<div class="px-1 sm:px-8 lg:px-20 pt-4 lg:pt-8">
 			{#if content.metadata.title}
-				<h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-gray-50 mb-3">
+				<h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
 					{content.metadata.title}
 				</h1>
 			{/if}
 			{#if content.metadata.description}
-				<p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-8 max-w-3xl">
+				<p class="text-lg font-medium text-gray-700 mb-8 max-w-3xl">
 					{content.metadata.description}
 				</p>
 			{/if}

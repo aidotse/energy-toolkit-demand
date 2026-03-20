@@ -6,9 +6,12 @@
 	 * or key messages. Can include icon and different variants for different
 	 * types of information (insight, warning, tip).
 	 *
+	 * On mobile (< lg), renders collapsed by default with tap to expand.
+	 * On desktop (lg+), always fully expanded.
+	 *
 	 * @component
 	 */
-	import { Lightbulb, AlertTriangle, Info } from 'lucide-svelte';
+	import { Lightbulb, AlertTriangle, Info, ChevronDown } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -23,28 +26,30 @@
 		class?: string;
 	} = $props();
 
+	let expanded = $state(false);
+
 	// Icon and color mapping
 	const variantConfig = {
 		insight: {
 			icon: Lightbulb,
-			bgClass: 'bg-page-bg dark:bg-gray-800',
-			borderClass: 'border-gray-300 dark:border-gray-700',
-			iconClass: 'text-gray-900 dark:text-gray-100',
-			titleClass: 'text-gray-900 dark:text-gray-100'
+			bgClass: 'bg-gradient-to-br from-chart-100/30 to-chart-300/15',
+			borderClass: 'border-chart-500',
+			iconClass: 'text-chart-700',
+			titleClass: 'text-chart-900'
 		},
 		warning: {
 			icon: AlertTriangle,
-			bgClass: 'bg-amber-50 dark:bg-amber-900/20',
-			borderClass: 'border-amber-200 dark:border-amber-800',
-			iconClass: 'text-amber-600 dark:text-amber-400',
-			titleClass: 'text-amber-900 dark:text-amber-100'
+			bgClass: 'bg-gradient-to-br from-amber-50 to-amber-100/50',
+			borderClass: 'border-amber-400',
+			iconClass: 'text-amber-600',
+			titleClass: 'text-amber-900'
 		},
 		info: {
 			icon: Info,
-			bgClass: 'bg-chart-300/15 dark:bg-chart-900/20',
-			borderClass: 'border-chart-700/30 dark:border-chart-700/50',
-			iconClass: 'text-chart-900 dark:text-chart-300',
-			titleClass: 'text-chart-900 dark:text-chart-100'
+			bgClass: 'bg-gradient-to-br from-chart-100/20 to-chart-300/10',
+			borderClass: 'border-chart-700',
+			iconClass: 'text-chart-700',
+			titleClass: 'text-chart-900'
 		}
 	};
 
@@ -53,23 +58,33 @@
 </script>
 
 <div
-	class="insight-box rounded border-l-4 p-6 {config.bgClass} {config.borderClass} {className}"
+	class="insight-box rounded border-l-4 px-5 py-4 lg:px-8 lg:py-7 {config.bgClass} {config.borderClass} {className}"
 >
-	<div class="flex gap-4">
-		<!-- Icon -->
-		<div class="flex-shrink-0 {config.iconClass}">
-			<Icon size={24} />
-		</div>
-
-		<!-- Content -->
-		<div class="flex-1">
-			{#if title}
-				<h3 class="text-lg font-semibold mb-2 {config.titleClass}">
+	<div>
+		{#if title}
+			<!-- Mobile: clickable header to toggle collapse -->
+			<button
+				class="lg:hidden flex items-center justify-between w-full text-left gap-2"
+				onclick={() => expanded = !expanded}
+			>
+				<h3 class="flex items-center gap-2 text-base font-semibold mt-0 mb-0 {config.titleClass}">
+					<span class="flex-shrink-0 {config.iconClass}"><Icon size={20} /></span>
 					{title}
 				</h3>
-			{/if}
+				<span class="flex-shrink-0 text-gray-400 transition-transform duration-200 {expanded ? 'rotate-180' : ''}">
+					<ChevronDown size={18} />
+				</span>
+			</button>
+			<!-- Desktop: always-visible header -->
+			<h3 class="hidden lg:flex items-center gap-2 text-base font-semibold mt-0 mb-2 {config.titleClass}">
+				<span class="flex-shrink-0 {config.iconClass}"><Icon size={20} /></span>
+				{title}
+			</h3>
+		{/if}
 
-			<div class="insight-content text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+		<!-- Mobile: collapsible content -->
+		<div class="insight-content text-sm text-gray-900 leading-relaxed lg:!grid-rows-[1fr] {expanded ? 'grid-rows-[1fr] mt-2' : 'grid-rows-[0fr]'}" style="display: grid; transition: grid-template-rows 200ms ease;">
+			<div class="overflow-hidden lg:!overflow-visible">
 				{@render children()}
 			</div>
 		</div>
@@ -77,8 +92,12 @@
 </div>
 
 <style>
+	.insight-box :global(h3) {
+		@apply mt-0;
+	}
+
 	.insight-content :global(p) {
-		@apply mb-3 last:mb-0;
+		@apply mb-3 last:mb-0 first:mt-0;
 	}
 
 	.insight-content :global(ul),
@@ -91,7 +110,7 @@
 	}
 
 	.insight-content :global(strong) {
-		@apply font-semibold text-gray-900 dark:text-gray-100;
+		@apply font-semibold text-gray-900;
 	}
 
 	.insight-content :global(a) {

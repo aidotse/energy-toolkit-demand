@@ -121,7 +121,7 @@
 			{#each segmentOrder as seg}
 				{@const color = getSegmentColor(seg).bg}
 				{@const label = data.segments[seg]?.label ?? seg}
-				<span class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+				<span class="flex items-center gap-1.5 text-sm text-gray-600">
 					<span class="inline-block w-4 h-0.5 rounded" style="background-color: {color};"></span>
 					{label}
 				</span>

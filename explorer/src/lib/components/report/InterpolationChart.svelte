@@ -107,7 +107,7 @@
 		{/each}
 	</svg>
 
-	<figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+	<figcaption class="text-center text-sm text-gray-500 mt-2">
 		○ = Energimyndighetens datapunkter &nbsp; ● = Interpolerade årsvärden
 	</figcaption>
 </figure>

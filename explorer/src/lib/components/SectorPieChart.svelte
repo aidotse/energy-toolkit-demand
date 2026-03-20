@@ -55,7 +55,8 @@
 		class: className = '',
 		comparisonYear = 2025,
 		enableComparison = false,
-		initialComparisonMode = 'year' as 'year' | 'scenario' | 'base',
+		initialComparisonMode = 'year' as 'year' | 'base',
+		deltaDisplay = 'percent' as 'percent' | 'absolute',
 		baseScenarioOverride,
 		parameterValuesOverride
 	}: {
@@ -67,7 +68,8 @@
 		class?: string;
 		comparisonYear?: number;
 		enableComparison?: boolean;
-		initialComparisonMode?: 'year' | 'scenario' | 'base';
+		initialComparisonMode?: 'year' | 'base';
+		deltaDisplay?: 'percent' | 'absolute';
 		baseScenarioOverride?: string;
 		parameterValuesOverride?: Record<string, number>;
 	} = $props();
@@ -80,7 +82,7 @@
 	let hoveredSegment = $state<string | null>(null);
 	let hoveredPieIndex = $state<number>(-1);
 	let tooltipPosition = $state<{ x: number; y: number } | null>(null);
-	let comparisonMode = $state<'year' | 'scenario' | 'base'>(initialComparisonMode);
+	let comparisonMode = $state<'year' | 'base'>(initialComparisonMode);
 
 	// For base scenario comparison: which scenario to compare against
 	let comparisonScenarioId = $state<string>('');
@@ -121,25 +123,19 @@
 		enableComparison &&
 			(comparisonMode === 'year'
 				? year !== comparisonYear
-				: comparisonMode === 'base'
-					? !!comparisonScenarioId
-					: parameterStore.hasActiveParameters)
+				: !!comparisonScenarioId)
 	);
 
 	// Labels above each pie (scenario names from config, not hardcoded)
 	let leftLabel = $derived(
 		comparisonMode === 'year'
 			? String(comparisonYear)
-			: comparisonMode === 'base'
-				? parameterStore.baseScenarios.find((s) => s.id === baseScenario)?.name || ''
-				: parameterStore.defaultScenario?.name || m.scenario_base_label()
+			: parameterStore.baseScenarios.find((s) => s.id === baseScenario)?.name || ''
 	);
 	let rightLabel = $derived(
 		comparisonMode === 'year'
 			? String(year)
-			: comparisonMode === 'base'
-				? parameterStore.baseScenarios.find((s) => s.id === comparisonScenarioId)?.name || ''
-				: m.scenario_with_adjustments()
+			: parameterStore.baseScenarios.find((s) => s.id === comparisonScenarioId)?.name || ''
 	);
 
 	// Dynamic description based on comparison mode
@@ -152,13 +148,10 @@
 		if (comparisonMode === 'year') {
 			return `Sektorsfördelning för ${geoName} ${comparisonYear} jämfört med ${year} i scenariot ${scenarioName}.`;
 		}
-		if (comparisonMode === 'base') {
-			const otherName = parameterStore.baseScenarios.find(
-				(s) => s.id === comparisonScenarioId
-			)?.name || '';
-			return `Sektorsfördelning för ${geoName} år ${year}: ${scenarioName} jämfört med ${otherName}.`;
-		}
-		return `Sektorsfördelning för ${geoName}: grundscenario jämfört med justerat, år ${year}.`;
+		const otherName = parameterStore.baseScenarios.find(
+			(s) => s.id === comparisonScenarioId
+		)?.name || '';
+		return `Sektorsfördelning för ${geoName} år ${year}: ${scenarioName} jämfört med ${otherName}.`;
 	});
 
 	async function fetchForYear(targetYear: number, withParams: boolean, scenarioOverride?: string) {
@@ -186,10 +179,6 @@
 		if (enableComparison && comparisonMode === 'year') {
 			// Left = comparisonYear baseline. Does NOT read `year` or `parameterValues`.
 			fetchLeftPie(comparisonYear, false);
-		} else if (enableComparison && comparisonMode === 'scenario') {
-			// Left = current year baseline. Does NOT read `parameterValues`.
-			if (!year) return;
-			fetchLeftPie(year, false);
 		} else if (enableComparison && comparisonMode === 'base') {
 			// Left = current year, current baseScenario, no params
 			if (!year) return;
@@ -222,13 +211,6 @@
 				return;
 			}
 			fetchRightPie(year, false, comparisonScenarioId);
-		} else {
-			if (!parameterStore.hasActiveParameters) {
-				rightRawData = [];
-				return;
-			}
-			const _params = parameterValues;
-			fetchRightPie(year, true);
 		}
 	});
 
@@ -314,6 +296,7 @@
 	let leftTotal = $derived(leftPieSlices.reduce((sum, s) => sum + s.value, 0));
 	let rightTotal = $derived(rightPieSlices.reduce((sum, s) => sum + s.value, 0));
 	let totalDelta = $derived(rightTotal - leftTotal);
+	let totalPercentChange = $derived(leftTotal > 0 ? (totalDelta / leftTotal) * 100 : 0);
 
 	// Delta calculations between left and right pies
 	let deltas = $derived.by(() => {
@@ -507,28 +490,20 @@
 	{#if enableComparison}
 		<div class="flex items-center gap-2 flex-wrap">
 			<div
-				class="inline-flex rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden"
+				class="inline-flex rounded-full border border-gray-200 overflow-hidden"
 			>
 				<button
 					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'year'
-						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
+						? 'bg-gray-900 text-white'
+						: 'bg-white text-gray-600 hover:bg-gray-50'}"
 					onclick={() => (comparisonMode = 'year')}
 				>
 					Jmf. tid
 				</button>
 				<button
-					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'scenario'
-						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
-					onclick={() => (comparisonMode = 'scenario')}
-				>
-					Jmf. parametrar
-				</button>
-				<button
 					class="px-3 py-1 text-xs font-medium transition-colors {comparisonMode === 'base'
-						? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-						: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400'}"
+						? 'bg-gray-900 text-white'
+						: 'bg-white text-gray-600 hover:bg-gray-50'}"
 					onclick={() => (comparisonMode = 'base')}
 				>
 					Jmf. scenarier
@@ -536,7 +511,7 @@
 			</div>
 			{#if comparisonMode === 'base' && otherScenarios.length > 0}
 				<select
-					class="text-xs border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+					class="text-xs border border-gray-200 rounded-full px-3 py-1 bg-white text-gray-700"
 					bind:value={comparisonScenarioId}
 				>
 					{#each otherScenarios as scenario}
@@ -609,23 +584,23 @@
 			text-anchor={lbl.textAnchor}
 			dominant-baseline="middle"
 			fill={lbl.fitsInside ? slice.textColor : '#000000'}
-			class="text-sm font-medium pointer-events-none"
-			style="font-size: 13px;"
+			class="font-medium pointer-events-none"
+			style="font-size: 18px;"
 		>
 			{#if lbl.fitsInside}
-				<tspan x={lbl.x} dy="-0.5em">{slice.displayName}</tspan>
-				<tspan x={lbl.x} dy="1.3em">{Math.round(slice.value / 1000)} TWh</tspan>
+				<tspan x={lbl.x} dy="-0.6em" style="font-size: 18px;">{slice.displayName}</tspan>
+				<tspan x={lbl.x} dy="1.4em" style="font-size: 16px;">{Math.round(slice.value / 1000)} TWh</tspan>
 			{:else}
-				<tspan dy="-0.5em">{slice.displayName}</tspan>
-				<tspan x={lbl.x} dy="1.3em">{Math.round(slice.value / 1000)} TWh</tspan>
+				<tspan dy="-0.6em" style="font-size: 16px;">{slice.displayName}</tspan>
+				<tspan x={lbl.x} dy="1.4em" style="font-size: 14px;">{Math.round(slice.value / 1000)} TWh</tspan>
 			{/if}
 		</text>
 	{/each}
 
 	<!-- Tooltip -->
 	{#if hoveredPieIndex === pieIndex && hoveredData && tooltipPosition}
-		{@const tooltipWidth = 140}
-		{@const tooltipHeight = 65}
+		{@const tooltipWidth = 170}
+		{@const tooltipHeight = 82}
 		{@const tooltipX = Math.min(
 			Math.max(tooltipPosition.x - tooltipWidth / 2, 10),
 			490 - tooltipWidth
@@ -646,13 +621,13 @@
 				rx="4"
 			/>
 			<!-- Tooltip content -->
-			<text x="10" y="18" fill="#000000" style="font-size: 12px;">
+			<text x="12" y="24" fill="#000000" style="font-size: 17px; font-weight: 600;">
 				{hoveredData.displayName}
 			</text>
-			<text x="10" y="36" fill={viz.label} style="font-size: 11px;">
+			<text x="12" y="46" fill={viz.label} style="font-size: 15px;">
 				{Math.round(hoveredData.value / 1000)} TWh
 			</text>
-			<text x="10" y="52" fill={viz.label} style="font-size: 11px;">
+			<text x="12" y="66" fill={viz.label} style="font-size: 15px;">
 				{hoveredData.percentage.toFixed(1)}% av totalt
 			</text>
 		</g>
@@ -670,7 +645,7 @@
 	headerControls={internalHeaderControls}
 	class={className}
 >
-	<div class="p-4">
+	<div class="p-2">
 		{#if loading}
 			<LoadingSkeleton variant="chart" message="Laddar sektoruppdelning..." />
 		{:else if error}
@@ -716,16 +691,20 @@
 											: 'text-gray-400'}
 								>
 									{delta.change > 0 ? '↑' : delta.change < 0 ? '↓' : '→'}
-									{Math.abs(Math.round(delta.change / 1000))} TWh
+									{#if deltaDisplay === 'percent'}
+										{Math.abs(Math.round(delta.percentChange))}%
+									{:else}
+										{Math.abs(Math.round(delta.change / 1000))} TWh
+									{/if}
 								</span>
 							{/if}
 						</div>
 					{/each}
 					<!-- Total change -->
 					<div
-						class="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-700 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+						class="mt-1.5 pt-1.5 border-t border-gray-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
 					>
-						<span class="text-gray-700 dark:text-gray-300">Totalt</span>
+						<span class="text-gray-700">Totalt</span>
 						<span
 							class={totalDelta > 0
 								? 'text-amber-600'
@@ -734,7 +713,11 @@
 									: 'text-gray-400'}
 						>
 							{totalDelta > 0 ? '↑' : totalDelta < 0 ? '↓' : '→'}
-							{Math.abs(Math.round(totalDelta / 1000))} TWh
+							{#if deltaDisplay === 'percent'}
+								{Math.abs(Math.round(totalPercentChange))}%
+							{:else}
+								{Math.abs(Math.round(totalDelta / 1000))} TWh
+							{/if}
 						</span>
 					</div>
 				</div>
@@ -748,7 +731,7 @@
 			</div>
 		{:else}
 			<!-- Single pie (original layout) -->
-			<div class="relative w-full h-[450px]">
+			<div class="relative w-full h-[320px] sm:h-[400px] lg:h-[450px]">
 				<svg viewBox="0 0 500 420" class="w-full h-full">
 					{@render renderPie(leftPieSlices, leftLabels, '', 0)}
 				</svg>

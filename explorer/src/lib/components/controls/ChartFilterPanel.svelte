@@ -133,15 +133,15 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h3 class="text-xs font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wide flex items-center gap-1.5">
+			<h3 class="text-xs font-semibold text-gray-900 uppercase tracking-wide flex items-center gap-1.5">
 				<SlidersHorizontal class="w-3.5 h-3.5" />
 				Filter
 			</h3>
-			<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{chartTitle}</p>
+			<p class="text-xs text-gray-500 mt-0.5">{chartTitle}</p>
 		</div>
 		<button
 			onclick={onClose}
-			class="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+			class="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
 		>
 			<X class="w-4 h-4" />
 		</button>
@@ -149,7 +149,7 @@
 
 	<!-- Geography -->
 	<div>
-		<span class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+		<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
 			Geografi
 		</span>
 		<GeographyCombobox
@@ -162,7 +162,7 @@
 
 	<!-- Year (slider) -->
 	<div>
-		<span class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+		<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
 			År
 		</span>
 		<YearSelector
@@ -176,7 +176,7 @@
 
 	<!-- Segment (multiselect dropdown) -->
 	<div>
-		<span class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+		<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
 			Sektor
 		</span>
 		<SegmentDropdown
@@ -189,7 +189,7 @@
 	<!-- Scenario (per-chart, writes to chartParametersStore) -->
 	{#if parameterStore.isInitialized}
 		<div>
-			<span class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+			<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
 				Scenario
 			</span>
 			<div class="flex flex-col gap-1">
@@ -198,8 +198,8 @@
 						onclick={() => handleBaseScenarioChange(scenario.id)}
 						class="w-full px-3 py-1.5 text-left text-xs rounded-md transition-colors
 							{effectiveScenarioId === scenario.id
-							? 'bg-chart-100 dark:bg-chart-900 text-chart-900 dark:text-chart-100 font-medium'
-							: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-750'}"
+							? 'bg-chart-100 text-chart-900 font-medium'
+							: 'bg-gray-50 text-gray-700 hover:bg-gray-100'}"
 					>
 						{scenario.name}
 						{#if scenario.default}
@@ -214,13 +214,13 @@
 		{#if isDefaultScenario}
 			<div>
 				<div class="flex items-center justify-between mb-1.5">
-					<span class="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+					<span class="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
 						Parametrar
 					</span>
 					{#if hasParamOverrides}
 						<button
 							onclick={resetParameters}
-							class="text-[10px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-0.5"
+							class="text-[10px] text-gray-500 hover:text-gray-700 flex items-center gap-0.5"
 						>
 							<RotateCcw class="w-2.5 h-2.5" />
 							Återställ
@@ -231,17 +231,17 @@
 				<div class="space-y-3">
 					{#each Object.entries(parameterStore.parametersBySegment) as [segment, params]}
 						<div class="space-y-1.5">
-							<span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+							<span class="text-[10px] font-medium text-gray-500">
 								{SEGMENT_LABELS[segment] || segment}
 							</span>
 							{#each params as param}
 								{@const currentValue = effectiveParamValues[param.name] ?? 0}
 								<div class="space-y-0.5">
 									<div class="flex items-center justify-between text-[10px]">
-										<span class="text-gray-600 dark:text-gray-400">
+										<span class="text-gray-600">
 											{getParamTypeLabel(param.name)}
 										</span>
-										<span class="font-medium text-gray-900 dark:text-gray-100">
+										<span class="font-medium text-gray-900">
 											{getParameterLabel(param, currentValue)}
 										</span>
 									</div>
@@ -258,8 +258,8 @@
 				</div>
 			</div>
 		{:else}
-			<div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-				<p class="text-[10px] text-gray-500 dark:text-gray-400">
+			<div class="p-2 bg-gray-50 rounded-md">
+				<p class="text-[10px] text-gray-500">
 					Parametrar kan justeras för <strong>{parameterStore.defaultScenario?.name || 'Beslutad Policy'}</strong>.
 				</p>
 			</div>
@@ -267,12 +267,12 @@
 	{/if}
 
 	<!-- Actions -->
-	<div class="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+	<div class="space-y-2 pt-2 border-t border-gray-200">
 		{#if allChartIds.length > 1}
 			<button
 				onclick={handleApplyToAll}
 				class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium
-					text-chart-900 dark:text-chart-100 bg-chart-700/10 hover:bg-chart-700/20
+					text-chart-900 bg-chart-700/10 hover:bg-chart-700/20
 					rounded-md transition-colors"
 			>
 				<Copy class="w-3.5 h-3.5" />
@@ -283,7 +283,7 @@
 		{#if hasOverrides}
 			<button
 				onclick={resetAll}
-				class="w-full px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+				class="w-full px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
 			>
 				Återställ alla
 			</button>
