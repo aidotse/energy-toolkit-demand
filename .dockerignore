@@ -18,7 +18,5 @@
 !paths.js
 !config.yaml
 
-# Include data (downloaded from S3 in CI)
-# Exclude scenarios/ (~15GB) - not used by the API server
-!data/
-data/scenarios/
+# Include entrypoint script
+!infrastructure/entrypoint.sh

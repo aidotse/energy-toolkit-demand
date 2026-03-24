@@ -25,6 +25,7 @@ PROJECT_NAME="behovskartan"
 # Derived names
 ECR_REPO="${PROJECT_NAME}-api"
 S3_BUCKET="${PROJECT_NAME}-explorer-${ENVIRONMENT}"
+S3_DATA_BUCKET="${PROJECT_NAME}-data-${ENVIRONMENT}"
 APP_RUNNER_SERVICE="${PROJECT_NAME}-api-${ENVIRONMENT}"
 
 echo "================================================"
@@ -202,10 +203,10 @@ if [ -n "$EXISTING_SERVICE" ] && [ "$EXISTING_SERVICE" != "None" ]; then
 else
     echo "   Creating App Runner service (will start after image is pushed)..."
 
-    # Create IAM role for App Runner to access ECR
+    # Create IAM access role for App Runner to pull from ECR
     ROLE_NAME="${PROJECT_NAME}-apprunner-ecr-access"
 
-    # Create trust policy
+    # Create trust policy for ECR access role
     cat > /tmp/trust-policy.json << EOF
 {
     "Version": "2012-10-17",
@@ -233,6 +234,55 @@ EOF
 
     ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ROLE_NAME}"
 
+    # Create IAM instance role for App Runner containers (S3 data access)
+    INSTANCE_ROLE_NAME="${PROJECT_NAME}-apprunner-instance"
+
+    cat > /tmp/instance-trust-policy.json << EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "tasks.apprunner.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+
+    aws iam create-role \
+        --role-name ${INSTANCE_ROLE_NAME} \
+        --assume-role-policy-document file:///tmp/instance-trust-policy.json \
+        2>/dev/null || echo "   Instance IAM role already exists"
+
+    # S3 read policy for downloading data at startup
+    cat > /tmp/s3-read-policy.json << EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:ListBucket"],
+            "Resource": [
+                "arn:aws:s3:::${S3_DATA_BUCKET}",
+                "arn:aws:s3:::${S3_DATA_BUCKET}/*"
+            ]
+        }
+    ]
+}
+EOF
+
+    aws iam put-role-policy \
+        --role-name ${INSTANCE_ROLE_NAME} \
+        --policy-name S3DataReadAccess \
+        --policy-document file:///tmp/s3-read-policy.json \
+        2>/dev/null || true
+
+    INSTANCE_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${INSTANCE_ROLE_NAME}"
+    echo "   Instance role: ${INSTANCE_ROLE_ARN}"
+
     # Wait for role to propagate
     sleep 10
 
@@ -249,7 +299,9 @@ EOF
                     "Port": "4010",
                     "RuntimeEnvironmentVariables": {
                         "NODE_ENV": "production",
-                        "ALLOWED_ORIGINS": "https://'"${CLOUDFRONT_DOMAIN}"'"
+                        "ALLOWED_ORIGINS": "https://'"${CLOUDFRONT_DOMAIN}"'",
+                        "S3_DATA_BUCKET": "'"${S3_DATA_BUCKET}"'",
+                        "AWS_DEFAULT_REGION": "'"${AWS_REGION}"'"
                     }
                 }
             },
@@ -257,7 +309,8 @@ EOF
         }' \
         --instance-configuration '{
             "Cpu": "1 vCPU",
-            "Memory": "2 GB"
+            "Memory": "2 GB",
+            "InstanceRoleArn": "'"${INSTANCE_ROLE_ARN}"'"
         }' \
         --health-check-configuration '{
             "Protocol": "HTTP",
@@ -299,6 +352,7 @@ echo "  S3_BUCKET_EXPLORER        = ${S3_BUCKET}"
 echo "  CLOUDFRONT_DISTRIBUTION_ID = ${CLOUDFRONT_ID}"
 echo "  CLOUDFRONT_DOMAIN         = ${CLOUDFRONT_DOMAIN}"
 echo "  ALLOWED_ORIGINS           = https://${CLOUDFRONT_DOMAIN}"
+echo "  S3_DATA_BUCKET            = ${S3_DATA_BUCKET}"
 echo ""
 echo "Next steps:"
 echo "  1. Push initial Docker image (see commands above)"

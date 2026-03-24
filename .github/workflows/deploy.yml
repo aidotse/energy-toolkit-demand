@@ -31,12 +31,6 @@ jobs:
       image_tag: ${{ steps.build.outputs.image_tag }}
 
     steps:
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
-          sudo docker system prune -af
-          df -h /
-
       - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -48,9 +42,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Download API data from S3
-        run: aws s3 sync s3://${{ vars.S3_DATA_BUCKET }}/ data/
 
       - name: Build and push Docker image
         id: build
@@ -96,7 +87,9 @@ jobs:
                   "Port": "4010",
                   "RuntimeEnvironmentVariables": {
                     "NODE_ENV": "production",
-                    "ALLOWED_ORIGINS": "${{ vars.ALLOWED_ORIGINS }}"
+                    "ALLOWED_ORIGINS": "${{ vars.ALLOWED_ORIGINS }}",
+                    "S3_DATA_BUCKET": "${{ vars.S3_DATA_BUCKET }}",
+                    "AWS_DEFAULT_REGION": "${{ env.AWS_REGION }}"
                   }
                 }
               },

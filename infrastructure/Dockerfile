@@ -1,16 +1,17 @@
 # Behovskartan API
-# Node.js + Express + DuckDB with bundled Parquet data
+# Node.js + Express + DuckDB — data downloaded from S3 at startup
 # Build context: repo root (docker build -f infrastructure/Dockerfile .)
 
 FROM node:20-slim
 
 WORKDIR /app
 
-# Install build dependencies for DuckDB native bindings
+# Install build dependencies for DuckDB native bindings + AWS CLI for S3 data download
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
+    awscli \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first (for layer caching)
@@ -32,8 +33,9 @@ COPY api/schemas/ ./api/schemas/
 COPY api/responses/ ./api/responses/
 COPY api/scripts/ ./api/scripts/
 
-# Copy data files (Parquet + JSON) - this is the large layer (~1.3 GB)
-COPY data/ ./data/
+# Copy entrypoint script (downloads data from S3 at startup)
+COPY infrastructure/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Set environment
 ENV NODE_ENV=production
@@ -43,8 +45,8 @@ ENV PORT=4010
 EXPOSE 4010
 
 # Health check - verify API responds
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD node -e "fetch('http://localhost:4010/config').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-# Start the server from the api directory
-CMD ["node", "api/local-server.js"]
+# Start via entrypoint (downloads data then starts server)
+CMD ["/app/entrypoint.sh"]
