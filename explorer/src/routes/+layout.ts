@@ -1,9 +1,15 @@
+import { building } from '$app/environment';
 import { fetchScenarios, fetchParameters } from '$lib/dataService';
 import type { LayoutLoad } from './$types';
 
 export const prerender = true;
 
 export const load: LayoutLoad = async ({ fetch }) => {
+	// Skip API calls during static build — client will fetch after hydration
+	if (building) {
+		return { scenarios: [], parameters: {}, defaultScenario: null };
+	}
+
 	try {
 		// Load scenarios and parameters for the navigation
 		const [scenariosResult, parametersResult] = await Promise.all([

@@ -97,4 +97,6 @@ export const CHART_DESCRIPTIONS: Record<
 	'stacked-sector': (y, g, seg, s) => `Elbehov per sektor över tid för ${g} 2025–2050 ${s}`,
 	'weekly-profile': (y, g, seg, s) => `Genomsnittlig veckobelastning per månad för ${g}${seg} år ${y} ${s}`,
 	map: (y, g, seg, s) => `Geografisk fördelning av elbehov år ${y} ${s}`,
+	'flex-impact': (y, g, seg, s) => `Varaktighetskurva som jämför effektbehovet med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
+	'flex-peak-bars': (y, g, seg, s) => `Toppeffekt med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
 };

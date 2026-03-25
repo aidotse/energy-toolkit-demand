@@ -16,6 +16,8 @@
 	import SectorPieChart from '$lib/components/SectorPieChart.svelte';
 	import GeoSegmentChart from '$lib/components/GeoSegmentChart.svelte';
 	import PeriodHeatmap from '$lib/components/PeriodHeatmap.svelte';
+	import FlexImpactChart from '$lib/components/FlexImpactChart.svelte';
+	import FlexPeakBars from '$lib/components/FlexPeakBars.svelte';
 	import { viewStore } from '$lib/stores/viewStore.svelte';
 	import { parameterStore, getParameterLabel } from '$lib/stores/parameterStore.svelte';
 	import { SEGMENT_LABELS } from '$lib/chartConfig';
@@ -91,7 +93,9 @@
 		'area-yearly': (y, g, seg, s) => `Årligt elbehov för ${g}${seg} 2025–2050 ${s}`,
 		'sector-pie': (y, g, seg, s) => `Sektorsfördelning av elbehov för ${g} år ${y} ${s}`,
 		'geo-segment': (y, g, seg, s) => `Sektorernas andel av elbehovet per län år ${y} ${s}`,
-		'period-heatmap': (y, g, seg, s) => `Elbehov fördelat på månad och tid på dygnet för ${g}${seg} år ${y} ${s}`
+		'period-heatmap': (y, g, seg, s) => `Elbehov fördelat på månad och tid på dygnet för ${g}${seg} år ${y} ${s}`,
+		'flex-impact': (y, g, seg, s) => `Varaktighetskurva som jämför effektbehovet med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
+		'flex-peak-bars': (y, g, seg, s) => `Toppeffekt med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`
 	};
 
 	let description = $derived(DESCRIPTIONS[chart]?.(viewStore.year, geoLabel, segmentLabel, scenarioSuffix) ?? '');
@@ -126,6 +130,22 @@
 		/>
 	{:else if chart === 'period-heatmap'}
 		<PeriodHeatmap
+			geography={viewStore.geography}
+			segment={viewStore.activeSegment}
+			year={viewStore.year}
+			exportable={exportable}
+			{description}
+		/>
+	{:else if chart === 'flex-impact'}
+		<FlexImpactChart
+			geography={viewStore.geography}
+			segment={viewStore.activeSegment}
+			year={viewStore.year}
+			exportable={exportable}
+			{description}
+		/>
+	{:else if chart === 'flex-peak-bars'}
+		<FlexPeakBars
 			geography={viewStore.geography}
 			segment={viewStore.activeSegment}
 			year={viewStore.year}

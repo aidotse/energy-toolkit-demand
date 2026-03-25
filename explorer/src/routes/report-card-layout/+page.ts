@@ -1,3 +1,4 @@
+import { building } from '$app/environment';
 import {
 	fetchDemandData,
 	fetchConfig,
@@ -10,7 +11,18 @@ import {
 import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
 
+const FALLBACK = {
+	config: null, scenarios: [], parameters: {}, globals: {},
+	year: 2045, geography: 'total', segment: 'total',
+	scenario: null, scenarioId: 'default',
+	geographies: [], geojson: { type: 'FeatureCollection' as const, features: [] },
+	timeSeriesData: [], hourlyData: [], dailyData: [],
+	segmentData: [], geoData: [],
+	totalEnergy2050: 0, totalEnergy2025: 0, growthRate: 0, peakPower: 0, scenarioCount: 0
+};
+
 export const load: PageLoad = async ({ fetch }) => {
+	if (building) return FALLBACK;
 	// Report page configuration
 	const geography = 'total'; // National totals
 	const segment = 'total'; // All segments combined initially

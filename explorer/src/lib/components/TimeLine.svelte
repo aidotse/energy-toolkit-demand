@@ -1,14 +1,14 @@
 <script lang="ts">
 	/**
-	 * TimeLine Component - Time series area chart visualization
+	 * TimeLine Component - Time series line chart visualization
 	 *
 	 * Supports single or multiple segments and geographies as overlapping
-	 * semi-transparent area series. Optional mini-chart brush for zooming.
+	 * colored line series. Optional mini-chart brush for zooming.
 	 * Backward-compatible: single segment/geography string props still work.
 	 *
 	 * @component
 	 */
-	import { AreaChart } from 'layerchart';
+	import { LineChart } from 'layerchart';
 	import { fetchDemandData } from '$lib/dataService';
 	import { makeDemandQuery, formatNumber } from '$lib/utilities';
 	import { getPowerPrefix } from '$lib/stores/units.svelte';
@@ -105,12 +105,12 @@
 
 	function getSeriesOpacity(seriesId: string): number {
 		if (selectedSeriesId) {
-			return selectedSeriesId === seriesId ? 0.9 : 0.1;
+			return selectedSeriesId === seriesId ? 1.0 : 0.15;
 		}
 		if (hoveredSeriesId) {
-			return hoveredSeriesId === seriesId ? 0.9 : 0.1;
+			return hoveredSeriesId === seriesId ? 1.0 : 0.15;
 		}
-		return 0.5;
+		return 1.0;
 	}
 
 	function handleLegendHover(seriesId: string | null) {
@@ -234,14 +234,13 @@
 			const opacity = getSeriesOpacity(key);
 			return {
 				key,
+				label: seriesLabel(seg, geo),
 				value: key,
-				color: hexToRgba(color, opacity * 0.4),
+				color: 'transparent',
 				props: {
-					line: {
-						fill: 'none',
-						stroke: hexToRgba(color, opacity),
-						strokeWidth: 2
-					}
+					fill: 'none',
+					stroke: hexToRgba(color, opacity),
+					strokeWidth: 2
 				}
 			};
 		});
@@ -391,8 +390,25 @@
 		normalizedScenarios.length > 1 ? comparisonData : pivotedData
 	);
 
-	// Shared tooltip and highlight props
-	const tooltipProps = {
+	// Format timestamp for tooltip — includes hour when data is hourly
+	function formatTimestamp(ts: any): string {
+		if (ts instanceof Date) {
+			return ts.toLocaleString('sv-SE', {
+				year: 'numeric', month: 'short', day: 'numeric',
+				hour: '2-digit', minute: '2-digit'
+			});
+		}
+		if (typeof ts === 'string' && ts.includes('T')) {
+			return new Date(ts).toLocaleString('sv-SE', {
+				year: 'numeric', month: 'short', day: 'numeric',
+				hour: '2-digit', minute: '2-digit'
+			});
+		}
+		return String(ts);
+	}
+
+	// Tooltip config — shared base, with single-series variant that hides "value" label
+	const tooltipBase = {
 		highlight: { area: { fill: 'rgba(0,0,0,0.05)' } },
 		tooltip: {
 			root: {
@@ -400,17 +416,65 @@
 				contained: 'window' as const,
 				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 border border-gray-200 backdrop-blur-sm'
 			},
+			header: {
+				format: (v: any) => formatTimestamp(v)
+			},
 			item: {
-				label: '',
-				format: (v: number) => formatNumber(v, getPowerPrefix(), 'W')
+				format: (v: number) => '\u00A0' + formatNumber(v, getPowerPrefix(), 'W')
 			}
 		}
 	};
+	// Single-series: show "Alla" as the label
+	const tooltipSingle = {
+		...tooltipBase,
+		tooltip: {
+			...tooltipBase.tooltip,
+			item: {
+				...tooltipBase.tooltip.item,
+				label: 'Alla'
+			}
+		}
+	};
+	// Multi-series: labels come from series[].label automatically
+	const tooltipMulti = tooltipBase;
+
+	// Adaptive x-axis format — uses a stateful tracker to detect tick spacing
+	// The format function receives individual tick values; we compare consecutive
+	// ticks to determine the visible time span and pick the right granularity.
+	let lastTickMs = $state(0);
+	let tickSpanMs = $state(365 * 24 * 60 * 60 * 1000);
+
+	function formatXTick(ts: any): string {
+		const d = ts instanceof Date ? ts : new Date(ts);
+		if (isNaN(d.getTime())) return String(ts);
+
+		const ms = d.getTime();
+		if (lastTickMs > 0 && ms !== lastTickMs) {
+			tickSpanMs = Math.abs(ms - lastTickMs);
+		}
+		lastTickMs = ms;
+
+		const spanDays = tickSpanMs / (1000 * 60 * 60 * 24);
+
+		if (spanDays < 0.5) {
+			// Sub-day tick spacing → show hours
+			return d.toLocaleString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+		} else if (spanDays < 5) {
+			// Few days between ticks → show day + month
+			return d.toLocaleString('sv-SE', { day: 'numeric', month: 'short' });
+		} else if (spanDays < 40) {
+			// Weeks between ticks → show day + month
+			return d.toLocaleString('sv-SE', { day: 'numeric', month: 'short' });
+		} else {
+			// Months between ticks → just month
+			return d.toLocaleString('sv-SE', { month: 'short' });
+		}
+	}
 
 	// Shared axis props
 	const axisProps = {
 		yAxis: { format: (v: number) => formatNumber(v, getPowerPrefix(), 'W').replace(/\.\d+/, ''), tickLabelProps: { fontSize: 11 } },
-		xAxis: { tickLabelProps: { fontSize: 11 } }
+		xAxis: { format: formatXTick, tickLabelProps: { fontSize: 11 } }
 	};
 
 	// Scenario comparison helpers (reused from existing code)
@@ -449,6 +513,9 @@
 			</button>
 		</div>
 	{/if}
+	{#if brushable && !isZoomed}
+		<p class="text-right text-xs text-gray-400 mb-1">Dra i diagrammet för att zooma in</p>
+	{/if}
 	<div class="h-[300px]">
 	{#if loading}
 		<LoadingSkeleton variant="chart" message="Laddar tidsserie..." />
@@ -468,32 +535,30 @@
 				return sid && comparisonData.every(d => d.values && typeof d.values[sid] !== 'undefined');
 			})}
 		{#if hasRequiredFields}
-			{@const areaSeries = normalizedScenarios.map(scenario => {
+			{@const lineSeries = normalizedScenarios.map(scenario => {
 				const scenarioId = scenario.id || scenario.scenario_id || '';
 				const opacity = getScenarioOpacity(scenarioId);
 				return {
 					key: scenarioId,
 					value: scenarioId,
-					color: hexToRgba(scenario.color || viz.scenario.baseline, opacity * 0.4),
+					color: 'transparent',
 					props: {
-						line: {
-							fill: 'none',
-							stroke: hexToRgba(scenario.color || viz.scenario.baseline, opacity),
-							strokeWidth: 2
-						}
+						fill: 'none',
+						stroke: hexToRgba(scenario.color || viz.scenario.baseline, opacity),
+						strokeWidth: 2
 					}
 				};
 			})}
 			{#key chartKey}
-				<AreaChart
+				<LineChart
 					data={comparisonData.map((d) => ({ timestamp: d.timestamp, ...d.values }))}
 					x="timestamp"
-					series={areaSeries}
+					series={lineSeries}
 					padding={CHART_PADDING.standard}
 					brush={brushable ? brushConfig : false}
 					props={{
 						...axisProps,
-						...tooltipProps
+						...tooltipMulti
 					}}
 				/>
 			{/key}
@@ -512,7 +577,7 @@
 	{:else if isMultiSeries}
 		<!-- Multi-segment / multi-geography mode -->
 		{#key chartKey}
-			<AreaChart
+			<LineChart
 				data={pivotedData}
 				x="timestamp"
 				series={chartSeries}
@@ -520,13 +585,32 @@
 				brush={brushable ? brushConfig : false}
 				props={{
 					...axisProps,
-					...tooltipProps
+					...tooltipMulti
 				}}
 			/>
 		{/key}
 
-		<!-- Multi-series legend -->
-		<div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 px-1">
+	{:else}
+		<!-- Single series mode (default / backward compatible) -->
+		{#key chartKey}
+			<LineChart
+				data={pivotedData}
+				x="timestamp"
+				y="total"
+				padding={CHART_PADDING.standard}
+				brush={brushable ? brushConfig : false}
+				props={{
+					spline: { fill: 'none', stroke: viz.teal[900], strokeWidth: 2 },
+					...axisProps,
+					...tooltipSingle
+				}}
+			/>
+		{/key}
+	{/if}
+	</div>
+
+	{#if isMultiSeries && !loading && hasData}
+		<div class="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1 pb-2 px-4">
 			{#each allSeriesKeys as { key, seg, geo }}
 				<button
 					class="flex items-center gap-1.5 text-[11px] transition-opacity cursor-pointer"
@@ -543,24 +627,6 @@
 				</button>
 			{/each}
 		</div>
-
-	{:else}
-		<!-- Single series mode (default / backward compatible) -->
-		{#key chartKey}
-			<AreaChart
-				data={pivotedData}
-				x="timestamp"
-				y="total"
-				padding={CHART_PADDING.standard}
-				brush={brushable ? brushConfig : false}
-				props={{
-					line: { fill: 'none', stroke: viz.teal[900], strokeWidth: 2 },
-					area: { fill: viz.teal[500], fillOpacity: 0.3 },
-					...axisProps,
-					...tooltipProps
-				}}
-			/>
-		{/key}
 	{/if}
-	</div>
+
 </ChartContainer>

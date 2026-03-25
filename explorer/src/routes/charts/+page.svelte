@@ -9,6 +9,8 @@
 	import GeoSegmentChart from '$lib/components/GeoSegmentChart.svelte';
 	import StackedSectorChart from '$lib/components/StackedSectorChart.svelte';
 	import MonthlyWeekProfile from '$lib/components/MonthlyWeekProfile.svelte';
+	import FlexImpactChart from '$lib/components/FlexImpactChart.svelte';
+	import FlexPeakBars from '$lib/components/FlexPeakBars.svelte';
 	import Map from '$lib/components/map/Map.svelte';
 	import ChartFilterPanel from '$lib/components/controls/ChartFilterPanel.svelte';
 	import LazyChart from '$lib/components/shared/LazyChart.svelte';
@@ -106,7 +108,9 @@
 		GEO_SEGMENT: 'geo-segment',
 		STACKED_SECTOR: 'stacked-sector',
 		WEEKLY_PROFILE: 'weekly-profile',
-		MAP: 'map'
+		MAP: 'map',
+		FLEX_IMPACT: 'flex-impact',
+		FLEX_PEAK_BARS: 'flex-peak-bars'
 	};
 
 	const CHART_TITLES: Record<string, string> = {
@@ -120,7 +124,9 @@
 		[CHART_IDS.GEO_SEGMENT]: 'Sektorernas andel per län',
 		[CHART_IDS.STACKED_SECTOR]: 'Sektorer över tid',
 		[CHART_IDS.WEEKLY_PROFILE]: 'Veckobelastning per månad',
-		[CHART_IDS.MAP]: 'Karta'
+		[CHART_IDS.MAP]: 'Karta',
+		[CHART_IDS.FLEX_IMPACT]: 'Effekt av flexibilitet',
+		[CHART_IDS.FLEX_PEAK_BARS]: 'Toppeffekt med flexibilitet'
 	};
 
 	const ALL_CHART_IDS = Object.values(CHART_IDS);
@@ -436,7 +442,7 @@
 						<TimeLine
 							geography={getEffectiveParams(CHART_IDS.TIMELINE).geography}
 							year={getEffectiveParams(CHART_IDS.TIMELINE).year}
-							segment={getActiveSegment(CHART_IDS.TIMELINE)}
+							segments={getActiveSegment(CHART_IDS.TIMELINE).split(',')}
 							resolution={(getEffectiveParams(CHART_IDS.TIMELINE).resolution || '1d') as '1h' | '1d' | '1w' | '1M' | '1Y'}
 							baseScenarioOverride={getEffectiveParams(CHART_IDS.TIMELINE).scenarioId}
 							parameterValuesOverride={getEffectiveParams(CHART_IDS.TIMELINE).parameterValues}
@@ -566,6 +572,60 @@
 							{/snippet}
 						</GeoSegmentChart>
 					</LazyChart>
+					</div>
+
+					<!-- Row 8: Flex charts side by side -->
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+						<div class="bg-white rounded-xl shadow-sm p-6 pb-12">
+							<LazyChart height="400px">
+								<FlexImpactChart
+									geography={getEffectiveParams(CHART_IDS.FLEX_IMPACT).geography}
+									year={getEffectiveParams(CHART_IDS.FLEX_IMPACT).year}
+									segment={getActiveSegment(CHART_IDS.FLEX_IMPACT)}
+									baseScenarioOverride={getEffectiveParams(CHART_IDS.FLEX_IMPACT).scenarioId}
+									parameterValuesOverride={getEffectiveParams(CHART_IDS.FLEX_IMPACT).parameterValues}
+									description={getDescription(CHART_IDS.FLEX_IMPACT)}
+									class="w-full"
+								>
+									{#snippet headerControls()}
+										<button
+											onclick={() => toggleFilter(CHART_IDS.FLEX_IMPACT)}
+											class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.FLEX_IMPACT)}"
+										>
+											<SlidersHorizontal class="w-3.5 h-3.5" />
+											{#if hasOverrides(CHART_IDS.FLEX_IMPACT)}
+												<span>{overrideCount(CHART_IDS.FLEX_IMPACT)}</span>
+											{/if}
+										</button>
+									{/snippet}
+								</FlexImpactChart>
+							</LazyChart>
+						</div>
+						<div class="bg-white rounded-xl shadow-sm p-6 pb-12">
+							<LazyChart height="400px">
+								<FlexPeakBars
+									geography={getEffectiveParams(CHART_IDS.FLEX_PEAK_BARS).geography}
+									year={getEffectiveParams(CHART_IDS.FLEX_PEAK_BARS).year}
+									segment={getActiveSegment(CHART_IDS.FLEX_PEAK_BARS)}
+									baseScenarioOverride={getEffectiveParams(CHART_IDS.FLEX_PEAK_BARS).scenarioId}
+									parameterValuesOverride={getEffectiveParams(CHART_IDS.FLEX_PEAK_BARS).parameterValues}
+									description={getDescription(CHART_IDS.FLEX_PEAK_BARS)}
+									class="w-full"
+								>
+									{#snippet headerControls()}
+										<button
+											onclick={() => toggleFilter(CHART_IDS.FLEX_PEAK_BARS)}
+											class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.FLEX_PEAK_BARS)}"
+										>
+											<SlidersHorizontal class="w-3.5 h-3.5" />
+											{#if hasOverrides(CHART_IDS.FLEX_PEAK_BARS)}
+												<span>{overrideCount(CHART_IDS.FLEX_PEAK_BARS)}</span>
+											{/if}
+										</button>
+									{/snippet}
+								</FlexPeakBars>
+							</LazyChart>
+						</div>
 					</div>
 
 				</div>

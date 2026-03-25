@@ -27,6 +27,13 @@ const config = {
 		adapter: adapter(),
         alias: {
             $paraglide: './src/lib/paraglide'
+        },
+        prerender: {
+            handleHttpError: ({ path, message }) => {
+                // Static assets like openapi.json get prefixed with locale during prerender
+                if (path.endsWith('/openapi.json')) return;
+                throw new Error(message);
+            }
         }
 	},
 

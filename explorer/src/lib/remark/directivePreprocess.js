@@ -36,7 +36,9 @@ const COMPONENTS = {
 	ChartEmbed: '$lib/components/report/ChartEmbed.svelte',
 	PowerConceptChart: '$lib/components/report/PowerConceptChart.svelte',
 	FlexIllustrationChart: '$lib/components/report/FlexIllustrationChart.svelte',
-	FlexFactorChart: '$lib/components/report/FlexFactorChart.svelte'
+	FlexFactorChart: '$lib/components/report/FlexFactorChart.svelte',
+	HomeFooterCTA: '$lib/components/report/HomeFooterCTA.svelte',
+	Comparison: '$lib/components/report/Comparison.svelte'
 };
 
 /**

@@ -83,3 +83,11 @@ Om denna flexibilitet utnyttjas skulle gapet mellan topp och dal kunna
 minska. Det kan innebära att elnätet dimensioneras smalare, att mindre
 reservkapacitet behövs och att förnybar el i högre grad kan användas när
 den produceras som mest — inte bara när den efterfrågas som mest.
+
+::ChartEmbed{chart="flex-peak-bars" exportable={false}}
+
+:::Comparison{value=6.9 unit="GW" unitValue=1.15 unitLabel="kärnreaktorer"}
+Baserat på genomsnittlig kapacitet för Sveriges sex reaktorer (~1,15 GW per reaktor).
+:::
+
+::HomeFooterCTA{}

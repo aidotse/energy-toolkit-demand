@@ -1,3 +1,4 @@
+import { building } from '$app/environment';
 import {
 	fetchConfig,
 	fetchScenarios,
@@ -9,7 +10,14 @@ import {
 import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
 
+const FALLBACK = {
+	config: null, scenarios: [], parameters: {}, globals: {},
+	geographies: [], geojson: { type: 'FeatureCollection' as const, features: [] },
+	geoData: [], year: 2030, geography: 'total', segment: 'total'
+};
+
 export const load: PageLoad = async ({ fetch }) => {
+	if (building) return FALLBACK;
 	try {
 		// Fetch static configuration data
 		const [configResult, scenariosResult, parametersResult, globalsResult, geographiesResult, geojsonResult] = await Promise.all([
