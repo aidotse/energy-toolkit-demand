@@ -32,6 +32,8 @@ const config = {
             handleHttpError: ({ path, message }) => {
                 // Static assets like openapi.json get prefixed with locale during prerender
                 if (path.endsWith('/openapi.json')) return;
+                // /data page requires live API for OpenAPI spec — skip during build
+                if (path === '/data' || path.endsWith('/data')) return;
                 throw new Error(message);
             }
         }
