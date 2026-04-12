@@ -80,9 +80,8 @@ jobs:
         # Explorer tests run in real chromium via vitest-browser-svelte.
         run: npx playwright install --with-deps chromium
         working-directory: ./explorer
-      - name: Test
-        working-directory: ./explorer
-        run: npm test
+      # Build before tests so Paraglide-generated files exist (gitignored,
+      # Vite plugin generates them during build).
       - name: Build
         working-directory: ./explorer
         env:
@@ -90,6 +89,9 @@ jobs:
           VITE_MAPBOX_TOKEN: ''
           VITE_MAPBOX_STYLE_LIGHT: ''
         run: npm run build
+      - name: Test
+        working-directory: ./explorer
+        run: npm test
 
   # Build and push API Docker image to ECR
   build-api:

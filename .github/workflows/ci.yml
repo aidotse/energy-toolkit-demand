@@ -57,10 +57,9 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: ./explorer
 
-      - name: Run explorer unit tests
-        working-directory: ./explorer
-        run: npm test
-
+      # Build BEFORE tests so Paraglide-generated files (src/lib/paraglide/*,
+      # gitignored and only created by the Vite plugin) exist before vitest
+      # tries to import them.
       - name: Build explorer
         working-directory: ./explorer
         env:
@@ -68,3 +67,7 @@ jobs:
           VITE_MAPBOX_TOKEN: ''
           VITE_MAPBOX_STYLE_LIGHT: ''
         run: npm run build
+
+      - name: Run explorer unit tests
+        working-directory: ./explorer
+        run: npm test
