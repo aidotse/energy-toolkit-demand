@@ -1,3 +1,28 @@
+/**
+ * Trailing-edge debounce: fires `fn` once after `ms` of quiet time.
+ * Subsequent calls within the window cancel and reschedule.
+ */
+export function debounce<Args extends unknown[]>(
+	fn: (...args: Args) => void,
+	ms: number
+): ((...args: Args) => void) & { cancel: () => void } {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	const debounced = (...args: Args) => {
+		if (timer !== null) clearTimeout(timer);
+		timer = setTimeout(() => {
+			timer = null;
+			fn(...args);
+		}, ms);
+	};
+	debounced.cancel = () => {
+		if (timer !== null) {
+			clearTimeout(timer);
+			timer = null;
+		}
+	};
+	return debounced;
+}
+
 export const formatNumber = (
 	num: number,
 	inputPrefix: string,

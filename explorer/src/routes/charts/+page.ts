@@ -1,8 +1,6 @@
 import { building } from '$app/environment';
 import {
 	fetchConfig,
-	fetchScenarios,
-	fetchParameters,
 	fetchGlobals,
 	fetchGeographies,
 	fetchDemandData
@@ -23,28 +21,25 @@ const FALLBACK = {
 	segment: 'total'
 };
 
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageLoad = async ({ fetch, parent }) => {
 	if (building) return FALLBACK;
 	try {
-		// Fetch static configuration data
+		// Scenarios + parameters come from the layout loader — don't refetch.
+		const { scenarios, parameters } = await parent();
+
+		// Fetch page-specific data in parallel
 		const [
 			configResult,
-			scenariosResult,
-			parametersResult,
 			globalsResult,
 			geographiesResult,
 			geojsonResult
 		] = await Promise.all([
 			fetchConfig(fetch),
-			fetchScenarios(fetch),
-			fetchParameters(fetch),
 			fetchGlobals(fetch),
 			fetchGeographies('json', fetch),
 			fetchGeographies('geojson', fetch)
 		]);
 		const config = configResult.data;
-		const scenarios = scenariosResult.data;
-		const parameters = parametersResult.data;
 		const globals = globalsResult.data;
 		const geographies = geographiesResult.data;
 		const geojson = geojsonResult.data;

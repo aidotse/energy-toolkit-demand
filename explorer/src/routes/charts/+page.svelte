@@ -27,6 +27,7 @@
 		getSegmentSuffix,
 		CHART_DESCRIPTIONS
 	} from '$lib/utils/chartDescriptions';
+	import { debounce } from '$lib/utilities';
 	import { browser } from '$app/environment';
 	import type { PageProps } from './$types';
 	import type { ChartParameters, AvailableParameters } from '$lib/types/controls';
@@ -63,9 +64,14 @@
 			}
 	);
 
-	// Sync global parameters back to store for persistence
+	// Sync global parameters back to store for persistence.
+	// Debounced so a rapid slider drag (year, multiselect toggles, etc.)
+	// collapses into one downstream chart refetch wave instead of one per tick.
+	const commitGlobalParams = debounce((next: ChartParameters) => {
+		chartsGlobalStore.params = next;
+	}, 150);
 	$effect(() => {
-		chartsGlobalStore.params = { ...globalParameters };
+		commitGlobalParams({ ...globalParameters });
 	});
 
 	// Import parameter selections from the frontpage (viewStore)

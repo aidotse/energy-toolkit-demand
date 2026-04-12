@@ -24,6 +24,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { OpenAPIBackend } from 'openapi-backend';
 import addFormats from 'ajv-formats';
@@ -160,17 +161,22 @@ app.use((req, res, next) => {
   res.set('X-Request-Id', req.id);
   const startTime = Date.now();
   res.on('finish', () => {
-    console.log(JSON.stringify({
+    const entry = {
       event: 'request',
       id: req.id,
       method: req.method,
       path: req.path,
       status: res.statusCode,
       latency_ms: Date.now() - startTime,
-    }));
+    };
+    // Tagged by /demand handler to show which query strategy ran.
+    if (req.queryPath) entry.query_path = req.queryPath;
+    console.log(JSON.stringify(entry));
   });
   next();
 });
+
+app.use(compression());
 
 // CORS: in prod, check against allowlist and log rejections. In dev, allow all.
 app.use(cors({
@@ -427,21 +433,29 @@ api.register('getDemand', async (c, req, res) => {
       preparedQuery = buildParamAggregatedQuery({
         baseScenario, segments, geoFilter, segFilter, start, end, parameterValues, aggregatedDir
       });
-      if (preparedQuery) debugLog('📊 Using param-aware aggregated tables');
+      if (preparedQuery) {
+        debugLog('📊 Using param-aware aggregated tables');
+        req.queryPath = 'param_yearly';
+      }
     }
 
     if (!preparedQuery && canUseAggregated && !hasNonZeroParams) {
       // Baseline aggregated tables (no parameters active). Pick the right
       // pre-aggregated parquet depending on the filter shape.
       let aggregatedTable;
+      let aggregatedTag;
       if (geoFilter === 'total' && segFilter === 'total') {
         aggregatedTable = safeDataPath(aggregatedDir, 'national_yearly.parquet');
+        aggregatedTag = 'national_yearly';
       } else if (geoFilter === 'all' && segFilter === 'all') {
         aggregatedTable = safeDataPath(aggregatedDir, 'geo_segment_yearly.parquet');
+        aggregatedTag = 'geo_segment_yearly';
       } else if (geoFilter === 'all') {
         aggregatedTable = safeDataPath(aggregatedDir, 'geography_yearly.parquet');
+        aggregatedTag = 'geography_yearly';
       } else if (segFilter === 'all') {
         aggregatedTable = safeDataPath(aggregatedDir, 'segment_yearly.parquet');
+        aggregatedTag = 'segment_yearly';
       }
 
       if (aggregatedTable && fs.existsSync(aggregatedTable)) {
@@ -454,6 +468,7 @@ api.register('getDemand', async (c, req, res) => {
           start,
           end,
         });
+        req.queryPath = aggregatedTag;
       }
     }
 
@@ -474,6 +489,7 @@ api.register('getDemand', async (c, req, res) => {
         parametersDir,
         strategy2Config
       });
+      req.queryPath = 'raw_scan';
     }
 
     debugLog('SQL:', preparedQuery.sql);
