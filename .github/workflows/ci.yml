@@ -22,13 +22,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'api/package-lock.json'
 
+      # Install all workspaces from the root lockfile (npm workspaces).
+      # There is no api/package-lock.json — api installs via the root.
       - name: Install dependencies
-        working-directory: ./api
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run api unit tests
         working-directory: ./api
         # Integration tests need parquet files from data/ (gitignored, 16GB).
         # They'll be covered by a follow-up job that syncs from S3; for now
@@ -47,17 +47,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'explorer/package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./explorer
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run explorer unit tests
         working-directory: ./explorer
         run: npm test
 
-      - name: Build
+      - name: Build explorer
         working-directory: ./explorer
         env:
           VITE_API_BASE_URL: http://localhost:4010

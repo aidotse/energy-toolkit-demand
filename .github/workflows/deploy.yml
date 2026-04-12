@@ -58,9 +58,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'api/package-lock.json'
-      - name: Install
-        working-directory: ./api
+      - name: Install (root — npm workspaces)
         run: npm ci
       - name: Test (unit only)
         working-directory: ./api
@@ -76,9 +74,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'explorer/package-lock.json'
-      - name: Install
-        working-directory: ./explorer
+      - name: Install (root — npm workspaces)
         run: npm ci
       - name: Test
         working-directory: ./explorer
