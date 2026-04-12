@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Runs tests on the workspaces whose files are staged.
+# Skip with `git commit --no-verify` only if you know what you're doing.
+
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+# api/ changes → run api tests
+if echo "$staged" | grep -qE '^api/'; then
+  echo "[pre-commit] api/ changes detected — running api tests"
+  (cd api && npm test)
+fi
+
+# explorer/ changes → run explorer unit tests
+# Build is NOT run here (too slow for pre-commit); CI runs the build.
+if echo "$staged" | grep -qE '^explorer/'; then
+  echo "[pre-commit] explorer/ changes detected — running explorer tests"
+  (cd explorer && npm test)
+fi

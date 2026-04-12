@@ -1,18 +1,16 @@
 # Send only what the Dockerfile needs to the build context
 *
 
-# Include API source
+# Include API source. Globs — not an explicit file list — so new source files
+# are picked up automatically. We got bitten by this when cache.js and csv.js
+# were added and silently missing from the image.
 !api/package*.json
-!api/local-server.js
-!api/utils.js
-!api/config.js
+!api/*.js
 !api/openapi.yaml
 !api/parameters.yaml
 !api/schemas/
 !api/responses/
 !api/scripts/
-!api/query-builder.js
-!api/cache.js
 
 # Include shared root files
 !paths.js

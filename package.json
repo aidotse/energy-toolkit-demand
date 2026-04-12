@@ -12,11 +12,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup": "node setup/index.js",
-    "bundle:api": "node api/bundle-openapi.js"
+    "bundle:api": "node api/bundle-openapi.js",
+    "prepare": "husky"
   },
   "author": "Viktor Bengtsson",
   "license": "ISC",
   "devDependencies": {
+    "husky": "9.1.7",
     "js-yaml": "^4.1.0",
     "json-schema-ref-parser": "^9.0.9",
     "vite": "^6.4.1"

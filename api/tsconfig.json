@@ -12,13 +12,16 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": []
   },
   "include": [
     "**/*.js"
   ],
   "exclude": [
     "node_modules",
-    "data"
+    "data",
+    "tests",
+    "scripts"
   ]
 }

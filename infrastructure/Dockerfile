@@ -26,8 +26,11 @@ RUN cd api && npm install --omit=dev
 COPY paths.js ./paths.js
 COPY config.yaml ./config.yaml
 
-# Copy application source files
-COPY api/local-server.js api/utils.js api/config.js ./api/
+# Copy application source files.
+# Glob pattern (not explicit list) so new runtime imports don't silently break
+# the image — we got bitten by that when cache.js was added. Unused CLI helpers
+# like generate-api.js are harmless because ESM doesn't load them unless imported.
+COPY api/*.js ./api/
 COPY api/openapi.yaml api/parameters.yaml ./api/
 COPY api/schemas/ ./api/schemas/
 COPY api/responses/ ./api/responses/

@@ -67,6 +67,62 @@ else
     echo "   ✅ Created"
 fi
 echo "   S3 bucket is private (CloudFront will access via OAC)"
+
+# Enable versioning on the explorer bucket so a bad build can be rolled back
+aws s3api put-bucket-versioning --bucket ${S3_BUCKET} \
+    --versioning-configuration Status=Enabled
+cat > /tmp/lifecycle-explorer.json << EOF
+{
+  "Rules": [{
+    "ID": "ExpireNoncurrentVersions",
+    "Status": "Enabled",
+    "Filter": {},
+    "NoncurrentVersionExpiration": { "NoncurrentDays": 14 },
+    "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+  }]
+}
+EOF
+aws s3api put-bucket-lifecycle-configuration --bucket ${S3_BUCKET} \
+    --lifecycle-configuration file:///tmp/lifecycle-explorer.json
+echo "   ✅ Versioning + 14-day noncurrent expiration enabled"
+echo ""
+
+# 2b. Create S3 Data Bucket (read by App Runner at container startup)
+echo "2b. Creating S3 data bucket: ${S3_DATA_BUCKET}"
+if aws s3api head-bucket --bucket ${S3_DATA_BUCKET} 2>/dev/null; then
+    echo "   ℹ️  Already exists"
+else
+    if [ "${AWS_REGION}" = "us-east-1" ]; then
+        aws s3api create-bucket --bucket ${S3_DATA_BUCKET} --region ${AWS_REGION}
+    else
+        aws s3api create-bucket --bucket ${S3_DATA_BUCKET} --region ${AWS_REGION} \
+            --create-bucket-configuration LocationConstraint=${AWS_REGION}
+    fi
+    # Block all public access — data is read via the App Runner instance role only
+    aws s3api put-public-access-block --bucket ${S3_DATA_BUCKET} \
+        --public-access-block-configuration \
+        "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    echo "   ✅ Created"
+fi
+
+# Enable versioning so accidental --delete syncs or wipes are recoverable
+aws s3api put-bucket-versioning --bucket ${S3_DATA_BUCKET} \
+    --versioning-configuration Status=Enabled
+# Expire noncurrent versions after 30 days so storage cost stays bounded
+cat > /tmp/lifecycle.json << EOF
+{
+  "Rules": [{
+    "ID": "ExpireNoncurrentVersions",
+    "Status": "Enabled",
+    "Filter": {},
+    "NoncurrentVersionExpiration": { "NoncurrentDays": 30 },
+    "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+  }]
+}
+EOF
+aws s3api put-bucket-lifecycle-configuration --bucket ${S3_DATA_BUCKET} \
+    --lifecycle-configuration file:///tmp/lifecycle.json
+echo "   ✅ Versioning + 30-day noncurrent expiration enabled"
 echo ""
 
 # 3. Create CloudFront Origin Access Control and Distribution
