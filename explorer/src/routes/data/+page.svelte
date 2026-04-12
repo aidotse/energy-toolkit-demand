@@ -3,8 +3,8 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	const spec = data.spec;
-	const paths = Object.entries(spec.paths) as [string, Record<string, any>][];
+	const spec = $derived(data.spec);
+	const paths = $derived(Object.entries(spec.paths) as [string, Record<string, any>][]);
 
 	function paramDefault(param: any): string | null {
 		return param.schema?.default !== undefined ? String(param.schema.default) : null;

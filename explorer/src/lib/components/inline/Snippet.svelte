@@ -1,11 +1,15 @@
 <script lang="ts">
     let {parameterData, property} = $props();
 
-    const output: string = property === 'end-year'
-        ? ((parameterData?.years?.[parameterData?.years?.length-1] + 1) || '').toString()
-        : property === 'start-year'
-        ? (parameterData?.years?.[0] || '').toString()
-        : '';
+    const output = $derived.by(() => {
+        if (property === 'end-year') {
+            return ((parameterData?.years?.[parameterData?.years?.length-1] + 1) || '').toString();
+        }
+        if (property === 'start-year') {
+            return (parameterData?.years?.[0] || '').toString();
+        }
+        return '';
+    });
 </script>
 
 <span>

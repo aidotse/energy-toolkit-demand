@@ -8,6 +8,7 @@
 ### From PLANS.md
 
 **Completed Phases:**
+
 - ✅ Phase 0: Scenario Store Integration
 - ✅ Phase 1: Component Standardization Foundation
 - ✅ Phase 1.5: Scenario Comparison Support
@@ -17,11 +18,13 @@
 **In Progress / Remaining:**
 
 #### Phase 2 (Export) - Minor Issues:
+
 - [ ] Fix PNG export missing axis labels (LayerChart complexity)
 - [ ] Responsive design testing at all breakpoints
 - [ ] Quality testing for exports
 
 #### Phase 3 (Enhanced Chart Library) - Significant Work:
+
 - [ ] Chart categorization and navigation
 - [ ] Chart configurator component (per-chart parameter controls)
 - [ ] Customization panel (title editing, colors, annotations)
@@ -29,6 +32,7 @@
 - [ ] Chart templates (10-15 professional templates)
 
 #### Phase 4 (Content) - Migration Deferred:
+
 - [ ] Convert existing Swedish text to markdown
 - [ ] Add English translations
 - [ ] Create glossary (50+ terms)
@@ -39,11 +43,13 @@
 ### From CHART_LIBRARY_REDESIGN.md
 
 **Completed:**
+
 - ✅ Phase 1: Debug and fix chart display issues
 
 **Remaining:**
 
 #### Phase 2: Reusable Control Components
+
 - [ ] `YearSelector.svelte` (dropdown/slider/pill variants)
 - [ ] `SegmentSelector.svelte` (dropdown/pills/radio variants)
 - [ ] `ResolutionSelector.svelte`
@@ -51,16 +57,19 @@
 - [ ] Enhanced `GeographySelector.svelte`
 
 #### Phase 3: Chart Parameter Override System
+
 - [ ] `ChartParameterPill.svelte` (compact pill to edit chart params)
 - [ ] `chartParameters.svelte.ts` store for per-chart overrides
 - [ ] Update all chart components to accept parameter overrides
 
 #### Phase 4: Layout Redesign
+
 - [ ] `ChartCard.svelte` wrapper with parameter pill
 - [ ] Flexible 12-column grid layout
 - [ ] `MapCard.svelte` (map in card, not fixed)
 
 #### Phase 5: Integration and Testing
+
 - [ ] Connect all pieces
 - [ ] Test parameter overrides
 - [ ] Test responsive behavior

@@ -22,7 +22,7 @@
 	} = $props();
 
 	// Local state
-	let sheetRef: HTMLDivElement | undefined;
+	let sheetRef = $state<HTMLDivElement | undefined>(undefined);
 	let startY = 0;
 	let currentY = 0;
 	let isDragging = false;
@@ -103,6 +103,10 @@
 		ontouchstart={handleTouchStart}
 		ontouchmove={handleTouchMove}
 		ontouchend={handleTouchEnd}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Välj scenario"
+		tabindex="-1"
 		class="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up"
 	>
 		<!-- Drag Handle -->

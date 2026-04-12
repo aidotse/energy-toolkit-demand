@@ -127,12 +127,12 @@
 		<div class="space-y-4">
 			{#if supportedParameters.includes('geography')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 mb-1">
+					<span class="block text-xs font-medium text-gray-700 mb-1">
 						Geografi
 						{#if chartOverrides.geography !== undefined}
 							<span class="ml-1 text-primary">●</span>
 						{/if}
-					</label>
+					</span>
 					<GeographySelector
 						value={effectiveParameters.geography || 'total'}
 						geographies={availableParameters.geographies}
@@ -146,12 +146,12 @@
 
 			{#if supportedParameters.includes('year')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 mb-1">
+					<span class="block text-xs font-medium text-gray-700 mb-1">
 						År
 						{#if chartOverrides.year !== undefined}
 							<span class="ml-1 text-primary">●</span>
 						{/if}
-					</label>
+					</span>
 					<YearSelector
 						value={effectiveParameters.year || 2025}
 						years={availableParameters.years}
@@ -164,14 +164,14 @@
 
 			{#if supportedParameters.includes('segment')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 mb-1">
+					<span class="block text-xs font-medium text-gray-700 mb-1">
 						Segment
 						{#if chartOverrides.segment !== undefined}
 							<span class="ml-1 text-primary">●</span>
 						{/if}
-					</label>
+					</span>
 					<SegmentSelector
-						value={effectiveParameters.segment || 'total'}
+						value={(Array.isArray(effectiveParameters.segment) ? effectiveParameters.segment[0] : effectiveParameters.segment) || 'total'}
 						segments={availableParameters.segments}
 						onChange={(val) => handleParameterChange('segment', val)}
 						variant="dropdown"
@@ -182,12 +182,12 @@
 
 			{#if supportedParameters.includes('resolution')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 mb-1">
+					<span class="block text-xs font-medium text-gray-700 mb-1">
 						Upplösning
 						{#if chartOverrides.resolution !== undefined}
 							<span class="ml-1 text-primary">●</span>
 						{/if}
-					</label>
+					</span>
 					<ResolutionSelector
 						value={effectiveParameters.resolution || '1h'}
 						resolutions={availableParameters.resolutions}
@@ -200,12 +200,12 @@
 
 			{#if supportedParameters.includes('aggregation')}
 				<div>
-					<label class="block text-xs font-medium text-gray-700 mb-1">
+					<span class="block text-xs font-medium text-gray-700 mb-1">
 						Aggregering
 						{#if chartOverrides.aggregation !== undefined}
 							<span class="ml-1 text-primary">●</span>
 						{/if}
-					</label>
+					</span>
 					<AggregationSelector
 						value={effectiveParameters.aggregation || 'sum'}
 						aggregations={availableParameters.aggregations}

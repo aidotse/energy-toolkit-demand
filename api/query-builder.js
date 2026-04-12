@@ -4,6 +4,15 @@
  * Builds DuckDB SQL queries for Strategy 2 demand data with parameter combination,
  * and for pre-aggregated yearly tables.
  *
+ * **SQL injection model:**
+ * Every builder returns `{ sql, params }`. Literal *values* (dates, filter
+ * strings, aggregation indices) are represented as `?` placeholders in the
+ * SQL and bound via DuckDB's prepared statements (`conn.prepare(sql).all(...params, cb)`).
+ * *Identifiers* (table names, column aliases, file paths) cannot be bound
+ * and are still interpolated — but they either come from config (trusted)
+ * or pass through `sanitizeSqlValue()` plus `safeDataPath()`, which are
+ * whitelist checks.
+ *
  * @module query-builder
  */
 
@@ -11,19 +20,42 @@ import path from 'path';
 import fs from 'fs';
 
 /**
- * Sanitize SQL identifier/value to prevent injection.
- * Only allows alphanumeric, hyphens, underscores.
+ * Sanitize a SQL identifier (scenario name, segment, column alias) by
+ * rejecting anything that isn't alphanumeric, hyphen, or underscore.
  *
- * @param {string} value - The value to sanitize
+ * Kept strictly for identifiers after the Phase 4 parameterization pass —
+ * do NOT use this for value literals anymore; use `?` placeholders instead.
+ *
+ * @param {string} value - The identifier to sanitize
  * @returns {string} The sanitized value
  * @throws {Error} If the value contains disallowed characters
  */
 function sanitizeSqlValue(value) {
   if (typeof value !== 'string') return String(value);
   if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-    throw new Error(`Invalid SQL value: ${value}`);
+    throw new Error(`Invalid SQL identifier: ${value}`);
   }
   return value;
+}
+
+/**
+ * Resolve a data-directory-relative path and verify the result is contained
+ * within `baseDir`. Defense-in-depth against path traversal — the callers
+ * already feed sanitized segments, but we still assert the boundary.
+ *
+ * @param {string} baseDir
+ * @param {...string} segments
+ * @returns {string} The absolute, contained path
+ * @throws {Error} If the joined path escapes `baseDir`
+ */
+function safeDataPath(baseDir, ...segments) {
+  const joined = path.join(baseDir, ...segments);
+  const resolved = path.resolve(joined);
+  const baseResolved = path.resolve(baseDir);
+  if (!(resolved === baseResolved || resolved.startsWith(baseResolved + path.sep))) {
+    throw new Error(`Path escape detected: ${segments.join('/')}`);
+  }
+  return resolved;
 }
 
 /**
@@ -50,7 +82,7 @@ function getScenarioName(slug) {
  * @param {string} opts.baseDir - Base data directory
  * @param {string} opts.parametersDir - Parameters data directory
  * @param {Object|null} opts.strategy2Config - Strategy 2 configuration
- * @returns {string} SQL query
+ * @returns {{sql: string, params: Array<string>}} SQL query + bound values
  */
 function buildStrategy2Query(opts) {
   const {
@@ -68,7 +100,8 @@ function buildStrategy2Query(opts) {
     strategy2Config
   } = opts;
 
-  // Sanitize filter values to prevent SQL injection
+  // Identifiers still need whitelisting because they end up in file paths
+  // and column aliases (neither of which can be `?` placeholders).
   const safeGeoFilter = sanitizeSqlValue(geoFilter);
   const safeBaseScenario = sanitizeSqlValue(baseScenario);
 
@@ -95,8 +128,11 @@ function buildStrategy2Query(opts) {
     default: timeExpr = 'combined.timestamp';
   }
 
-  // Build queries for each segment
+  // Build queries for each segment. Each subquery may bind (start, end,
+  // geography) — we collect those in segmentParams in the same order they
+  // appear textually.
   const segmentQueries = [];
+  const segmentParams = [];
 
   for (const segment of segments) {
     // Skip if segment filter doesn't match
@@ -108,8 +144,10 @@ function buildStrategy2Query(opts) {
       }
     }
 
-    // Base parquet path for this segment
-    const basePath = path.join(baseDir, safeBaseScenario, segment, 'data.parquet');
+    // Base parquet path for this segment — goes into read_parquet() as an
+    // identifier, not a bindable value. Path is built from sanitized input
+    // and checked against the base dir for defense-in-depth.
+    const basePath = safeDataPath(baseDir, safeBaseScenario, segment, 'data.parquet');
 
     if (!fs.existsSync(basePath)) {
       console.warn(`Base file not found: ${basePath}`);
@@ -117,16 +155,23 @@ function buildStrategy2Query(opts) {
     }
 
     // Find relevant parameters for this segment
-    const segmentParams = [];
+    const paramJoins = [];
     if (strategy2Config?.parameters) {
       for (const [paramName, paramDef] of Object.entries(strategy2Config.parameters)) {
         if (paramDef.segment === segment) {
           const paramIndex = parameterValues[paramName] || 0;
           if (paramIndex > 0) {
             // Only join if parameter is not baseline (0)
-            const paramPath = path.join(parametersDir, paramName, String(paramIndex), segment, 'data.parquet');
+            const safeParamName = sanitizeSqlValue(paramName);
+            const paramPath = safeDataPath(
+              parametersDir,
+              safeParamName,
+              String(paramIndex),
+              segment,
+              'data.parquet'
+            );
             if (fs.existsSync(paramPath)) {
-              segmentParams.push({ name: paramName, path: paramPath, alias: paramName.replace(/_/g, '') });
+              paramJoins.push({ name: paramName, path: paramPath, alias: safeParamName.replace(/_/g, '') });
             }
           }
         }
@@ -135,23 +180,25 @@ function buildStrategy2Query(opts) {
 
     // Build the query for this segment
     let selectValue = 'b.value';
-    let fromClause = `read_parquet('${basePath}') b`;
+    const fromClause = `read_parquet('${basePath}') b`;
     const joins = [];
 
     // Add JOIN clauses for each parameter
-    segmentParams.forEach((param, idx) => {
+    paramJoins.forEach((param, idx) => {
       const alias = `p${idx}`;
       joins.push(`LEFT JOIN read_parquet('${param.path}') ${alias} ON b.timestamp = ${alias}.timestamp AND b.geography = ${alias}.geography`);
       selectValue = `${selectValue} * COALESCE(${alias}.value / NULLIF(b.value, 0), 1.0)`;
     });
 
     const whereConditions = [
-      `b.timestamp >= TIMESTAMP '${start}'`,
-      `b.timestamp < TIMESTAMP '${end}'`
+      'b.timestamp >= ?::TIMESTAMP',
+      'b.timestamp < ?::TIMESTAMP',
     ];
+    segmentParams.push(start, end);
 
     if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
-      whereConditions.push(`b.geography = '${safeGeoFilter}'`);
+      whereConditions.push('b.geography = ?');
+      segmentParams.push(safeGeoFilter);
     }
 
     const segmentQuery = `
@@ -177,9 +224,10 @@ function buildStrategy2Query(opts) {
     ? `(${segmentQueries.join('\n      UNION ALL\n      ')}) combined`
     : `(${segmentQueries[0]}) combined`;
 
-  // Build GROUP BY and SELECT based on filters
+  // Build GROUP BY and outer SELECT.
   const groupBy = [timeExpr];
   const selectExtras = [];
+  const selectParams = [];
 
   // Geography handling
   if (safeGeoFilter === 'total') {
@@ -188,7 +236,8 @@ function buildStrategy2Query(opts) {
     selectExtras.push('combined.geography AS geography');
     groupBy.push('combined.geography');
   } else {
-    selectExtras.push(`'${safeGeoFilter}' AS geography`);
+    selectExtras.push('? AS geography');
+    selectParams.push(safeGeoFilter);
   }
 
   // Segment handling
@@ -199,22 +248,31 @@ function buildStrategy2Query(opts) {
     selectExtras.push('combined.segment AS segment');
     groupBy.push('combined.segment');
   } else {
-    selectExtras.push(`'${safeSegFilter}' AS segment`);
+    selectExtras.push('? AS segment');
+    selectParams.push(safeSegFilter);
   }
 
-  // Build final query
+  // Final query. Placeholder order reading top-to-bottom:
+  //   outer SELECT (selectExtras ?s) → outer scenario_id ? → each segment
+  //   subquery's WHERE ?s
   const sql = `
     SELECT
       ${timeExpr} AS period,
       ${selectExtras.join(',\n      ')},
-      '${safeBaseScenario}' AS scenario_id,
+      ? AS scenario_id,
       ${aggFunc}(combined.value) AS value
     FROM ${combinedData}
     GROUP BY ${groupBy.join(', ')}
     ORDER BY period
   `;
 
-  return sql;
+  const params = [
+    ...selectParams,
+    safeBaseScenario,
+    ...segmentParams,
+  ];
+
+  return { sql, params };
 }
 
 /**
@@ -230,7 +288,7 @@ function buildStrategy2Query(opts) {
  * @param {string} opts.end - End timestamp
  * @param {Object} opts.parameterValues - Parameter name to index mapping
  * @param {string} opts.aggregatedDir - Aggregated data directory
- * @returns {string|null} SQL query or null if aggregated file doesn't exist
+ * @returns {{sql: string, params: Array<string|number>}|null} SQL query + params, or null if aggregated file doesn't exist
  */
 function buildParamAggregatedQuery(opts) {
   const {
@@ -244,7 +302,7 @@ function buildParamAggregatedQuery(opts) {
     aggregatedDir
   } = opts;
 
-  // Sanitize filter values to prevent SQL injection
+  // Sanitize filter values (they end up in column aliases + file paths)
   const safeGeoFilter = sanitizeSqlValue(geoFilter);
   const safeBaseScenario = sanitizeSqlValue(baseScenario);
 
@@ -258,14 +316,50 @@ function buildParamAggregatedQuery(opts) {
     safeSegFilter = sanitizeSqlValue(segFilter);
   }
 
-  const paramYearlyPath = path.join(aggregatedDir, 'param_yearly.parquet');
+  const paramYearlyPath = safeDataPath(aggregatedDir, 'param_yearly.parquet');
   if (!fs.existsSync(paramYearlyPath)) return null;
 
   const scenarioName = getScenarioName(safeBaseScenario);
 
-  // Build per-segment filter conditions based on parameter values
-  const segmentConditions = [];
+  // Build SELECT extras first (they appear earliest in the SQL text).
+  const selectExtras = [];
+  const selectParams = [];
+  const groupBy = ['year'];
 
+  if (safeGeoFilter === 'total') {
+    selectExtras.push("'total' AS geography");
+  } else if (safeGeoFilter === 'all') {
+    selectExtras.push('geography');
+    groupBy.push('geography');
+  } else {
+    selectExtras.push('? AS geography');
+    selectParams.push(safeGeoFilter);
+  }
+
+  if (safeSegFilter === 'total') {
+    selectExtras.push("'total' AS segment");
+  } else if (safeSegFilter === 'all' || segFilterList) {
+    selectExtras.push('segment');
+    groupBy.push('segment');
+  } else {
+    selectExtras.push('? AS segment');
+    selectParams.push(safeSegFilter);
+  }
+
+  // Build WHERE clauses + their params in textual order.
+  const whereParams = [];
+  const wheres = [
+    'CAST(year AS INTEGER) >= ?',
+    'CAST(year AS INTEGER) < ?',
+    'scenario_id = ?',
+  ];
+  whereParams.push(
+    new Date(start).getFullYear(),
+    new Date(end).getFullYear(),
+    scenarioName
+  );
+
+  const segmentConditions = [];
   for (const segment of segments) {
     if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
       if (segFilterList) {
@@ -280,27 +374,82 @@ function buildParamAggregatedQuery(opts) {
     const growthIndex = parameterValues[growthParam] || 0;
     const flexIndex = parameterValues[flexParam] || 0;
 
+    // segment is a config-controlled enum; safe to interpolate as identifier.
+    // growth_index / flex_index are integers — bind them.
     segmentConditions.push(
-      `(segment = '${segment}' AND growth_index = ${growthIndex} AND flex_index = ${flexIndex})`
+      `(segment = '${sanitizeSqlValue(segment)}' AND growth_index = ? AND flex_index = ?)`
     );
+    whereParams.push(growthIndex, flexIndex);
   }
 
   if (segmentConditions.length === 0) return null;
 
-  const wheres = [
-    `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
-    `CAST(year AS INTEGER) < ${new Date(end).getFullYear()}`,
-    `scenario_id = '${scenarioName}'`,
-    `(${segmentConditions.join(' OR ')})`
-  ];
+  wheres.push(`(${segmentConditions.join(' OR ')})`);
 
   if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
-    wheres.push(`geography = '${safeGeoFilter}'`);
+    wheres.push('geography = ?');
+    whereParams.push(safeGeoFilter);
   }
 
-  // Build GROUP BY and SELECT based on filters
-  const groupBy = ['year'];
+  // Final SQL. Placeholder order reading top-to-bottom:
+  //   selectExtras (geo/segment ?) → scenario_id ? → WHERE chain
+  const sql = `
+    SELECT
+      MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
+      ${selectExtras.join(', ')},
+      ? AS scenario_id,
+      SUM(total_value) AS value
+    FROM read_parquet('${paramYearlyPath}')
+    WHERE ${wheres.join(' AND ')}
+    GROUP BY ${groupBy.join(', ')}
+    ORDER BY period
+  `;
+
+  const params = [
+    ...selectParams,
+    safeBaseScenario,
+    ...whereParams,
+  ];
+
+  return { sql, params };
+}
+
+/**
+ * Build SQL for the baseline pre-aggregated yearly tables (no parameters).
+ * Picks the right `national_yearly` / `geography_yearly` / `segment_yearly`
+ * / `geo_segment_yearly` parquet depending on filter shape — the caller
+ * resolves the exact path and passes it in.
+ *
+ * @param {Object} opts
+ * @param {string} opts.aggregatedTable - Already-resolved parquet path
+ * @param {string} opts.baseScenario
+ * @param {string} opts.geoFilter
+ * @param {string} opts.segFilter
+ * @param {string} opts.start
+ * @param {string} opts.end
+ * @returns {{sql: string, params: Array<string|number>}}
+ */
+function buildBaselineAggregatedQuery(opts) {
+  const { aggregatedTable, baseScenario, geoFilter, segFilter, start, end } = opts;
+
+  const safeGeoFilter = sanitizeSqlValue(geoFilter);
+  const safeBaseScenario = sanitizeSqlValue(baseScenario);
+
+  let safeSegFilter;
+  let segFilterList = null;
+  if (segFilter.includes(',')) {
+    segFilterList = segFilter.split(',').map((s) => sanitizeSqlValue(s.trim()));
+    safeSegFilter = segFilterList.join(',');
+  } else {
+    safeSegFilter = sanitizeSqlValue(segFilter);
+  }
+
+  const scenarioName = getScenarioName(safeBaseScenario);
+
+  // SELECT extras first (they appear earliest in the SQL text).
   const selectExtras = [];
+  const selectParams = [];
+  const groupBy = ['year'];
 
   if (safeGeoFilter === 'total') {
     selectExtras.push("'total' AS geography");
@@ -308,7 +457,8 @@ function buildParamAggregatedQuery(opts) {
     selectExtras.push('geography');
     groupBy.push('geography');
   } else {
-    selectExtras.push(`'${safeGeoFilter}' AS geography`);
+    selectExtras.push('? AS geography');
+    selectParams.push(safeGeoFilter);
   }
 
   if (safeSegFilter === 'total') {
@@ -317,20 +467,65 @@ function buildParamAggregatedQuery(opts) {
     selectExtras.push('segment');
     groupBy.push('segment');
   } else {
-    selectExtras.push(`'${safeSegFilter}' AS segment`);
+    selectExtras.push('? AS segment');
+    selectParams.push(safeSegFilter);
   }
 
-  return `
+  // WHERE clause + params in textual order.
+  const whereParams = [];
+  const wheres = [
+    'CAST(year AS INTEGER) >= ?',
+    'CAST(year AS INTEGER) < ?',
+    'scenario_id = ?',
+  ];
+  whereParams.push(
+    new Date(start).getFullYear(),
+    new Date(end).getFullYear(),
+    scenarioName
+  );
+
+  if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
+    wheres.push('geography = ?');
+    whereParams.push(safeGeoFilter);
+  }
+
+  if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
+    if (segFilterList) {
+      const placeholders = segFilterList.map(() => '?').join(', ');
+      wheres.push(`segment IN (${placeholders})`);
+      whereParams.push(...segFilterList);
+    } else {
+      wheres.push('segment = ?');
+      whereParams.push(safeSegFilter);
+    }
+  }
+
+  const sql = `
     SELECT
       MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
       ${selectExtras.join(', ')},
-      '${safeBaseScenario}' AS scenario_id,
+      ? AS scenario_id,
       SUM(total_value) AS value
-    FROM read_parquet('${paramYearlyPath}')
+    FROM read_parquet('${aggregatedTable}')
     WHERE ${wheres.join(' AND ')}
     GROUP BY ${groupBy.join(', ')}
     ORDER BY period
   `;
+
+  const params = [
+    ...selectParams,
+    safeBaseScenario,
+    ...whereParams,
+  ];
+
+  return { sql, params };
 }
 
-export { sanitizeSqlValue, buildStrategy2Query, buildParamAggregatedQuery, getScenarioName };
+export {
+  sanitizeSqlValue,
+  safeDataPath,
+  buildStrategy2Query,
+  buildParamAggregatedQuery,
+  buildBaselineAggregatedQuery,
+  getScenarioName
+};

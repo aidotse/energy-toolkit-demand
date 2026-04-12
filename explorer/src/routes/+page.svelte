@@ -17,7 +17,9 @@
 
 	let { data }: { data: PageData } = $props();
 
+	// svelte-ignore state_referenced_locally
 	let year = $state(data.year);
+	// svelte-ignore state_referenced_locally
 	let geography = $state(data.geography);
 	let segments = $state<string[]>(['total']);
 

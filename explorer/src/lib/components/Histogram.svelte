@@ -319,8 +319,11 @@
 		};
 	});
 
-	// Shared tooltip and highlight props
-	const tooltipProps = {
+	// Shared tooltip and highlight props.
+	// Typed as `any` because layerchart's BarChart props accept a subset of
+	// what we configure here (header format, variant, contained) and the
+	// strict types reject our literal strings.
+	const tooltipProps: any = {
 		highlight: {
 			area: { fill: 'rgba(0,0,0,0.05)' }
 		},
@@ -350,6 +353,7 @@
 	chartData={exportData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ left: 32, right: 32 }}
 	class={className}
 >
 	<div class="h-[300px]">

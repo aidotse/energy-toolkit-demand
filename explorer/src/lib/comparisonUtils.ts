@@ -24,7 +24,7 @@ export { COMPARISON_COLORS };
  * @returns Normalized array of scenarios
  */
 export function getNormalizedScenarios(
-	scenario?: ScenarioObject,
+	scenario?: ScenarioObject | null,
 	scenarios?: ScenarioObject[]
 ): ScenarioObject[] {
 	if (scenarios && scenarios.length > 0) {
@@ -58,10 +58,7 @@ export function assignScenarioColors(scenarios: ScenarioObject[]): ScenarioObjec
  * @param scenarios - Array of scenarios with colors
  * @returns Hex color string or default gray
  */
-export function getScenarioColor(
-	scenarioId: string,
-	scenarios: ScenarioObject[]
-): string {
+export function getScenarioColor(scenarioId: string, scenarios: ScenarioObject[]): string {
 	const scenario = scenarios.find((s) => s.id === scenarioId || s.scenario_id === scenarioId);
 	return scenario?.color || SCENARIO_COLORS.baseline;
 }
@@ -143,7 +140,8 @@ export function mergeScenarioData(
 		const data = dataByScenario[scenarioId] || [];
 
 		for (const point of data) {
-			const timestamp = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp);
+			const timestamp =
+				point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp);
 			const time = timestamp.getTime();
 
 			if (!pointsMap.has(time)) {
@@ -158,7 +156,9 @@ export function mergeScenarioData(
 		}
 	}
 
-	return Array.from(pointsMap.values()).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+	return Array.from(pointsMap.values()).sort(
+		(a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+	);
 }
 
 /**

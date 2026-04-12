@@ -13,13 +13,13 @@ components:
     DemandRow:
       type: object
       properties:
-        timestamp: { type: string, format: date-time }
+        period: { type: string, format: date-time, description: "Start of the time bucket the aggregated value belongs to (ISO 8601)." }
         value: { type: number }
         geography: { type: string }
         segment: { type: string }
         scenario_id: { type: string }
-        timestamp_year: { type: integer }
-      required: [timestamp, value, geography, segment, scenario_id]
+        timestamp_year: { type: integer, description: "Convenience field — the year component of `period`, useful when grouping without re-parsing the timestamp." }
+      required: [period, value, geography, segment, scenario_id]
       patternProperties:
         '^scenario_[a-z0-9_]+$':
           oneOf:
@@ -27,6 +27,23 @@ components:
             - type: number
             - type: string
       additionalProperties: false
+
+    Error:
+      type: object
+      description: "Uniform error envelope returned by any endpoint on 4xx/5xx responses."
+      required: [error, requestId]
+      properties:
+        error:
+          type: string
+          description: "Human-readable summary safe to display to end users. Never contains internal paths, SQL, or stack traces."
+        requestId:
+          type: string
+          description: "Server-generated correlation ID. Also returned in the `X-Request-Id` response header. Use this when filing a bug so operators can find the request in logs."
+        details:
+          type: array
+          description: "Structured validation errors (only present on 400 responses from schema validation)."
+          items:
+            type: object
 
     CsvBinary:
       type: string
@@ -57,3 +74,145 @@ components:
       description: List of available resolution-aggregation combinations
       items:
         $ref: '#/components/schemas/AggregationOption'
+
+    Strategy2ParameterValue:
+      type: object
+      description: |
+        A single selectable value for a Strategy 2 parameter. The `index`
+        is what clients pass to `/demand?housing_growth=<index>`; the
+        `label` and `value` are what clients display and use as the
+        semantic multiplier.
+      required: [index, label, value, hasData]
+      properties:
+        index:
+          type: integer
+          description: Position in the value list. This is what you pass to /demand.
+          example: 1
+        label:
+          type: string
+          description: Human-readable label for UIs.
+          example: "+15%"
+        value:
+          type: number
+          description: Semantic numeric value (percent delta, multiplier, etc.) as configured in the generator.
+          example: 15
+        hasData:
+          type: boolean
+          description: Whether parquet files exist for this index (true) or whether it's the baseline / synthetic (false).
+
+    Strategy2Parameter:
+      type: object
+      description: |
+        Definition of one Strategy 2 parameter knob (e.g. `housing_growth`).
+        Returned as part of `/parameters`. Clients use the `values` list to
+        render a selector and pass the chosen `index` to `/demand`.
+      required: [segment, description, operation, baselineIndex, values]
+      properties:
+        segment:
+          type: string
+          description: Segment this parameter scales (e.g. `housing`, `transport`).
+        description:
+          type: string
+        operation:
+          type: string
+          enum: [multiply, add]
+          description: How the parameter combines with the base scenario.
+        baselineIndex:
+          type: integer
+          description: Which index represents the no-op baseline (typically 0).
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/Strategy2ParameterValue'
+
+    Strategy2Config:
+      type: object
+      description: |
+        The full set of Strategy 2 knobs (base scenarios + independent
+        parameters) that `/demand` will accept. Embedded in `/parameters`
+        under the `strategy2` key.
+      required: [strategy, baseScenarios, parameters, bySegment, defaults]
+      properties:
+        strategy:
+          type: integer
+          const: 2
+        baseScenarios:
+          type: array
+          items:
+            type: object
+            required: [id, name, default]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              default: { type: boolean }
+        parameters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Strategy2Parameter'
+        bySegment:
+          type: object
+          description: Same parameters grouped by segment, for UI convenience.
+          additionalProperties:
+            type: array
+            items:
+              allOf:
+                - { type: object, properties: { name: { type: string } } }
+                - $ref: '#/components/schemas/Strategy2Parameter'
+        defaults:
+          type: object
+          additionalProperties:
+            type: integer
+
+    ParametersResponse:
+      type: object
+      description: |
+        Complete parameter lookup tables. Top-level fields are arrays of
+        valid values for `/demand` query parameters (years, geographies,
+        segments, resolutions, aggregations, formats). The `parameters`
+        array is a flat list of every parameter with its valid values and
+        which endpoints reference it. When Strategy 2 is enabled (the
+        default), `strategy2` contains the semantic values, segment
+        groupings, and baseline indices clients need to render parameter
+        selectors.
+      properties:
+        years:
+          type: array
+          items: { type: integer }
+        geographies:
+          type: array
+          items: { type: string }
+        segments:
+          type: array
+          items: { type: string }
+        resolutions:
+          type: array
+          items: { type: string }
+        aggregations:
+          type: array
+          items: { type: string }
+        formats:
+          type: array
+          items: { type: string }
+        geo_formats:
+          type: array
+          items: { type: string }
+        parameters:
+          type: array
+          description: Flat list of query parameters and their enum values.
+          items:
+            type: object
+            required: [name, required, values, endpoints]
+            properties:
+              name: { type: string }
+              required: { type: boolean }
+              values:
+                type: array
+                items:
+                  oneOf:
+                    - { type: string }
+                    - { type: integer }
+              endpoints:
+                type: array
+                items: { type: string }
+        strategy2:
+          $ref: '#/components/schemas/Strategy2Config'

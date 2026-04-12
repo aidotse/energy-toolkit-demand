@@ -118,7 +118,7 @@
 	const BAR_AREA_H = H - TOP - BOTTOM;
 
 	const BASELINE_COLOR = viz.teal[900];
-	const FLEX_COLOR = '#e67e22';
+	const FLEX_COLOR = viz.flex;
 
 	// Bar geometry (derived from data)
 	const barLeftX = $derived((W - BAR_W * 2 - GAP) / 2);
@@ -145,6 +145,7 @@
 	chartData={[{ baselinePeak, flexPeak, delta, pct }]}
 	{exportable}
 	{headerControls}
+	exportPadding={{ top: 24 }}
 	class={className}
 >
 	<div class="flex justify-center">
@@ -160,7 +161,7 @@
 		<svg viewBox="0 0 {W} {H}" class="w-full max-w-md" preserveAspectRatio="xMidYMid meet">
 			<defs>
 				<pattern id="peak-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-					<line x1="0" y1="0" x2="0" y2="6" stroke="#dc2626" stroke-width="1.5" opacity="0.3" />
+					<line x1="0" y1="0" x2="0" y2="6" stroke={viz.warning} stroke-width="1.5" opacity="0.3" />
 				</pattern>
 			</defs>
 
@@ -184,7 +185,7 @@
 					x={barRightX} y={hatchY}
 					width={BAR_W} height={hatchH}
 					fill="url(#peak-hatch)"
-					stroke="#dc2626" stroke-width="1" stroke-dasharray="4 2" opacity="0.6"
+					stroke={viz.warning} stroke-width="1" stroke-dasharray="4 2" opacity="0.6"
 					rx="3"
 				/>
 
@@ -193,24 +194,24 @@
 				<line
 					x1={bracketX} y1={hatchY + 2}
 					x2={bracketX} y2={hatchY + hatchH - 2}
-					stroke="#dc2626" stroke-width="1.5"
+					stroke={viz.warning} stroke-width="1.5"
 				/>
 				<!-- Top tick -->
 				<line
 					x1={bracketX - 4} y1={hatchY + 2}
 					x2={bracketX + 2} y2={hatchY + 2}
-					stroke="#dc2626" stroke-width="1.5"
+					stroke={viz.warning} stroke-width="1.5"
 				/>
 				<!-- Bottom tick -->
 				<line
 					x1={bracketX - 4} y1={hatchY + hatchH - 2}
 					x2={bracketX + 2} y2={hatchY + hatchH - 2}
-					stroke="#dc2626" stroke-width="1.5"
+					stroke={viz.warning} stroke-width="1.5"
 				/>
 				<!-- Delta text -->
 				<text
 					x={bracketX + 8} y={bracketMidY + 4}
-					font-size="12" font-weight="700" fill="#dc2626"
+					font-size="12" font-weight="700" fill={viz.warning}
 				>
 					−{delta.toFixed(1)} GW
 				</text>
@@ -225,7 +226,7 @@
 			</text>
 			<text
 				x={barLeftX + BAR_W / 2} y={TOP + BAR_AREA_H + 38}
-				text-anchor="middle" font-size="10" fill="#6b7280"
+				text-anchor="middle" font-size="10" fill={viz.mutedLabel}
 			>
 				Utan flexibilitet
 			</text>
@@ -238,7 +239,7 @@
 			</text>
 			<text
 				x={barRightX + BAR_W / 2} y={TOP + BAR_AREA_H + 38}
-				text-anchor="middle" font-size="10" fill="#6b7280"
+				text-anchor="middle" font-size="10" fill={viz.mutedLabel}
 			>
 				Med 15 % flexibilitet
 			</text>

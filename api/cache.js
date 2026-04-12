@@ -16,6 +16,9 @@ const queryCache = new Map();
 /** Maximum number of cached entries before LRU eviction */
 const QUERY_CACHE_MAX = 500;
 
+let hits = 0;
+let misses = 0;
+
 /**
  * Get cached query result
  * @param {string} key - Cache key
@@ -27,8 +30,10 @@ function getCachedQuery(key) {
     // Move to end (most recently used) by re-inserting
     queryCache.delete(key);
     queryCache.set(key, data);
+    hits++;
     return data;
   }
+  misses++;
   return null;
 }
 
@@ -51,6 +56,8 @@ function setCachedQuery(key, data) {
  */
 function clearCache() {
   queryCache.clear();
+  hits = 0;
+  misses = 0;
 }
 
 /**
@@ -61,4 +68,12 @@ function cacheSize() {
   return queryCache.size;
 }
 
-export { getCachedQuery, setCachedQuery, clearCache, cacheSize, QUERY_CACHE_MAX };
+/**
+ * Get cache stats for the /_health endpoint.
+ * @returns {{ hits: number, misses: number, size: number, maxSize: number }}
+ */
+function getCacheStats() {
+  return { hits, misses, size: queryCache.size, maxSize: QUERY_CACHE_MAX };
+}
+
+export { getCachedQuery, setCachedQuery, clearCache, cacheSize, getCacheStats, QUERY_CACHE_MAX };

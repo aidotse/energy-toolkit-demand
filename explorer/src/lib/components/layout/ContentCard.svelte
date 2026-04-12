@@ -31,8 +31,8 @@
 		typeof iconProp === 'string' ? resolveIcon(iconProp) : iconProp
 	);
 
-	const hoverClasses = hover ? 'hover:shadow-md hover:-translate-y-0.5' : '';
-	const paddingClasses = noPadding ? '' : 'py-6 md:py-8';
+	const hoverClasses = $derived(hover ? 'hover:shadow-md hover:-translate-y-0.5' : '');
+	const paddingClasses = $derived(noPadding ? '' : 'py-6 md:py-8');
 </script>
 
 <div

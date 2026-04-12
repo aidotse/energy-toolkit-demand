@@ -26,7 +26,7 @@
 	</div>
 </div>
 
-<style>
+<style lang="postcss">
 	.content-block {
 		@apply mx-auto;
 	}

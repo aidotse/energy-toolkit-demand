@@ -12,11 +12,14 @@
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
 
+	// svelte-ignore state_referenced_locally
 	const { scenarios, parameters, defaultScenario } = data;
 
 	// Initialize scenario store
 	scenarioState.setScenarios(scenarios);
-	scenarioState.setScenario(defaultScenario);
+	if (defaultScenario) {
+		scenarioState.setScenario(defaultScenario);
+	}
 
 	// Initialize parameter store with Strategy 2 config
 	const strategy2Config = getStrategy2Config(parameters);
@@ -90,6 +93,12 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	{#if import.meta.env.VITE_ENV === 'staging'}
+		<meta name="robots" content="noindex, nofollow, noarchive" />
+	{/if}
+</svelte:head>
 
 <ParaglideJS {i18n}>
 	<!-- Navigation -->

@@ -125,9 +125,9 @@
 		}
 	});
 
-	// Series colors — distinct enough to read clearly
+	// Series colors — distinct enough to read clearly. Both come from $lib/colors.
 	const BASELINE_COLOR = viz.teal[900];   // dark teal
-	const FLEX_COLOR = '#e67e22';           // warm orange
+	const FLEX_COLOR = viz.flex;            // warm orange
 
 	// Series config — copied from AreaChart.svelte multi-series pattern (lines 356-370)
 	const series = [
@@ -168,6 +168,7 @@
 	chartData={durationData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ top: 24, bottom: 24 }}
 	class={className}
 >
 
@@ -211,7 +212,7 @@
 					{#if value !== undefined}
 						<Tooltip.Root
 							x={padding.left}
-							y={() => y({ [key]: value })}
+							y={y({ [key]: value })}
 							anchor="right"
 							contained={false}
 							class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"

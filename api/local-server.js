@@ -24,6 +24,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { OpenAPIBackend } from 'openapi-backend';
 import addFormats from 'ajv-formats';
 import duckdb from 'duckdb';
@@ -34,13 +35,50 @@ import qs from 'qs';
 import fs from 'fs';
 import { parsePeriod, formatPeriod } from './utils.js';
 import { getDataDir } from '../paths.js';
-import { getCachedQuery, setCachedQuery } from './cache.js';
-import { sanitizeSqlValue, buildStrategy2Query, buildParamAggregatedQuery, getScenarioName } from './query-builder.js';
+import { getCachedQuery, setCachedQuery, getCacheStats } from './cache.js';
+import {
+  sanitizeSqlValue,
+  safeDataPath,
+  buildStrategy2Query,
+  buildParamAggregatedQuery,
+  buildBaselineAggregatedQuery,
+  getScenarioName,
+} from './query-builder.js';
+import { toCsv } from './csv.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Server start time used for ETag generation (data is static until restart) */
 const serverStartTime = Date.now();
+
+/**
+ * Send a sanitized error response. The full error is logged server-side
+ * (with request ID for correlation) but the client only sees a short
+ * public message — never file paths, SQL, or stack traces.
+ *
+ * @param {Object} req - Express request (must have req.id from requestId middleware)
+ * @param {Object} res - Express response
+ * @param {number} status - HTTP status code
+ * @param {string} publicMessage - Safe message to return to the client
+ * @param {Error|unknown} [err] - Internal error to log (not sent to client)
+ * @param {Array} [details] - Optional structured details (only use for safe-to-return data like validation errors)
+ */
+function sendError(req, res, status, publicMessage, err, details) {
+  const requestId = req.id || 'unknown';
+  if (err) {
+    console.error(JSON.stringify({
+      event: 'error',
+      requestId,
+      status,
+      publicMessage,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    }));
+  }
+  const body = { error: publicMessage, requestId };
+  if (details) body.details = details;
+  res.status(status).json(body);
+}
 
 const api = new OpenAPIBackend({
   definition: path.join(__dirname, 'openapi.yaml'),
@@ -97,16 +135,84 @@ await api.init();
 
 const app = express();
 
-// CORS configuration - allow localhost in dev, configurable origins in production
+// App Runner terminates TLS and forwards via a single hop; trust one proxy
+// layer so req.ip reflects the real client for rate limiting and logging.
+app.set('trust proxy', 1);
+
+// CORS configuration - permissive in dev, configurable allowlist in production
+const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:5173', 'http://localhost:5174', 'http://192.168.1.72:5173'];
+  : null;
 
+// Per-request debug logs are noisy on App Runner; opt in via DEBUG_REQUESTS=1.
+const debugRequests = !isProduction || process.env.DEBUG_REQUESTS === '1';
+const debugLog = (...args) => { if (debugRequests) console.log(...args); };
+
+if (isProduction && !allowedOrigins) {
+  console.warn('⚠️  NODE_ENV=production but ALLOWED_ORIGINS is unset — all cross-origin requests will be rejected.');
+}
+
+// Request ID + latency log middleware. Runs before everything else so even
+// rejected CORS requests get an ID in the logs.
+app.use((req, res, next) => {
+  req.id = crypto.randomUUID();
+  res.set('X-Request-Id', req.id);
+  const startTime = Date.now();
+  res.on('finish', () => {
+    console.log(JSON.stringify({
+      event: 'request',
+      id: req.id,
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      latency_ms: Date.now() - startTime,
+    }));
+  });
+  next();
+});
+
+// CORS: in prod, check against allowlist and log rejections. In dev, allow all.
 app.use(cors({
-  origin: allowedOrigins
+  origin: (origin, callback) => {
+    // Same-origin or non-browser requests have no Origin header — always allow.
+    if (!origin) return callback(null, true);
+    if (!isProduction) return callback(null, true);
+    if (allowedOrigins && allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(JSON.stringify({ event: 'cors_reject', origin }));
+    return callback(new Error('CORS: origin not allowed'));
+  }
 }));
 
 app.use(express.json());
+
+// Rate limit /demand only (static endpoints are ETag-cached and cheap).
+// Defaults: 300 requests / minute / IP. Override via env vars.
+const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60_000;
+const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX, 10) || 300;
+const demandRateLimiter = rateLimit({
+  windowMs: rateLimitWindowMs,
+  max: rateLimitMax,
+  standardHeaders: true, // RateLimit-* headers
+  legacyHeaders: false,
+  handler: (req, res /* , next, options */) => {
+    sendError(req, res, 429, 'Too many requests');
+  },
+});
+app.use('/demand', demandRateLimiter);
+
+// Internal /_health endpoint — not in the OpenAPI spec, used by deploy smoke
+// tests and for cache observability. Must be registered BEFORE the OpenAPI
+// catch-all so it's not routed through api.handleRequest.
+app.get('/_health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime_s: Math.floor((Date.now() - serverStartTime) / 1000),
+    cache: getCacheStats(),
+  });
+});
 
 // route everything through OpenAPI‐Backend
 app.use((req, res) =>
@@ -166,7 +272,7 @@ api.register('getGeographies', (c, req, res) => {
   const filepath = path.join(dataDir, filename);
 
   if (!fs.existsSync(filepath)) {
-    return res.status(404).json({ error: 'Not found' });
+    return sendError(req, res, 404, 'Endpoint data unavailable');
   }
 
   const contentType = fmt === 'geojson' ? 'application/geo+json' : 'application/json';
@@ -189,7 +295,7 @@ staticOps.forEach((op) => {
     const base = op.replace(/^get/, '').toLowerCase();
     const filepath = path.join(dataDir, `${base}.json`);
     if (!fs.existsSync(filepath)) {
-      return res.status(404).json({ error: 'Not found' });
+      return sendError(req, res, 404, 'Endpoint data unavailable');
     }
     // Static config files rarely change, cache for 1 hour
     sendCachedFile(res, req, filepath, 'application/json', 3600);
@@ -247,12 +353,26 @@ api.register('getDemand', async (c, req, res) => {
       baseScenario = defaultScenario;
     }
 
-    // Collect parameter values from query
+    // Collect parameter values from query, bounds-checked against the
+    // parameter config. Out-of-range values return 400.
     const parameterValues = {};
     if (strategy2Config?.parameters) {
-      for (const paramName of Object.keys(strategy2Config.parameters)) {
-        const value = parseInt(query[paramName], 10);
-        parameterValues[paramName] = isNaN(value) ? 0 : value;
+      for (const [paramName, paramDef] of Object.entries(strategy2Config.parameters)) {
+        const raw = query[paramName];
+        if (raw === undefined || raw === null || raw === '') {
+          parameterValues[paramName] = 0;
+          continue;
+        }
+        const value = parseInt(raw, 10);
+        if (Number.isNaN(value) || value < 0 || value >= paramDef.values.length) {
+          return sendError(
+            req,
+            res,
+            400,
+            `Parameter "${paramName}" must be an integer index in [0, ${paramDef.values.length - 1}]`
+          );
+        }
+        parameterValues[paramName] = value;
       }
     }
 
@@ -272,16 +392,18 @@ api.register('getDemand', async (c, req, res) => {
     // Check in-memory cache
     const cachedResult = getCachedQuery(cacheKey);
     if (cachedResult) {
-      console.log('📊 Cache hit for demand query');
+      debugLog('📊 Cache hit for demand query');
       res.set('ETag', etag);
       res.set('Cache-Control', 'public, max-age=300');
+      res.set('Vary', 'Accept-Encoding');
       if (fmt === 'csv') {
+        res.set('Content-Disposition', `attachment; filename="${csvFilename(baseScenario, start, end)}"`);
         return res.type('text/csv').send(cachedResult);
       }
       return res.json(cachedResult);
     }
 
-    console.log('📊 Demand query:', {
+    debugLog('📊 Demand query:', {
       baseScenario,
       start,
       end,
@@ -296,102 +418,49 @@ api.register('getDemand', async (c, req, res) => {
     const hasNonZeroParams = Object.values(parameterValues).some(v => v > 0);
     const canUseAggregated = resolution === '1Y' && fs.existsSync(aggregatedDir);
 
-    let sql;
+    // `preparedQuery` is `{ sql, params }` — a parameterized statement body.
+    let preparedQuery;
 
     if (canUseAggregated && hasNonZeroParams) {
       // Parameter-aware aggregated query (param_yearly.parquet)
       const segments = getSegments();
-      sql = buildParamAggregatedQuery({
+      preparedQuery = buildParamAggregatedQuery({
         baseScenario, segments, geoFilter, segFilter, start, end, parameterValues, aggregatedDir
       });
-      if (sql) console.log('📊 Using param-aware aggregated tables');
+      if (preparedQuery) debugLog('📊 Using param-aware aggregated tables');
     }
 
-    if (!sql && canUseAggregated && !hasNonZeroParams) {
-      // Baseline aggregated tables (no parameters active)
+    if (!preparedQuery && canUseAggregated && !hasNonZeroParams) {
+      // Baseline aggregated tables (no parameters active). Pick the right
+      // pre-aggregated parquet depending on the filter shape.
       let aggregatedTable;
       if (geoFilter === 'total' && segFilter === 'total') {
-        aggregatedTable = path.join(aggregatedDir, 'national_yearly.parquet');
+        aggregatedTable = safeDataPath(aggregatedDir, 'national_yearly.parquet');
       } else if (geoFilter === 'all' && segFilter === 'all') {
-        aggregatedTable = path.join(aggregatedDir, 'geo_segment_yearly.parquet');
+        aggregatedTable = safeDataPath(aggregatedDir, 'geo_segment_yearly.parquet');
       } else if (geoFilter === 'all') {
-        aggregatedTable = path.join(aggregatedDir, 'geography_yearly.parquet');
+        aggregatedTable = safeDataPath(aggregatedDir, 'geography_yearly.parquet');
       } else if (segFilter === 'all') {
-        aggregatedTable = path.join(aggregatedDir, 'segment_yearly.parquet');
+        aggregatedTable = safeDataPath(aggregatedDir, 'segment_yearly.parquet');
       }
 
       if (aggregatedTable && fs.existsSync(aggregatedTable)) {
-        console.log('📊 Using pre-aggregated tables');
-        const safeGeoFilter = sanitizeSqlValue(geoFilter);
-        const safeBaseScenario = sanitizeSqlValue(baseScenario);
-
-        // Parse comma-separated segment filter
-        let safeSegFilter;
-        let segFilterList = null;
-        if (segFilter.includes(',')) {
-          segFilterList = segFilter.split(',').map(s => sanitizeSqlValue(s.trim()));
-          safeSegFilter = segFilterList.join(',');
-        } else {
-          safeSegFilter = sanitizeSqlValue(segFilter);
-        }
-
-        const scenarioName = getScenarioName(safeBaseScenario);
-        const wheres = [
-          `CAST(year AS INTEGER) >= ${new Date(start).getFullYear()}`,
-          `CAST(year AS INTEGER) < ${new Date(end).getFullYear()}`,
-          `scenario_id = '${scenarioName}'`
-        ];
-
-        if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
-          wheres.push(`geography = '${safeGeoFilter}'`);
-        }
-        if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
-          if (segFilterList) {
-            wheres.push(`segment IN (${segFilterList.map(s => `'${s}'`).join(', ')})`);
-          } else {
-            wheres.push(`segment = '${safeSegFilter}'`);
-          }
-        }
-
-        const groupBy = ['year'];
-        const selectExtras = [];
-
-        if (safeGeoFilter === 'total') {
-          selectExtras.push("'total' AS geography");
-        } else if (safeGeoFilter === 'all') {
-          selectExtras.push('geography');
-          groupBy.push('geography');
-        } else {
-          selectExtras.push(`'${safeGeoFilter}' AS geography`);
-        }
-
-        if (safeSegFilter === 'total') {
-          selectExtras.push("'total' AS segment");
-        } else if (safeSegFilter === 'all' || segFilterList) {
-          selectExtras.push('segment');
-          groupBy.push('segment');
-        } else {
-          selectExtras.push(`'${safeSegFilter}' AS segment`);
-        }
-
-        sql = `
-          SELECT
-            MAKE_TIMESTAMP(CAST(year AS INTEGER), 1, 1, 0, 0, 0) AS period,
-            ${selectExtras.join(', ')},
-            '${safeBaseScenario}' AS scenario_id,
-            SUM(total_value) AS value
-          FROM read_parquet('${aggregatedTable}')
-          WHERE ${wheres.join(' AND ')}
-          GROUP BY ${groupBy.join(', ')}
-          ORDER BY period
-        `;
+        debugLog('📊 Using pre-aggregated tables');
+        preparedQuery = buildBaselineAggregatedQuery({
+          aggregatedTable,
+          baseScenario,
+          geoFilter,
+          segFilter,
+          start,
+          end,
+        });
       }
     }
 
-    if (!sql) {
+    if (!preparedQuery) {
       // Fallback: full raw parquet scan with parameter JOINs
       const segments = getSegments();
-      sql = buildStrategy2Query({
+      preparedQuery = buildStrategy2Query({
         baseScenario,
         segments,
         geoFilter,
@@ -407,56 +476,68 @@ api.register('getDemand', async (c, req, res) => {
       });
     }
 
-    console.log('SQL:', sql);
+    debugLog('SQL:', preparedQuery.sql);
 
-    // Execute query
-    const rawRows = await new Promise((resolve, reject) =>
-      conn.all(sql, (err, rows) => (err ? reject(err) : resolve(rows)))
-    );
-
-    // Clean BigInt values
-    const rows = rawRows.map(r =>
-      Object.fromEntries(Object.entries(r).map(([k, v]) =>
-        typeof v === 'bigint' ? [k, Number(v)] : [k, v]
-      ))
-    );
+    // Execute query via prepared statement so values are bound, not interpolated.
+    const rows = await runPrepared(preparedQuery);
 
     // Set HTTP cache headers on fresh responses
     res.set('ETag', etag);
     res.set('Cache-Control', 'public, max-age=300');
+    res.set('Vary', 'Accept-Encoding');
 
     // Send response and cache result
     if (fmt === 'csv') {
-      const header = 'period,geography,segment,scenario_id,value';
-      const lines = rows.map(r => [
-        formatPeriod(r.period, resolution),
-        r.geography,
-        r.segment,
-        r.scenario_id,
-        r.value
-      ].join(','));
-      const csvResult = [header, ...lines].join('\n');
+      // Format period column via formatPeriod for each row, then serialize.
+      const csvRows = rows.map((r) => ({
+        period: formatPeriod(r.period, resolution),
+        geography: r.geography,
+        segment: r.segment,
+        scenario_id: r.scenario_id,
+        value: r.value,
+      }));
+      const csvResult = toCsv(csvRows, ['period', 'geography', 'segment', 'scenario_id', 'value']);
       setCachedQuery(cacheKey, csvResult);
+      res.set('Content-Disposition', `attachment; filename="${csvFilename(baseScenario, start, end)}"`);
       res.type('text/csv').send(csvResult);
     } else {
       setCachedQuery(cacheKey, rows);
       res.json(rows);
     }
   } catch (err) {
-    console.error('Error in getDemand:', err);
-    res.status(500).json({ error: err.message });
+    sendError(req, res, 500, 'Query failed', err);
   }
 });
 
+/**
+ * Build a safe CSV filename for Content-Disposition.
+ */
+function csvFilename(baseScenario, start, end) {
+  const safe = (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, '');
+  return `demand-${safe(baseScenario)}-${safe(start).slice(0, 10)}-${safe(end).slice(0, 10)}.csv`;
+}
+
+
 // Fallbacks
 api.register('notFound', (c, req, res) =>
-  res.status(404).json({ error: 'Not found' })
+  sendError(req, res, 404, 'Not found')
 );
 api.register('validationFail', (c, req, res) =>
-  res
-    .status(400)
-    .json({ error: 'Bad request', details: c.validation.errors })
+  sendError(req, res, 400, 'Bad request', null, c.validation.errors)
 );
+
+/** Execute a prepared `{sql, params}` pair and return cleaned rows. */
+async function runPrepared(query) {
+  const rows = await new Promise((resolve, reject) => {
+    const stmt = conn.prepare(query.sql);
+    stmt.all(...query.params, (err, rows) => (err ? reject(err) : resolve(rows)));
+  });
+  return rows.map((r) =>
+    Object.fromEntries(
+      Object.entries(r).map(([k, v]) => (typeof v === 'bigint' ? [k, Number(v)] : [k, v]))
+    )
+  );
+}
 
 /**
  * Pre-warm cache with common queries for faster initial page loads
@@ -468,172 +549,155 @@ async function warmupCache() {
   console.log('🔥 Warming up cache...');
   let cached = 0;
 
-  for (const baseScenario of baseScenarios) {
-    // 1. National yearly totals (most common query)
+  const warmQuery = async (cacheKey, opts, label) => {
+    if (getCachedQuery(cacheKey)) return;
     try {
-      const nationalKey = JSON.stringify({
+      const segments = getSegments();
+      const query = buildStrategy2Query({
+        segments,
+        parameterValues: {},
+        baseDir,
+        parametersDir,
+        strategy2Config,
+        resolution: '1Y',
+        aggregation: 'sum',
+        ...opts,
+      });
+      const cleaned = await runPrepared(query);
+      setCachedQuery(cacheKey, cleaned);
+      cached++;
+    } catch (e) {
+      console.warn(`  Warning: Could not warm ${label}`);
+    }
+  };
+
+  for (const baseScenario of baseScenarios) {
+    // 1. National yearly totals
+    await warmQuery(
+      JSON.stringify({
         baseScenario, start: '2025-01-01', end: '2051-01-01',
         resolution: '1Y', aggregation: 'sum',
         geoFilter: 'total', segFilter: 'total', parameterValues: {}, fmt: 'json'
-      });
+      }),
+      { baseScenario, geoFilter: 'total', segFilter: 'total', start: '2025-01-01', end: '2051-01-01' },
+      `national totals for ${baseScenario}`
+    );
 
-      if (!getCachedQuery(nationalKey)) {
-        const segments = getSegments();
-        const sql = buildStrategy2Query({
-          baseScenario, segments, geoFilter: 'total', segFilter: 'total',
-          start: '2025-01-01', end: '2051-01-01', resolution: '1Y', aggregation: 'sum',
-          parameterValues: {}, baseDir, parametersDir, strategy2Config
-        });
-        const rows = await new Promise((resolve, reject) =>
-          conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
-        );
-        const cleaned = rows.map(r =>
-          Object.fromEntries(Object.entries(r).map(([k, v]) =>
-            typeof v === 'bigint' ? [k, Number(v)] : [k, v]
-          ))
-        );
-        setCachedQuery(nationalKey, cleaned);
-        cached++;
-      }
-    } catch (e) {
-      console.warn(`  Warning: Could not warm national totals for ${baseScenario}`);
-    }
-
-    // 2. Geographic yearly data (for map)
     for (const year of years) {
-      try {
-        const geoKey = JSON.stringify({
+      // 2. Geographic yearly data (for map)
+      await warmQuery(
+        JSON.stringify({
           baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
           resolution: '1Y', aggregation: 'sum',
           geoFilter: 'all', segFilter: 'total', parameterValues: {}, fmt: 'json'
-        });
+        }),
+        { baseScenario, geoFilter: 'all', segFilter: 'total', start: `${year}-01-01`, end: `${year + 1}-01-01` },
+        `geo data for ${baseScenario} year ${year}`
+      );
 
-        if (!getCachedQuery(geoKey)) {
-          const segments = getSegments();
-          const sql = buildStrategy2Query({
-            baseScenario, segments, geoFilter: 'all', segFilter: 'total',
-            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}, baseDir, parametersDir, strategy2Config
-          });
-          const rows = await new Promise((resolve, reject) =>
-            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
-          );
-          const cleaned = rows.map(r =>
-            Object.fromEntries(Object.entries(r).map(([k, v]) =>
-              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
-            ))
-          );
-          setCachedQuery(geoKey, cleaned);
-          cached++;
-        }
-      } catch (e) {
-        console.warn(`  Warning: Could not warm geo data for ${baseScenario} year ${year}`);
-      }
-    }
-
-    // 3. Segment yearly data (for pie chart)
-    for (const year of years) {
-      try {
-        const segKey = JSON.stringify({
+      // 3. Segment yearly data (for pie chart)
+      await warmQuery(
+        JSON.stringify({
           baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
           resolution: '1Y', aggregation: 'sum',
           geoFilter: 'total', segFilter: 'all', parameterValues: {}, fmt: 'json'
-        });
+        }),
+        { baseScenario, geoFilter: 'total', segFilter: 'all', start: `${year}-01-01`, end: `${year + 1}-01-01` },
+        `segment data for ${baseScenario} year ${year}`
+      );
 
-        if (!getCachedQuery(segKey)) {
-          const segments = getSegments();
-          const sql = buildStrategy2Query({
-            baseScenario, segments, geoFilter: 'total', segFilter: 'all',
-            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}, baseDir, parametersDir, strategy2Config
-          });
-          const rows = await new Promise((resolve, reject) =>
-            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
-          );
-          const cleaned = rows.map(r =>
-            Object.fromEntries(Object.entries(r).map(([k, v]) =>
-              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
-            ))
-          );
-          setCachedQuery(segKey, cleaned);
-          cached++;
-        }
-      } catch (e) {
-        console.warn(`  Warning: Could not warm segment data for ${baseScenario} year ${year}`);
-      }
-    }
-
-    // 4. All geographies with all segments (for SectorPieChart & GeoSegmentChart)
-    for (const year of years) {
-      try {
-        const allAllKey = JSON.stringify({
+      // 4. All geographies with all segments
+      await warmQuery(
+        JSON.stringify({
           baseScenario, start: `${year}-01-01`, end: `${year + 1}-01-01`,
           resolution: '1Y', aggregation: 'sum',
           geoFilter: 'all', segFilter: 'all', parameterValues: {}, fmt: 'json'
-        });
-
-        if (!getCachedQuery(allAllKey)) {
-          const segments = getSegments();
-          const sql = buildStrategy2Query({
-            baseScenario, segments, geoFilter: 'all', segFilter: 'all',
-            start: `${year}-01-01`, end: `${year + 1}-01-01`, resolution: '1Y', aggregation: 'sum',
-            parameterValues: {}, baseDir, parametersDir, strategy2Config
-          });
-          const rows = await new Promise((resolve, reject) =>
-            conn.all(sql, (err, rows) => err ? reject(err) : resolve(rows))
-          );
-          const cleaned = rows.map(r =>
-            Object.fromEntries(Object.entries(r).map(([k, v]) =>
-              typeof v === 'bigint' ? [k, Number(v)] : [k, v]
-            ))
-          );
-          setCachedQuery(allAllKey, cleaned);
-          cached++;
-        }
-      } catch (e) {
-        console.warn(`  Warning: Could not warm all-geo/all-seg data for ${baseScenario} year ${year}`);
-      }
+        }),
+        { baseScenario, geoFilter: 'all', segFilter: 'all', start: `${year}-01-01`, end: `${year + 1}-01-01` },
+        `all-geo/all-seg data for ${baseScenario} year ${year}`
+      );
     }
   }
 
   console.log(`🔥 Cache warmed: ${cached} queries pre-cached`);
 }
 
-const port = process.env.PORT || 4010;
-const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ API server running at http://localhost:${port}`);
-  if (strategy2Config) {
-    console.log(`📊 Strategy 2 enabled: ${strategy2Config.baseScenarios?.length || 0} base scenarios, ${Object.keys(strategy2Config.parameters || {}).length} parameters`);
-  }
-  if (process.env.ALLOWED_ORIGINS) {
-    console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
-  }
+// The Express app is exported so integration tests can import it without
+// starting a TCP listener. The `listen()` call only runs when this module is
+// the process entry point (`node api/local-server.js`) — vitest imports the
+// module via `import()` so `import.meta.url` won't equal argv[1].
+export { app };
 
-  // Warm up cache after server starts
-  warmupCache().catch(err => console.error('Cache warmup failed:', err));
-});
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  const entryUrl = `file://${path.resolve(process.argv[1])}`;
+  return import.meta.url === entryUrl;
+})();
 
-// Graceful shutdown handler
-function shutdown(signal) {
-  console.log(`\n${signal} received, shutting down gracefully...`);
-  server.close(() => {
-    console.log('HTTP server closed');
-    try {
-      conn.close();
-      db.close();
-      console.log('DuckDB connection closed');
-    } catch (e) {
-      // Ignore errors during shutdown
+let server;
+if (isMain) {
+  const port = process.env.PORT || 4010;
+  server = app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ API server running at http://localhost:${port}`);
+    if (strategy2Config) {
+      console.log(`📊 Strategy 2 enabled: ${strategy2Config.baseScenarios?.length || 0} base scenarios, ${Object.keys(strategy2Config.parameters || {}).length} parameters`);
     }
-    process.exit(0);
-  });
+    if (process.env.ALLOWED_ORIGINS) {
+      console.log(`🌐 CORS origins: ${allowedOrigins.join(', ')}`);
+    }
 
-  // Force exit after 10 seconds if graceful shutdown fails
-  setTimeout(() => {
-    console.error('Forced shutdown after timeout');
-    process.exit(1);
-  }, 10000);
+    // Warm up cache after server starts
+    warmupCache().catch(err => console.error('Cache warmup failed:', err));
+  });
 }
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+// Graceful shutdown handler — only relevant when we actually started a
+// listener (not when imported from a test).
+if (isMain) {
+  let isShuttingDown = false;
+  const shutdown = (reason, exitCode = 0) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`\n${reason} — shutting down gracefully...`);
+    server.close(() => {
+      console.log('HTTP server closed');
+      try {
+        conn.close();
+        db.close();
+        console.log('DuckDB connection closed');
+      } catch (e) {
+        // Ignore errors during shutdown
+      }
+      process.exit(exitCode);
+    });
+
+    // Force exit after 10 seconds if graceful shutdown fails
+    setTimeout(() => {
+      console.error('Forced shutdown after timeout');
+      process.exit(exitCode || 1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Last-resort handlers: log the full error and shut down cleanly. Without
+  // these, a single unhandled rejection anywhere in the server (e.g. a missing
+  // await on a DuckDB call) would tear down the process with no context.
+  process.on('uncaughtException', (err) => {
+    console.error(JSON.stringify({
+      event: 'uncaught_exception',
+      message: err?.message,
+      stack: err?.stack,
+    }));
+    shutdown('uncaughtException', 1);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error(JSON.stringify({
+      event: 'unhandled_rejection',
+      message: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+    }));
+    shutdown('unhandledRejection', 1);
+  });
+}

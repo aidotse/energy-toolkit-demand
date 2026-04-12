@@ -17,6 +17,7 @@ I scenarierna kommer nästan hela ökningen från sektorer som idag knappt
 använder el. Det handlar inte om mer el till samma saker — utan om att
 transporter, industri och datacenter kan tillkomma som stora nya elanvändare.
 :::
+
 <!-- -->
 
 ## Vilka sektorer driver förändringen?
@@ -28,7 +29,7 @@ elektrifierar processer som tidigare drevs av fossila bränslen, och
 datacenter kan växa som en helt ny kategori.
 
 Bostädernas absoluta elanvändning bedöms vara relativt stabil. Deras
-*andel* av den totala förbrukningen kan däremot minska, i takt med att
+_andel_ av den totala förbrukningen kan däremot minska, i takt med att
 andra sektorer växer snabbare.
 
 ::ChartEmbed{chart="sector-pie" enableComparison={true} exportable={false}}
@@ -38,6 +39,7 @@ Trots värmepumpar och ökad digitalisering pekar scenarierna på att
 bostadssektorn inte är den som driver det växande elbehovet. Det är
 snarare transporter och industri som kan stå för de stora volymökningarna.
 :::
+
 <!-- -->
 
 ## Regional variation
@@ -55,12 +57,13 @@ Norra Sverige har produktionsöverskott men kan komma att möta stor ny
 efterfrågan från datacenter och grön industri. Södra Sverige har redan
 idag kapacitetsutmaningar — och det är där merparten av befolkningen bor.
 :::
+
 <!-- -->
 
 ## När behövs elen?
 
 Total årsförbrukning berättar bara halva historien. Lika viktigt är
-*när* elen behövs. Skillnaderna kan vara stora: en kall vintermorgon kan
+_när_ elen behövs. Skillnaderna kan vara stora: en kall vintermorgon kan
 effektbehovet vara flera gånger högre än en sommarnatt.
 
 Värmekurvan i diagrammet nedan visar dessa mönster. Vintern har tydliga
@@ -91,3 +94,5 @@ Baserat på genomsnittlig kapacitet för Sveriges sex reaktorer (~1,15 GW per re
 :::
 
 ::HomeFooterCTA{}
+
+::HomeFooter{}

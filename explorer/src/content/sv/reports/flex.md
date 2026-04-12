@@ -1,11 +1,11 @@
 ---
-title: "Flexibilitet"
-description: "Att flytta el i tid — inte använda mindre, utan fördela jämnare."
-lastUpdated: "2026-03-03"
+title: 'Flexibilitet'
+description: 'Att flytta el i tid — inte använda mindre, utan fördela jämnare.'
+lastUpdated: '2026-03-03'
 layout: reports
 ---
 
-Den här applikationen visar inte bara hur mycket el Sverige kan komma att behöva, utan också *när* behovet uppstår. Och det är i *när*-frågan som flexibilitet blir avgörande.
+Den här applikationen visar inte bara hur mycket el Sverige kan komma att behöva, utan också _när_ behovet uppstår. Och det är i _när_-frågan som flexibilitet blir avgörande.
 
 Flexibilitet — ofta förkortat "flex" — handlar om att flytta elförbrukning i tid. Inte att använda mindre el totalt, utan att fördela den jämnare. Toppar kapas, dalar fylls, och elsystemet klarar sig med mindre kapacitet.
 
@@ -22,6 +22,7 @@ Flex är som att få en del av trafikanterna att resa en timme tidigare eller se
 :::InsightBox{variant="insight" title="Samma energi, lägre toppar"}
 Flex handlar inte om att minska elförbrukningen — utan om att fördela den jämnare över tid. Den totala energin är densamma, men toppeffekten sjunker.
 :::
+
 <!-- -->
 
 ## Vad kan vara flexibelt?
@@ -53,6 +54,7 @@ Stationära batterier har vuxit snabbt i Sverige och når idag runt 1 GW install
 :::InsightBox{variant="info" title="Flexibilitetspotentialen är störst på vintern"}
 Vintern har 3–4 gånger högre flexibilitetspotential än sommaren, eftersom elvärme — den största flexibla lasten — främst används under kalla månader.
 :::
+
 <!-- -->
 
 ## Varför är flex viktigt i just Sverige?
@@ -69,7 +71,7 @@ Vattenkraft är Sveriges traditionella flexibilitetsresurs — den kan regleras 
 
 #### Vindkraften: variabel och växande
 
-Vindkraften har vuxit från en marginell källa till ett av Sveriges största kraftslag, med över 40 TWh per år. Men vinden blåser inte alltid när elen behövs som mest. Under lugna, kalla högtrycksperioder på vintern — ibland kallad *Dunkelflaute* — kan vindproduktionen vara nära noll i flera dagar. Det skapar svängningar i **residuallasten** (efterfrågan minus vind- och solproduktion), och dessa svängningar måste hanteras med flexibla resurser.
+Vindkraften har vuxit från en marginell källa till ett av Sveriges största kraftslag, med över 40 TWh per år. Men vinden blåser inte alltid när elen behövs som mest. Under lugna, kalla högtrycksperioder på vintern — ibland kallad _Dunkelflaute_ — kan vindproduktionen vara nära noll i flera dagar. Det skapar svängningar i **residuallasten** (efterfrågan minus vind- och solproduktion), och dessa svängningar måste hanteras med flexibla resurser.
 
 #### Prissignaler och effekttariffer
 
@@ -112,13 +114,13 @@ Där flex-faktorn styr graden av utjämning:
 
 ### Varför den här modellen?
 
-Modellen är medvetet förenklad. Den säger ingenting om *hur* flexibiliteten uppnås — om det är genom smart styrning av värmepumpar, schemalagd elbilsladdning eller industriell lastförflyttning. Den visar istället *effekten* av flexibilitet: en jämnare profil med lägre toppar och utfyllda dalar.
+Modellen är medvetet förenklad. Den säger ingenting om _hur_ flexibiliteten uppnås — om det är genom smart styrning av värmepumpar, schemalagd elbilsladdning eller industriell lastförflyttning. Den visar istället _effekten_ av flexibilitet: en jämnare profil med lägre toppar och utfyllda dalar.
 
 Det gör den till ett bra verktyg för att utforska frågor som:
 
 - Hur mycket kan toppeffekten sänkas om ett segment blir 20 % eller 40 % mer flexibelt?
 - Vilka segment har störst påverkan på den samlade profilen om de blir flexibla?
-- Hur förändras effektbehovet om elektrifieringen ökar *och* flexibiliteten ökar samtidigt?
+- Hur förändras effektbehovet om elektrifieringen ökar _och_ flexibiliteten ökar samtidigt?
 
 ### Vad modellen visar — och inte visar
 
@@ -134,6 +136,7 @@ Däremot modellerar vi inte:
 :::InsightBox{variant="info" title="En övre gräns"}
 Flex-scenarierna visar den mest optimistiska effekten av en given flex-grad. I praktiken kommer resultatet att vara mer begränsat — men riktningen stämmer.
 :::
+
 <!-- -->
 
 ## Flex per segment
@@ -152,6 +155,7 @@ Eftersom segmenten har olika dygns- och årstidsprofiler påverkar samma flex-gr
 :::InsightBox{variant="insight" title="Samma flex-faktor, olika resultat"}
 En flex-faktor på 0,8 ger stor effekt för bostäder (som har stora svängningar) men nästan ingen för datacenter (som redan är jämna). Samma parameter — helt olika utfall.
 :::
+
 <!-- -->
 
 ## Hur stor flex är rimlig?
@@ -166,12 +170,12 @@ Ingen av dessa nivåer förutsätter att förbrukningen blir helt jämn — de v
 
 ## Sammanfattning
 
-| Begrepp | Beskrivning |
-|---|---|
-| **Flexibilitet (flex)** | Att flytta elförbrukning i tid — inte att minska den |
-| **Utjämning** | Toppar sänks, dalar höjs, totalen bevaras |
-| **Flex-faktor** | 1,0 = ingen förändring, 0,8 = 20 % utjämning, 0,6 = 40 % utjämning |
-| **Toppeffekt** | Minskar med flex — det är den viktigaste konsekvensen |
-| **Total energi** | Oförändrad — flex flyttar el, den skapar eller tar inte bort den |
+| Begrepp                 | Beskrivning                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| **Flexibilitet (flex)** | Att flytta elförbrukning i tid — inte att minska den               |
+| **Utjämning**           | Toppar sänks, dalar höjs, totalen bevaras                          |
+| **Flex-faktor**         | 1,0 = ingen förändring, 0,8 = 20 % utjämning, 0,6 = 40 % utjämning |
+| **Toppeffekt**          | Minskar med flex — det är den viktigaste konsekvensen              |
+| **Total energi**        | Oförändrad — flex flyttar el, den skapar eller tar inte bort den   |
 
 Flexibilitet är inte en magisk lösning, men det är ett av de mest kostnadseffektiva verktygen för att hantera framtidens elbehov. Genom att utforska flex-scenarierna i den här applikationen kan du se hur stor skillnad utjämning gör — för olika segment, regioner och tidshorisonter.

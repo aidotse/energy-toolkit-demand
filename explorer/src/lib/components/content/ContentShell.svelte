@@ -23,8 +23,8 @@
 		header?: Snippet;
 	} = $props();
 
-	let content: ContentFile | null = $state(null);
-	let ContentComponent = $derived(content?.default);
+	let content = $state<ContentFile | null>(null);
+	let ContentComponent = $derived<any>(content?.default);
 	let loading = $state(true);
 	let error = $state(false);
 

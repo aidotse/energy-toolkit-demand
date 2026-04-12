@@ -23,15 +23,36 @@ function createViewStore() {
 	let initialized = $state(false);
 
 	return {
-		get initialized() { return initialized; },
-		get year() { return year; },
-		set year(v: number) { year = v; initialized = true; },
-		get geography() { return geography; },
-		set geography(v: string) { geography = v; initialized = true; },
-		get segment() { return segment; },
-		set segment(v: string[]) { segment = v; initialized = true; },
-		get pageData() { return pageData; },
-		set pageData(v: PageData | null) { pageData = v; },
+		get initialized() {
+			return initialized;
+		},
+		get year() {
+			return year;
+		},
+		set year(v: number) {
+			year = v;
+			initialized = true;
+		},
+		get geography() {
+			return geography;
+		},
+		set geography(v: string) {
+			geography = v;
+			initialized = true;
+		},
+		get segment() {
+			return segment;
+		},
+		set segment(v: string[]) {
+			segment = v;
+			initialized = true;
+		},
+		get pageData() {
+			return pageData;
+		},
+		set pageData(v: PageData | null) {
+			pageData = v;
+		},
 
 		/** Look up geography display name from pageData */
 		get geographyName(): string {
@@ -48,7 +69,7 @@ function createViewStore() {
 
 		/** Segment string for descriptions: single, comma-separated, or 'total' */
 		get segmentLabel(): string {
-			const filtered = segment.filter(s => s !== 'total');
+			const filtered = segment.filter((s) => s !== 'total');
 			if (filtered.length === 0) return 'total';
 			return filtered.join(',');
 		}

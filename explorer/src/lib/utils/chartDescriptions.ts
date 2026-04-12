@@ -61,9 +61,7 @@ export function getGeoLabel(
 	geographiesMetadata: Array<{ id?: string; geo_id?: string; name?: string; geo_name?: string }>
 ): string {
 	if (geography === 'total' || geography === '00') return 'Sverige';
-	const geo = geographiesMetadata.find(
-		(g: any) => g.geo_id === geography || g.id === geography
-	);
+	const geo = geographiesMetadata.find((g: any) => g.geo_id === geography || g.id === geography);
 	return (geo as any)?.geo_name || (geo as any)?.name || geography;
 }
 
@@ -72,7 +70,7 @@ export function getSegmentSuffix(segment: string): string {
 	if (segment === 'total') return '';
 	// Handle comma-separated segments (e.g. "housing,transport")
 	if (segment.includes(',')) {
-		const labels = segment.split(',').map(s => getSegmentLabel(s.trim()).toLowerCase());
+		const labels = segment.split(',').map((s) => getSegmentLabel(s.trim()).toLowerCase());
 		if (labels.length === 2) return `, sektorerna ${labels[0]} och ${labels[1]}`;
 		return `, sektorerna ${labels.slice(0, -1).join(', ')} och ${labels[labels.length - 1]}`;
 	}
@@ -93,10 +91,15 @@ export const CHART_DESCRIPTIONS: Record<
 	'period-heatmap': (y, g, seg, s) =>
 		`Visar genomsnittlig effekt (GW) per månad och tid på dygnet för ${g}${seg} år ${y} ${s}`,
 	timeline: (y, g, seg, s) => `Elbehov över tid för ${g}${seg} år ${y} ${s}`,
-	histogram: (y, g, seg, s) => `Visar hur många timmar per år som effektbehovet ligger på en given nivå för ${g}${seg} år ${y} — illustrerar hur ofta efterfrågan är hög respektive låg. ${s}`,
+	histogram: (y, g, seg, s) =>
+		`Visar hur många timmar per år som effektbehovet ligger på en given nivå för ${g}${seg} år ${y} — illustrerar hur ofta efterfrågan är hög respektive låg. ${s}`,
 	'stacked-sector': (y, g, seg, s) => `Elbehov per sektor över tid för ${g} 2025–2050 ${s}`,
-	'weekly-profile': (y, g, seg, s) => `Genomsnittlig veckobelastning per månad för ${g}${seg} år ${y} ${s}`,
+	'weekly-profile': (y, g, seg, s) =>
+		`Genomsnittlig veckobelastning per månad för ${g}${seg} år ${y} ${s}`,
 	map: (y, g, seg, s) => `Geografisk fördelning av elbehov år ${y} ${s}`,
-	'flex-impact': (y, g, seg, s) => `Varaktighetskurva som jämför effektbehovet med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
-	'flex-peak-bars': (y, g, seg, s) => `Toppeffekt med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
+	'flex-impact': (y, g, seg, s) =>
+		`Varaktighetskurva som jämför effektbehovet med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
+	'flex-peak-bars': (y, g, seg, s) =>
+		`Toppeffekt med och utan 15% flexibilitet för ${g}${seg} år ${y} ${s}`,
+	'geo-pie': (y, g, seg, s) => `Topp 4 län efter elbehov${seg} år ${y} ${s}`
 };

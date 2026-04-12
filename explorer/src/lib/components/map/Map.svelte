@@ -37,6 +37,7 @@
 	} = $props();
 
 	// Local year state for the slider - synced with parent via callback
+	// svelte-ignore state_referenced_locally
 	let localYear = $state(year);
 
 	// Sync local year when parent year changes

@@ -102,7 +102,6 @@
 			<!-- Language Selector -->
 			<Menu placement="bottom-end">
 				<button
-					slot="trigger"
 					class="text-sm font-medium px-2 py-1 rounded hover:bg-gray-100 transition-colors uppercase"
 				>
 					{languageTag()}

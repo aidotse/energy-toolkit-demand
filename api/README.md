@@ -83,8 +83,33 @@ data/
 
 5. **Test the API:**
    ```bash
+   # Static endpoints (baked at startup, 1-hour cache):
    curl http://localhost:4010/globals
-   curl "http://localhost:4010/demand?period.start=2030&period.end=2031&period.resolution=1Y&period.aggregation=sum&geography=total&segment=total&scenarioId=default"
+   curl http://localhost:4010/parameters
+   curl http://localhost:4010/_health
+
+   # /demand takes a nested `period` object. Encode it with bracket
+   # notation in the query string (`qs` library format):
+   curl -G http://localhost:4010/demand \
+     --data-urlencode 'period[start]=2030' \
+     --data-urlencode 'period[end]=2031' \
+     --data-urlencode 'period[resolution]=1Y' \
+     --data-urlencode 'period[aggregation]=sum' \
+     --data-urlencode 'geography=total' \
+     --data-urlencode 'segment=total' \
+     --data-urlencode 'baseScenario=beslutad-policy'
+
+   # Same request as CSV (RFC 4180 quoted, Content-Disposition attachment):
+   curl -G http://localhost:4010/demand \
+     --data-urlencode 'period[start]=2030' \
+     --data-urlencode 'period[end]=2031' \
+     --data-urlencode 'period[resolution]=1Y' \
+     --data-urlencode 'period[aggregation]=sum' \
+     --data-urlencode 'geography=total' \
+     --data-urlencode 'segment=total' \
+     --data-urlencode 'baseScenario=beslutad-policy' \
+     --data-urlencode 'format=csv' \
+     -o demand.csv
    ```
 
 6. **Access API documentation:**

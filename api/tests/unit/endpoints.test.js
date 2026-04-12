@@ -10,9 +10,7 @@ import { buildStaticEndpoints } from '../../scripts/generate-endpoints.js';
 
 describe('Endpoint Generation', () => {
   describe('generateParameters', () => {
-    test('should handle empty parameters document', async () => {
-      // Create a minimal openapi.yaml content
-      const mockOpenApiContent = `
+    const mockOpenApiContent = `
 openapi: 3.0.0
 info:
   title: Test API
@@ -25,46 +23,12 @@ components:
   parameters: {}
 `;
 
-      // Create temporary files
-      const tempDir = '/tmp/endpoint-test';
-      const openApiPath = path.join(tempDir, 'openapi.yaml');
+    const mockParamsContent = `
+components:
+  parameters: {}
+`;
 
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      fs.writeFileSync(openApiPath, mockOpenApiContent);
-
-      const result = await generateParameters(null, openApiPath);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(0);
-
-      // Cleanup
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    });
-
-    test('should throw error for invalid OpenAPI file', async () => {
-      const invalidPath = '/nonexistent/openapi.yaml';
-
-      await expect(generateParameters(null, invalidPath)).rejects.toThrow();
-    });
-
-    test('should handle OpenAPI file with parameters', async () => {
-      const mockOpenApiContent = `
-openapi: 3.0.0
-info:
-  title: Test API
-  version: 1.0.0
-paths:
-  /test:
-    get:
-      parameters:
-        - name: testParam
-          in: query
-          schema:
-            type: string
-            enum: ['value1', 'value2']
+    const mockParamsWithEntries = `
 components:
   parameters:
     testParam:
@@ -76,20 +40,73 @@ components:
         enum: ['value1', 'value2']
 `;
 
-      const tempDir = '/tmp/endpoint-test-params';
-      const openApiPath = path.join(tempDir, 'openapi.yaml');
+    test('should handle empty parameters document', async () => {
+      const tempDir = '/tmp/endpoint-test';
 
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      fs.writeFileSync(openApiPath, mockOpenApiContent);
+      fs.writeFileSync(path.join(tempDir, 'openapi.yaml'), mockOpenApiContent);
+      fs.writeFileSync(path.join(tempDir, 'parameters.yaml'), mockParamsContent);
 
-      const result = await generateParameters(null, openApiPath);
+      const result = await generateParameters(
+        path.join(tempDir, 'parameters.yaml'),
+        path.join(tempDir, 'openapi.yaml')
+      );
 
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty('parameters');
+      expect(Array.isArray(result.parameters)).toBe(true);
+      expect(result.parameters).toHaveLength(0);
 
-      // Cleanup
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    test('should throw error for invalid parameters file', async () => {
+      await expect(
+        generateParameters('/nonexistent/parameters.yaml', '/nonexistent/openapi.yaml')
+      ).rejects.toThrow();
+    });
+
+    test('should handle parameters file with entries', async () => {
+      const tempDir = '/tmp/endpoint-test-params';
+
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const openApiWithParams = `
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /test:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/testParam'
+components:
+  parameters:
+    testParam:
+      name: testParam
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ['value1', 'value2']
+`;
+
+      fs.writeFileSync(path.join(tempDir, 'openapi.yaml'), openApiWithParams);
+      fs.writeFileSync(path.join(tempDir, 'parameters.yaml'), mockParamsWithEntries);
+
+      const result = await generateParameters(
+        path.join(tempDir, 'parameters.yaml'),
+        path.join(tempDir, 'openapi.yaml')
+      );
+
+      expect(result).toHaveProperty('parameters');
+      expect(Array.isArray(result.parameters)).toBe(true);
+
       fs.rmSync(tempDir, { recursive: true, force: true });
     });
   });
@@ -230,17 +247,11 @@ components:
 
   describe('generateScenarios', () => {
     const mockConfig = {
-      scenario: {
-        scenarios: [
-          {
-            name: 'climate_change',
-            items: [
-              { value: 0, label: 'No change' },
-              { value: 1, label: 'Moderate change' }
-            ]
-          }
-        ],
-        useBaseAsDefaultScenario: false
+      parameters: {
+        baseScenarios: [
+          { id: 'base-scenario', label: 'Base Scenario', default: true },
+          { id: 'alt-scenario', label: 'Alternative Scenario', default: false }
+        ]
       }
     };
 
@@ -248,15 +259,15 @@ components:
       const result = await generateScenarios(mockConfig);
 
       expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.length).toBe(2);
       expect(result[0]).toHaveProperty('scenario_id');
       expect(result[0]).toHaveProperty('name');
-      expect(result[0]).toHaveProperty('parameters');
+      expect(result[0]).toHaveProperty('default', true);
     });
 
     test('should throw error for missing scenario config', async () => {
       const invalidConfig = { name: 'test' };
-      await expect(generateScenarios(invalidConfig)).rejects.toThrow('Invalid config: missing scenario.scenarios section');
+      await expect(generateScenarios(invalidConfig)).rejects.toThrow('Invalid config: missing parameters.baseScenarios list');
     });
   });
 
@@ -311,13 +322,12 @@ geography:
       name: "Test Geography 1"
       type: "region"
   file: "test-geographies.geojson"
-scenario:
-  scenarios:
-    - name: "test_scenario"
-      items:
-        - value: 0
-          label: "Base"
-  useBaseAsDefaultScenario: false
+parameters:
+  strategy: 2
+  baseScenarios:
+    - id: "test-scenario"
+      label: "Test Scenario"
+      default: true
 api:
   resolutions: ["1d"]
   aggregations: ["sum"]
@@ -336,12 +346,18 @@ components:
   parameters: {}
 `;
 
+      const paramsContent = `
+components:
+  parameters: {}
+`;
+
       fs.writeFileSync(path.join(tempDir, 'config.yaml'), configContent);
 
       // Create api subdirectory
       const apiDir = path.join(tempDir, 'api');
       fs.mkdirSync(apiDir, { recursive: true });
       fs.writeFileSync(path.join(apiDir, 'openapi.yaml'), openApiContent);
+      fs.writeFileSync(path.join(apiDir, 'parameters.yaml'), paramsContent);
 
       process.chdir(tempDir);
     });
@@ -354,7 +370,8 @@ components:
     });
 
     test('should create data directory if it does not exist', async () => {
-      const dataDir = path.join(tempDir, 'api', 'data');
+      // getDataDir() resolves to {projectRoot}/data/ where projectRoot = tempDir
+      const dataDir = path.join(tempDir, 'data');
       expect(fs.existsSync(dataDir)).toBe(false);
 
       const result = await buildStaticEndpoints();
@@ -368,7 +385,7 @@ components:
 
       expect(result).toBe(true);
 
-      const dataDir = path.join(tempDir, 'api', 'data');
+      const dataDir = path.join(tempDir, 'data');
       expect(fs.existsSync(path.join(dataDir, 'parameters.json'))).toBe(true);
       expect(fs.existsSync(path.join(dataDir, 'geographies.json'))).toBe(true);
       expect(fs.existsSync(path.join(dataDir, 'scenarios.json'))).toBe(true);
@@ -381,11 +398,12 @@ components:
 
       expect(result).toBe(true);
 
-      const dataDir = path.join(tempDir, 'api', 'data');
+      const dataDir = path.join(tempDir, 'data');
 
-      // Test parameters.json
+      // Test parameters.json (now an object with a parameters array)
       const params = JSON.parse(fs.readFileSync(path.join(dataDir, 'parameters.json'), 'utf8'));
-      expect(Array.isArray(params)).toBe(true);
+      expect(typeof params).toBe('object');
+      expect(params).toHaveProperty('parameters');
 
       // Test geographies.json
       const geographies = JSON.parse(fs.readFileSync(path.join(dataDir, 'geographies.json'), 'utf8'));
@@ -400,21 +418,24 @@ components:
     });
 
     test('should handle errors gracefully and return false', async () => {
-      // Create a separate temporary directory without proper paths
+      // Create a separate temporary directory without config.yaml
       const errorTestDir = '/tmp/error-test-dir';
       if (fs.existsSync(errorTestDir)) {
         fs.rmSync(errorTestDir, { recursive: true, force: true });
       }
       fs.mkdirSync(errorTestDir, { recursive: true });
 
-      const originalCwd = process.cwd();
+      // Write a config.yaml so findProjectRoot succeeds, but omit required files
+      fs.writeFileSync(path.join(errorTestDir, 'config.yaml'), 'name: broken\naccess: public\n');
+
+      const savedCwd = process.cwd();
       process.chdir(errorTestDir);
 
       try {
         const result = await buildStaticEndpoints();
         expect(result).toBe(false);
       } finally {
-        process.chdir(originalCwd);
+        process.chdir(savedCwd);
         if (fs.existsSync(errorTestDir)) {
           fs.rmSync(errorTestDir, { recursive: true, force: true });
         }

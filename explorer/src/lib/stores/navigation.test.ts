@@ -11,17 +11,12 @@ import { navigationState } from './navigation.svelte';
 describe('navigationState', () => {
 	beforeEach(() => {
 		// Reset all states to defaults
-		navigationState.panelExpanded = true;
 		navigationState.mobileMenuOpen = false;
 		navigationState.scenarioModalOpen = false;
 		navigationState.scenarioDropdownOpen = false;
 	});
 
 	describe('initial state defaults', () => {
-		test('panelExpanded defaults to true', () => {
-			expect(navigationState.panelExpanded).toBe(true);
-		});
-
 		test('mobileMenuOpen defaults to false', () => {
 			expect(navigationState.mobileMenuOpen).toBe(false);
 		});
@@ -32,34 +27,6 @@ describe('navigationState', () => {
 
 		test('scenarioDropdownOpen defaults to false', () => {
 			expect(navigationState.scenarioDropdownOpen).toBe(false);
-		});
-	});
-
-	describe('togglePanel', () => {
-		test('toggles panelExpanded from true to false', () => {
-			expect(navigationState.panelExpanded).toBe(true);
-
-			navigationState.togglePanel();
-
-			expect(navigationState.panelExpanded).toBe(false);
-		});
-
-		test('toggles panelExpanded from false to true', () => {
-			navigationState.panelExpanded = false;
-
-			navigationState.togglePanel();
-
-			expect(navigationState.panelExpanded).toBe(true);
-		});
-
-		test('persists value to localStorage', () => {
-			navigationState.togglePanel();
-
-			expect(localStorage.getItem('scenarioPanelExpanded')).toBe('false');
-
-			navigationState.togglePanel();
-
-			expect(localStorage.getItem('scenarioPanelExpanded')).toBe('true');
 		});
 	});
 

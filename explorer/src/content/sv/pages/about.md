@@ -1,6 +1,6 @@
 ---
-title: "Om projektet"
-description: "Ett verktyg för att utforska och visualisera Sveriges framtida elbehov"
+title: 'Om projektet'
+description: 'Ett verktyg för att utforska och visualisera Sveriges framtida elbehov'
 layout: reports
 ---
 
@@ -15,7 +15,7 @@ nätplanerare och alla som arbetar med Sveriges energiomställning.
 
 ---
 
-*Denna sida är under arbete. Filip — fyll på med mer information om projektet, bakgrund och metodik.*
+_Denna sida är under arbete. Filip — fyll på med mer information om projektet, bakgrund och metodik._
 
 ---
 

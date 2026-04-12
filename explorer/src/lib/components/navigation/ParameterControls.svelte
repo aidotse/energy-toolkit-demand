@@ -47,9 +47,9 @@
 	<div class="space-y-4" class:space-y-3={compact}>
 		<!-- Base Scenario Selector -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600">
+			<div class="block text-xs font-medium text-gray-600">
 				Basscenario
-			</label>
+			</div>
 			<div class="flex flex-col gap-1">
 				{#each parameterStore.baseScenarios as scenario}
 					<button
@@ -76,14 +76,14 @@
 			<!-- Parameter Groups -->
 			<div class="space-y-2">
 				<div class="flex items-center justify-between">
-					<label class="block text-xs font-medium text-gray-600">
+					<div class="block text-xs font-medium text-gray-600">
 						Parametrar
 						{#if parameterStore.activeParameterCount > 0}
 							<span class="ml-1 px-1.5 py-0.5 bg-chart-100 text-chart-900 rounded text-xs">
 								{parameterStore.activeParameterCount}
 							</span>
 						{/if}
-					</label>
+					</div>
 					{#if showReset && parameterStore.hasActiveParameters}
 						<button
 							onclick={() => parameterStore.resetToBaseline()}

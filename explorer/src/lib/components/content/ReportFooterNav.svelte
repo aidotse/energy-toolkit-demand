@@ -42,7 +42,7 @@
 
 	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 		{#each otherReports as report}
-			{@const colorClasses = {
+			{@const colorClasses = ({
 				amber: {
 					bg: 'bg-amber-100',
 					icon: 'text-amber-600',
@@ -61,7 +61,7 @@
 					border: 'hover:border-indigo-400',
 					title: 'group-hover:text-indigo-600'
 				}
-			}[report.color]}
+			} as Record<string, { bg: string; icon: string; border: string; title: string }>)[report.color]!}
 			<a
 				href={report.href}
 				class="group flex items-start gap-4 p-5 rounded-xl border border-gray-200 {colorClasses.border} transition-colors"

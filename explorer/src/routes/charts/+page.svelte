@@ -11,6 +11,7 @@
 	import MonthlyWeekProfile from '$lib/components/MonthlyWeekProfile.svelte';
 	import FlexImpactChart from '$lib/components/FlexImpactChart.svelte';
 	import FlexPeakBars from '$lib/components/FlexPeakBars.svelte';
+	import GeoPieChart from '$lib/components/GeoPieChart.svelte';
 	import Map from '$lib/components/map/Map.svelte';
 	import ChartFilterPanel from '$lib/components/controls/ChartFilterPanel.svelte';
 	import LazyChart from '$lib/components/shared/LazyChart.svelte';
@@ -31,7 +32,12 @@
 	import type { ChartParameters, AvailableParameters } from '$lib/types/controls';
 
 	let { data }: PageProps = $props();
-	const { parameters, scenarios, geographies, geojson, globals, geoData } = data;
+	const parameters = $derived(data.parameters);
+	const scenarios = $derived(data.scenarios);
+	const geographies = $derived(data.geographies);
+	const geojson = $derived(data.geojson);
+	const globals = $derived(data.globals);
+	const geoData = $derived(data.geoData);
 
 	// Initialize parameterStore with Strategy 2 config
 	$effect(() => {
@@ -39,13 +45,19 @@
 		parameterStore.initialize(strategy2Config);
 	});
 
-	// Global parameters (defaults for all charts, persisted across navigation)
+	// Global parameters (defaults for all charts, persisted across navigation).
+	// Seeded once from the initial page data — subsequent navigations keep
+	// their own state in chartsGlobalStore, so snapshotting initial values
+	// here is intentional.
 	let globalParameters = $state<ChartParameters>(
 		chartsGlobalStore.initialized
 			? chartsGlobalStore.params!
 			: {
+				// svelte-ignore state_referenced_locally
 				geography: data.geography,
+				// svelte-ignore state_referenced_locally
 				year: data.year,
+				// svelte-ignore state_referenced_locally
 				segment: data.segment,
 				resolution: '1h'
 			}
@@ -110,7 +122,8 @@
 		WEEKLY_PROFILE: 'weekly-profile',
 		MAP: 'map',
 		FLEX_IMPACT: 'flex-impact',
-		FLEX_PEAK_BARS: 'flex-peak-bars'
+		FLEX_PEAK_BARS: 'flex-peak-bars',
+		GEO_PIE: 'geo-pie'
 	};
 
 	const CHART_TITLES: Record<string, string> = {
@@ -126,7 +139,8 @@
 		[CHART_IDS.WEEKLY_PROFILE]: 'Veckobelastning per månad',
 		[CHART_IDS.MAP]: 'Karta',
 		[CHART_IDS.FLEX_IMPACT]: 'Effekt av flexibilitet',
-		[CHART_IDS.FLEX_PEAK_BARS]: 'Toppeffekt med flexibilitet'
+		[CHART_IDS.FLEX_PEAK_BARS]: 'Toppeffekt med flexibilitet',
+		[CHART_IDS.GEO_PIE]: 'Topp 4 län'
 	};
 
 	const ALL_CHART_IDS = Object.values(CHART_IDS);
@@ -338,6 +352,8 @@
 							geography={getEffectiveParams(CHART_IDS.STACKED_SECTOR).geography}
 							baseScenarioOverride={getEffectiveParams(CHART_IDS.STACKED_SECTOR).scenarioId}
 							parameterValuesOverride={getEffectiveParams(CHART_IDS.STACKED_SECTOR).parameterValues}
+							scenarios={scenarioState.comparisonScenarios}
+							comparisonMode={scenarioState.comparisonMode}
 							description={getDescription(CHART_IDS.STACKED_SECTOR)}
 							class="w-full"
 						>
@@ -356,31 +372,51 @@
 					</LazyChart>
 					</div>
 
-					<!-- Row 2: SectorPieChart (1/2) + PeriodHeatmap (1/2) -->
+					<!-- Row 2: SectorPieChart (full width) -->
+					<div class="bg-white rounded-xl shadow-sm p-6">
+						<LazyChart height="400px">
+							<SectorPieChart
+								geography={getEffectiveParams(CHART_IDS.SECTOR_PIE).geography}
+								year={getEffectiveParams(CHART_IDS.SECTOR_PIE).year}
+								baseScenarioOverride={getEffectiveParams(CHART_IDS.SECTOR_PIE).scenarioId}
+								parameterValuesOverride={getEffectiveParams(CHART_IDS.SECTOR_PIE).parameterValues}
+								enableComparison={true}
+								initialComparisonMode="base"
+								description={getDescription(CHART_IDS.SECTOR_PIE)}
+								class="w-full"
+							>
+								{#snippet headerControls()}
+									<button
+										onclick={() => toggleFilter(CHART_IDS.SECTOR_PIE)}
+										class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.SECTOR_PIE)}"
+									>
+										<SlidersHorizontal class="w-3.5 h-3.5" />
+										{#if hasOverrides(CHART_IDS.SECTOR_PIE)}
+											<span>{overrideCount(CHART_IDS.SECTOR_PIE)}</span>
+										{/if}
+									</button>
+								{/snippet}
+							</SectorPieChart>
+						</LazyChart>
+					</div>
+
+					<!-- Row 2b: Map (1/2) + PeriodHeatmap (1/2) -->
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 						<div class="bg-white rounded-xl shadow-sm p-6">
-							<LazyChart height="500px">
-								<SectorPieChart
-									geography={getEffectiveParams(CHART_IDS.SECTOR_PIE).geography}
-									year={getEffectiveParams(CHART_IDS.SECTOR_PIE).year}
-									baseScenarioOverride={getEffectiveParams(CHART_IDS.SECTOR_PIE).scenarioId}
-									parameterValuesOverride={getEffectiveParams(CHART_IDS.SECTOR_PIE).parameterValues}
-									description={getDescription(CHART_IDS.SECTOR_PIE)}
-									class="w-full"
-								>
-									{#snippet headerControls()}
-										<button
-											onclick={() => toggleFilter(CHART_IDS.SECTOR_PIE)}
-											class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.SECTOR_PIE)}"
-										>
-											<SlidersHorizontal class="w-3.5 h-3.5" />
-											{#if hasOverrides(CHART_IDS.SECTOR_PIE)}
-												<span>{overrideCount(CHART_IDS.SECTOR_PIE)}</span>
-											{/if}
-										</button>
-									{/snippet}
-								</SectorPieChart>
-							</LazyChart>
+							<div class="rounded overflow-hidden">
+								<div class="h-[500px]">
+									<Map
+										geojsonData={geojson}
+										yearData={geoData}
+										year={getEffectiveParams(CHART_IDS.MAP).year || 2030}
+										geography={getEffectiveParams(CHART_IDS.MAP).geography}
+										scenario={scenario}
+										lower_bound={(globals as any)?.bounds?.map_yearly_geography?.lower_bound || (globals as any)?.lower_bound || 0}
+										upper_bound={(globals as any)?.bounds?.map_yearly_geography?.upper_bound || (globals as any)?.upper_bound || 1000000}
+										parameterData={parameters}
+									/>
+								</div>
+							</div>
 						</div>
 						<div class="bg-white rounded-xl shadow-sm p-6">
 							<LazyChart height="500px">
@@ -390,6 +426,8 @@
 									segment={getActiveSegment(CHART_IDS.PERIOD_HEATMAP)}
 									baseScenarioOverride={getEffectiveParams(CHART_IDS.PERIOD_HEATMAP).scenarioId}
 									parameterValuesOverride={getEffectiveParams(CHART_IDS.PERIOD_HEATMAP).parameterValues}
+									scenarios={scenarioState.comparisonScenarios}
+									comparisonMode={scenarioState.comparisonMode}
 									description={getDescription(CHART_IDS.PERIOD_HEATMAP)}
 									class="w-full"
 								>
@@ -418,6 +456,8 @@
 							segment={getActiveSegment(CHART_IDS.WEEKLY_PROFILE)}
 							baseScenarioOverride={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).scenarioId}
 							parameterValuesOverride={getEffectiveParams(CHART_IDS.WEEKLY_PROFILE).parameterValues}
+							scenarios={scenarioState.comparisonScenarios}
+							comparisonMode={scenarioState.comparisonMode}
 							description={getDescription(CHART_IDS.WEEKLY_PROFILE)}
 							class="w-full"
 						>
@@ -498,24 +538,32 @@
 					</LazyChart>
 					</div>
 
-					<!-- Row 5: Map (half) -->
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-						<div class="bg-white rounded-xl shadow-sm p-6">
-							<div class="rounded overflow-hidden">
-								<div class="h-[500px]">
-									<Map
-										geojsonData={geojson}
-										yearData={geoData}
-										year={getEffectiveParams(CHART_IDS.MAP).year || 2030}
-										geography={getEffectiveParams(CHART_IDS.MAP).geography}
-										scenario={scenario}
-										lower_bound={(globals as any)?.bounds?.map_yearly_geography?.lower_bound || (globals as any)?.lower_bound || 0}
-										upper_bound={(globals as any)?.bounds?.map_yearly_geography?.upper_bound || (globals as any)?.upper_bound || 1000000}
-										parameterData={parameters}
-									/>
-								</div>
-							</div>
-						</div>
+					<!-- Row 5: GeoPieChart (full width) -->
+					<div class="bg-white rounded-xl shadow-sm p-6">
+						<LazyChart height="380px">
+							<GeoPieChart
+								year={getEffectiveParams(CHART_IDS.GEO_PIE).year}
+								segment={getActiveSegment(CHART_IDS.GEO_PIE)}
+								geographies={geographiesMeta}
+								baseScenarioOverride={getEffectiveParams(CHART_IDS.GEO_PIE).scenarioId}
+								parameterValuesOverride={getEffectiveParams(CHART_IDS.GEO_PIE).parameterValues}
+								enableComparison={true}
+								description={getDescription(CHART_IDS.GEO_PIE)}
+								class="w-full"
+							>
+								{#snippet headerControls()}
+									<button
+										onclick={() => toggleFilter(CHART_IDS.GEO_PIE)}
+										class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors {filterBtnClass(CHART_IDS.GEO_PIE)}"
+									>
+										<SlidersHorizontal class="w-3.5 h-3.5" />
+										{#if hasOverrides(CHART_IDS.GEO_PIE)}
+											<span>{overrideCount(CHART_IDS.GEO_PIE)}</span>
+										{/if}
+									</button>
+								{/snippet}
+							</GeoPieChart>
+						</LazyChart>
 					</div>
 
 					<!-- Row 6: GeoBarChart (full width) -->
@@ -524,7 +572,7 @@
 								<GeoBarChart
 									year={getEffectiveParams(CHART_IDS.GEO_BAR).year || 2030}
 									segment={getActiveSegment(CHART_IDS.GEO_BAR)}
-									parameterData={{ geographies }}
+									parameterData={{ geographies: geographiesMeta }}
 									baseScenarioOverride={getEffectiveParams(CHART_IDS.GEO_BAR).scenarioId}
 									parameterValuesOverride={getEffectiveParams(CHART_IDS.GEO_BAR).parameterValues}
 									scenarios={scenarioState.comparisonScenarios}
@@ -555,7 +603,9 @@
 							segment={getActiveSegment(CHART_IDS.GEO_SEGMENT)}
 							baseScenarioOverride={getEffectiveParams(CHART_IDS.GEO_SEGMENT).scenarioId}
 							parameterValuesOverride={getEffectiveParams(CHART_IDS.GEO_SEGMENT).parameterValues}
-							parameterData={{ geographies }}
+							scenarios={scenarioState.comparisonScenarios}
+							comparisonMode={scenarioState.comparisonMode}
+							parameterData={{ geographies: geographiesMeta }}
 							description={getDescription(CHART_IDS.GEO_SEGMENT)}
 							class="w-full"
 						>

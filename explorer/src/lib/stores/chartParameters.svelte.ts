@@ -89,9 +89,15 @@ function createChartsGlobalStore() {
 	let params = $state<ChartParameters | null>(null);
 
 	return {
-		get params() { return params; },
-		set params(v: ChartParameters | null) { params = v; },
-		get initialized() { return params !== null; }
+		get params() {
+			return params;
+		},
+		set params(v: ChartParameters | null) {
+			params = v;
+		},
+		get initialized() {
+			return params !== null;
+		}
 	};
 }
 

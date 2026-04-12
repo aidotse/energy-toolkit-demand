@@ -30,7 +30,7 @@
 	{@render children?.()}
 </div>
 
-<style>
+<style lang="postcss">
 	/* Prose styling — mirrors ReportLayout for consistent markdown rendering */
 	.markdown-content :global(h2) {
 		@apply text-2xl font-bold text-gray-900 mb-3 mt-10 first:mt-0;

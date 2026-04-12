@@ -59,6 +59,7 @@ export interface ChartParameters {
 	year?: number;
 	segment?: string | string[];
 	resolution?: string;
+	aggregation?: string;
 	scenarioId?: string;
 	parameterValues?: Record<string, number>;
 }
@@ -72,5 +73,6 @@ export interface AvailableParameters {
 	geographies?: string[];
 	segments?: string[];
 	resolutions?: string[];
+	aggregations?: string[];
 	scenarios?: Array<{ id: string; name: string; is_default?: boolean }>;
 }

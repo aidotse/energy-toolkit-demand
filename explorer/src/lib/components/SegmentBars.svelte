@@ -301,6 +301,7 @@
 	chartData={exportData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ top: 24, bottom: 64 }}
 	class={className}
 >
 	<div class="h-[350px]">

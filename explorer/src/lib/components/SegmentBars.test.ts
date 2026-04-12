@@ -43,7 +43,7 @@ describe('SegmentBars', () => {
 			}
 		});
 
-		const titles = screen.getAllByText(/Sektoruppdelning/i);
+		const titles = screen.getAllByText(/Energi per sektor/i);
 		expect(titles.length).toBeGreaterThan(0);
 	});
 

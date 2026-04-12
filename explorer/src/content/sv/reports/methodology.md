@@ -1,7 +1,7 @@
 ---
-title: "Metodik"
-description: "Så bygger vi scenarierna – från Energimyndighetens långsiktiga scenarier till detaljerade timkurvor för varje län, segment och scenario. Hela kedjan är öppen och reproducerbar."
-lastUpdated: "2026-03-03"
+title: 'Metodik'
+description: 'Så bygger vi scenarierna – från Energimyndighetens långsiktiga scenarier till detaljerade timkurvor för varje län, segment och scenario. Hela kedjan är öppen och reproducerbar.'
+lastUpdated: '2026-03-03'
 layout: reports
 ---
 
@@ -16,12 +16,13 @@ Alla scenarier utgår från Energimyndighetens långsiktiga scenarier. Vi lägge
 antaganden om energiutvecklingen — vi förädlar befintlig data till högre tidsupplösning och
 gör den möjlig att utforska interaktivt.
 :::
+
 <!-- -->
 
 ## Steg 1: Energimyndighetens scenarier
 
 Grunden är Energimyndighetens långtidsscenarier för elanvändning, publicerade i rapporten
-*Scenarier över Sveriges energisystem* (ER 2025:13). Scenarierna togs fram genom att kombinera
+_Scenarier över Sveriges energisystem_ (ER 2025:13). Scenarierna togs fram genom att kombinera
 två osäkerhetsdimensioner — graden av globalisering och graden av miljöhänsyn — vilket ger
 fyra principiella utvecklingsvägar. Tre av dessa valdes ut för regional nedbrytning, utförd
 av Profu på uppdrag av Energimyndigheten.
@@ -49,6 +50,7 @@ omfattande utbyggnad. Sverige blir en exportör av fossilfria produkter.
 Inget av scenarierna ska ses som mer eller mindre sannolikt. De visar möjliga
 utvecklingsvägar under olika antaganden om omvärlden och politiken.
 :::
+
 <!-- -->
 
 #### Fem sektorer
@@ -92,11 +94,12 @@ scenario, sektor och län.
 Linjär interpolering valdes för sin transparens. Inga dolda antaganden om
 tillväxttakt eller trendbrott — kurvan följer exakt de officiella datapunkterna.
 :::
+
 <!-- -->
 
 ## Steg 3: Från årsenergi till timeffekt
 
-Årsenergi i TWh säger oss *hur mycket* el som behövs, men inte *när*. För nätplanering
+Årsenergi i TWh säger oss _hur mycket_ el som behövs, men inte _när_. För nätplanering
 är det timvariationen som avgör: när inträffar topparna? När är dalarna? Hur ser
 belastningen ut en vintermorgon jämfört med en sommarnatt?
 
@@ -105,7 +108,7 @@ summerar till 1,0 över hela året — multiplicera med årsenergimängden så f
 i MW.
 
 Det här är inte en prognos för en specifik timme 25 år framåt. Det är en del av
-scenariometodiken — vi visar ett exempel på hur timmönster *kan* se ut, baserat på
+scenariometodiken — vi visar ett exempel på hur timmönster _kan_ se ut, baserat på
 dagens uppmätta data.
 
 #### Dygnsmönster per sektor
@@ -142,14 +145,14 @@ minskning på helger för icke-kontinuerliga verksamheter.
 
 Sammansatt profil av tre delsegment, viktade efter årlig energianvändning:
 
-- *Personbilar (49 %)*: Laddningsmönster från svensk forskning. Topp sen kväll/natt
+- _Personbilar (49 %)_: Laddningsmönster från svensk forskning. Topp sen kväll/natt
   när bilar laddas efter arbetsdagen. Stark säsongsvariation — vintern 28 % över
   sommar (batteri- och kupéuppvärmning). Vardagar har högre efterfrågan.
-- *Tunga lastbilar (32 %)*: Baserat på AI Swedens 40 %-elektrifieringsscenario med
+- _Tunga lastbilar (32 %)_: Baserat på AI Swedens 40 %-elektrifieringsscenario med
   data från 1 556 geografiska hexagoner. Middagstopp (depå- och möjlighetsladdning
   under raster). Mycket stark vardagsprofil — vardagsefterfrågan cirka 3× helg.
   Juli–augusti-dipp speglar minskad logistik under sommaren.
-- *Tåg (18 %)*: Dubbla toppar vardagar (pendlartopp morgon och eftermiddag), jämnare
+- _Tåg (18 %)_: Dubbla toppar vardagar (pendlartopp morgon och eftermiddag), jämnare
   dagsplatå helger. Säsongsvariation följer pendlingsmönster.
 
 #### Datacenter
@@ -163,12 +166,13 @@ veckovariation överhuvudtaget.
 :::InsightBox{variant="info" title="8 760 timmar × 26 år × 21 län × 5 sektorer × 3 scenarier"}
 Totalt cirka 72 miljoner datapunkter.
 :::
+
 <!-- -->
 
 ## Steg 4: Scenarioparametrar
 
 Energimyndighetens tre scenarier beskriver möjliga utvecklingsbanor. För enkelhetens
-skull har vi valt *Beslutad politik* som standardscenario. Parametersystemet låter
+skull har vi valt _Beslutad politik_ som standardscenario. Parametersystemet låter
 användaren skapa egna variationer — vad händer om en sektor växer snabbare eller
 långsammare än prognosen?
 
@@ -184,7 +188,7 @@ förändringar och beteendeskiften faktiskt sprids i samhället. Omställningen
 
 #### Flexkurvor
 
-Flexparametern flyttar förbrukning *inom* dygnet utan att ändra den totala
+Flexparametern flyttar förbrukning _inom_ dygnet utan att ändra den totala
 energimängden. Det modellerar efterfrågeflexibilitet — till exempel att elbilar
 laddas nattetid istället för kvällstid, eller att industri förskjuter processer
 till timmar med lägre belastning.
@@ -198,6 +202,7 @@ Tillväxt- och flexparametrarna appliceras ovanpå Energimyndighetens scenarier.
 De ersätter aldrig grundscenariot — de låter dig utforska hur resultat påverkas av
 rimliga avvikelser från baslinjen.
 :::
+
 <!-- -->
 
 ## Steg 5: Kvalitetssäkring
@@ -214,7 +219,7 @@ i omvandlingen.
 #### Kontrollerat brus för realism
 
 Ett litet slumpmässigt brus (±2 %, reproducerbart med fast slumpfrö) läggs till
-timvärdena för att undvika orealistiskt jämna mönster. Bruset appliceras *före*
+timvärdena för att undvika orealistiskt jämna mönster. Bruset appliceras _före_
 normaliseringen, så årstotalerna bevaras exakt.
 
 #### Skottårshantering

@@ -7,8 +7,9 @@
 
 	/* state (must use `let`) */
 	let open        = $state(false);
+	// svelte-ignore state_referenced_locally
 	let selectedIdx = $state(
-		Math.max(0, items.findIndex(o => o.value === geography))
+		Math.max(0, items.findIndex((o: { value: string }) => o.value === geography))
 	);
 	let listEl: HTMLUListElement;
 
@@ -20,15 +21,17 @@
 	}
 
 	/* shift list so the selected <li> overlaps the trigger row */
-	$effect(async () => {
-		if (open && listEl) {
-			await tick();                                   // wait for list render
-			const li      = listEl.children[selectedIdx] as HTMLLIElement;
-			const offsetY = li?.offsetTop ?? 0;
-			listEl.style.transform = `translateY(-${offsetY}px)`;  // move list up
-		} else if (listEl) {
-			listEl.style.transform = '';                              // reset
-		}
+	$effect(() => {
+		void (async () => {
+			if (open && listEl) {
+				await tick();                                   // wait for list render
+				const li      = listEl.children[selectedIdx] as HTMLLIElement;
+				const offsetY = li?.offsetTop ?? 0;
+				listEl.style.transform = `translateY(-${offsetY}px)`;  // move list up
+			} else if (listEl) {
+				listEl.style.transform = '';                              // reset
+			}
+		})();
 	});
 </script>
 
@@ -41,21 +44,25 @@
 		       {open ? 'z-50 max-h-48' : 'max-h-8'}"
 	>
 		{#each items as item, idx}
-			<li
-				onclick={() => choose(idx)}
-				class="px-2 py-1 cursor-pointer hover:bg-gray-100
-				       {idx === selectedIdx ? 'font-semibold bg-indigo-50' : ''}"
-			>
-				{item.label}
+			<li>
+				<button
+					type="button"
+					onclick={() => choose(idx)}
+					class="w-full text-left px-2 py-1 cursor-pointer hover:bg-gray-100
+					       {idx === selectedIdx ? 'font-semibold bg-indigo-50' : ''}"
+				>
+					{item.label}
+				</button>
 			</li>
 		{/each}
 	</ul>
 
 	<!-- trigger text / hit‑area -->
-	<div
+	<button
+		type="button"
 		class="cursor-pointer px-2 py-1 relative z-40"
 		onclick={toggle}
 	>
 		{items[selectedIdx]?.label}
-	</div>
+	</button>
 </div>

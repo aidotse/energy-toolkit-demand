@@ -10,11 +10,19 @@ import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
 
 const FALLBACK = {
-	config: null, scenarios: [], parameters: {}, globals: {},
-	year: 2050, geography: 'total', segment: 'total',
-	scenario: null, scenarioId: 'default',
-	geographies: [], geojson: { type: 'FeatureCollection' as const, features: [] },
-	geoData: [], scenarioCount: 0
+	config: null,
+	scenarios: [],
+	parameters: {},
+	globals: { lower_bound: 0, upper_bound: 30000000 },
+	year: 2050,
+	geography: 'total',
+	segment: 'total',
+	scenario: null,
+	scenarioId: 'default',
+	geographies: [],
+	geojson: { type: 'FeatureCollection' as const, features: [] },
+	geoData: [],
+	scenarioCount: 0
 };
 
 export const load: PageLoad = async ({ fetch, parent }) => {
@@ -30,13 +38,12 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 		const { scenarios, parameters, defaultScenario } = parentData;
 
 		// Fetch only what we need that layout doesn't provide
-		const [configResult, globalsResult, geographiesResult, geojsonResult] =
-			await Promise.all([
-				fetchConfig(fetch),
-				fetchGlobals(fetch),
-				fetchGeographies('json', fetch),
-				fetchGeographies('geojson', fetch)
-			]);
+		const [configResult, globalsResult, geographiesResult, geojsonResult] = await Promise.all([
+			fetchConfig(fetch),
+			fetchGlobals(fetch),
+			fetchGeographies('json', fetch),
+			fetchGeographies('geojson', fetch)
+		]);
 		const config = configResult.data;
 		const globals = globalsResult.data;
 		const geographies = geographiesResult.data;
@@ -89,7 +96,7 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 			config: null,
 			scenarios: [],
 			parameters: {},
-			globals: {},
+			globals: { lower_bound: 0, upper_bound: 30000000 },
 			year: 2050,
 			geography: 'total',
 			segment: 'total',

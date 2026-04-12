@@ -15,11 +15,12 @@
         embedded?: boolean;
     } = $props();
 
-    const minYear:number = parameterData?.years?.length > 0 ? Math.min(...parameterData.years) : 2025;
-    const maxYear:number = parameterData?.years?.length > 0 ? Math.max(...parameterData.years) : 2050;
+    const minYear = $derived<number>(parameterData?.years?.length > 0 ? Math.min(...parameterData.years) : 2025);
+    const maxYear = $derived<number>(parameterData?.years?.length > 0 ? Math.max(...parameterData.years) : 2050);
 
     let sliderRef: HTMLInputElement;
     let isInitialized = $state(false);
+    // svelte-ignore state_referenced_locally
     let tempYear = $state(year); // Local state for immediate slider updates
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 

@@ -31,11 +31,12 @@ const meta = {
 		layout: 'padded',
 		docs: {
 			description: {
-				component: 'A reusable error state component with consistent styling and optional retry functionality. Includes proper ARIA attributes for accessibility.'
+				component:
+					'A reusable error state component with consistent styling and optional retry functionality. Includes proper ARIA attributes for accessibility.'
 			}
 		}
 	}
-} satisfies Meta<ErrorState>;
+} satisfies Meta<typeof ErrorState>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

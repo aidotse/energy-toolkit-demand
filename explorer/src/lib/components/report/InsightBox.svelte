@@ -91,7 +91,7 @@
 	</div>
 </div>
 
-<style>
+<style lang="postcss">
 	.insight-box :global(h3) {
 		@apply mt-0;
 	}

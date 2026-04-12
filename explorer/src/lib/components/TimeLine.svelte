@@ -27,7 +27,7 @@
 		createComparisonMetadata,
 		hexToRgba
 	} from '$lib/comparisonUtils';
-	import { viz, SEGMENT_COLORS } from '$lib/colors';
+	import { viz, SEGMENT_COLORS, GEO_PALETTE } from '$lib/colors';
 	import { CHART_PADDING } from '$lib/chartConfig';
 	import { getSegmentLabel } from '$lib/chartConfig';
 	import type { Snippet } from 'svelte';
@@ -141,11 +141,8 @@
 		onreset: () => { isZoomed = false; }
 	};
 
-	// --- Geography color palette for multi-geo ---
-	const GEO_PALETTE = [
-		'#004d66', '#1690b8', '#282658', '#7fd4f0', '#660042',
-		'#47134d', '#46a0c4', '#bfe9f7', '#003f66', '#9ca3af'
-	] as const;
+	// Multi-geo color palette is sourced from $lib/colors so a single edit there
+	// propagates to TimeLine, GeoPieChart, and any other consumer.
 
 	// --- Build series key and color for each (segment, geography) pair ---
 	function seriesKey(seg: string, geo: string): string {
@@ -199,7 +196,7 @@
 
 		if (!isMultiSeries) {
 			return rawData.map((d) => ({
-				timestamp: d.period || d.timestamp,
+				timestamp: d.period,
 				total: d.value || d.total || 0
 			}));
 		}
@@ -207,7 +204,7 @@
 		// Group by timestamp
 		const byTime = new Map<string, Record<string, any>>();
 		for (const d of rawData) {
-			const ts = d.period || d.timestamp;
+			const ts = d.period;
 			const tsKey = ts instanceof Date ? ts.toISOString() : String(ts);
 			const seg = d.segment || 'total';
 			const geo = d.geography || 'total';
@@ -253,13 +250,10 @@
 					Object.fromEntries(
 						Object.entries(dataByScenario).map(([scenarioId, data]) => [
 							scenarioId,
-							data.map((d) => {
-								const dateField = d.period || d.timestamp;
-								return {
-									timestamp: dateField instanceof Date ? dateField : new Date(dateField),
-									value: d.value || d.total || 0
-								};
-							})
+							data.map((d) => ({
+								timestamp: d.period instanceof Date ? d.period : new Date(d.period),
+								value: d.value || d.total || 0
+							}))
 						])
 					),
 					normalizedScenarios
@@ -268,7 +262,11 @@
 	);
 
 	let metadata = $derived(
-		normalizedScenarios.length > 1 ? createComparisonMetadata(normalizedScenarios, comparisonData) : null
+		normalizedScenarios.length > 1
+			? createComparisonMetadata(normalizedScenarios, comparisonData)
+			: normalizedScenarios.length === 1
+				? { scenarios: normalizedScenarios, colors: normalizedScenarios.map(s => s.color || '') }
+				: null
 	);
 
 	// Get current parameter state for reactive fetching
@@ -500,6 +498,7 @@
 	chartData={exportData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ left: 32, right: 32 }}
 	class={className}
 >
 	{#if brushable && isZoomed}
@@ -514,7 +513,7 @@
 		</div>
 	{/if}
 	{#if brushable && !isZoomed}
-		<p class="text-right text-xs text-gray-400 mb-1">Dra i diagrammet för att zooma in</p>
+		<p class="export-hide text-right text-xs text-gray-400 mb-1">Dra i diagrammet för att zooma in</p>
 	{/if}
 	<div class="h-[300px]">
 	{#if loading}
@@ -564,16 +563,6 @@
 			{/key}
 		{/if}
 
-		{#if metadata}
-			<ScenarioLegend
-				scenarios={normalizedScenarios}
-				{metadata}
-				onHover={handleLegendHover}
-				onClick={handleLegendClick}
-				class="mt-2"
-			/>
-		{/if}
-
 	{:else if isMultiSeries}
 		<!-- Multi-segment / multi-geography mode -->
 		{#key chartKey}
@@ -608,6 +597,28 @@
 		{/key}
 	{/if}
 	</div>
+
+	{#if metadata && !isMultiSeries && !loading && hasData}
+		<div class="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1 pb-2 px-4">
+			{#each normalizedScenarios as scenario, index}
+				{@const scenarioId = scenario.id || scenario.scenario_id || ''}
+				<button
+					class="flex items-center gap-1.5 text-[11px] transition-opacity cursor-pointer"
+					style="opacity: {getScenarioOpacity(scenarioId)}"
+					title={scenario.name || `Scenario ${index + 1}`}
+					onmouseenter={() => handleLegendHover(scenarioId)}
+					onmouseleave={() => handleLegendHover(null)}
+					onclick={() => handleLegendClick(scenarioId)}
+				>
+					<span
+						class="w-3 h-2 rounded-sm inline-block"
+						style="background: {scenario.color}"
+					></span>
+					<span class="text-gray-700">{normalizedScenarios.length === 1 ? 'Alla' : `Scenario ${index + 1}`}</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if isMultiSeries && !loading && hasData}
 		<div class="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1 pb-2 px-4">

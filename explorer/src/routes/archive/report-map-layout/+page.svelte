@@ -1,4 +1,5 @@
 <script lang="ts">
+	// @ts-nocheck - archived experimental page, not maintained
 	/**
 	 * Report Page with Fixed Map Layout
 	 *

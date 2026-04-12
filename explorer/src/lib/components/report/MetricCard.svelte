@@ -17,6 +17,7 @@
 		icon: Icon,
 		trend,
 		trendLabel,
+		filterText,
 		class: className = ''
 	}: {
 		value: string | number;
@@ -25,6 +26,7 @@
 		icon?: ComponentType;
 		trend?: 'up' | 'down' | 'neutral';
 		trendLabel?: string;
+		filterText?: string;
 		class?: string;
 	} = $props();
 
@@ -72,6 +74,13 @@
 		</div>
 	{/if}
 
+	<!-- Filter text (optional) — flowing italic description of active filters -->
+	{#if filterText}
+		<div class="metric-filter mt-2 pt-2 border-t border-white/15 text-[10px] italic text-emerald-300">
+			{filterText}
+		</div>
+	{/if}
+
 	<!-- Trend indicator (optional) — commented out until meaningful content for all cards -->
 	<!-- {#if trend && trendLabel}
 		<div class="metric-trend mt-2 pt-2 border-t border-white/20">
@@ -83,7 +92,7 @@
 	{/if} -->
 </div>
 
-<style>
+<style lang="postcss">
 	.metric-card {
 		@apply relative;
 		min-height: 105px;

@@ -1,6 +1,6 @@
 ---
-title: "Data & API"
-description: "Tillgång till data och information om hur du använder vårt API"
+title: 'Data & API'
+description: 'Tillgång till data och information om hur du använder vårt API'
 layout: reports
 ---
 
@@ -35,14 +35,17 @@ GET /demand?start=2030&end=2051&resolution=1Y&aggregation=sum&geography=total&se
 ## Användningstips
 
 #### Server-side aggregering
+
 Använd `geography=total` och `segment=total` för att få
 servern att aggregera data åt dig. Detta är mycket snabbare än att hämta all data och aggregera själv.
 
 #### Upplösning och aggregering
+
 För årlig data använd `resolution=1Y` med `aggregation=sum` för total energi.
 För effekt (power) använd `aggregation=mean` eller `max`.
 
 #### Svarsformat
+
 API:et stöder både JSON och CSV (`?format=csv`). Geografiendpointen stöder även GeoJSON (`?format=geojson`).
 
 ## Dataformat

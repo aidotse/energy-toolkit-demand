@@ -37,6 +37,7 @@
 		scenarios: scenariosProp,
 		comparisonMode = false,
 		exportable = true,
+		description = '',
 		headerControls,
 		baseScenarioOverride,
 		parameterValuesOverride,
@@ -44,6 +45,7 @@
 	}: GeographicChartProps & {
 		parameterData?: any;
 		exportable?: boolean;
+		description?: string;
 		headerControls?: Snippet;
 		segment?: string;
 		baseScenarioOverride?: string;
@@ -331,12 +333,14 @@
 
 <ChartContainer
 	title="Årlig energiförbrukning per geografi"
+	{description}
 	sizeVariant="none"
 	aspectRatio="auto"
 	metadata={exportMetadata}
 	chartData={exportData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ left: 32, right: 32 }}
 	class={className}
 >
 	<div class="h-[400px]">

@@ -36,11 +36,12 @@ const meta = {
 		layout: 'padded',
 		docs: {
 			description: {
-				component: 'A reusable chart component for visualizing segment breakdown. Supports both single scenario and comparison modes with interactive legend.'
+				component:
+					'A reusable chart component for visualizing segment breakdown. Supports both single scenario and comparison modes with interactive legend.'
 			}
 		}
 	}
-} satisfies Meta<SegmentBars>;
+} satisfies Meta<typeof SegmentBars>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

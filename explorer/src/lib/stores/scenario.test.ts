@@ -17,7 +17,7 @@ function createMockScenario(overrides?: Partial<Scenario>): Scenario {
 		name: 'Test Scenario',
 		default: false,
 		parameters: { housing_growth: 0, transport_flex: 0 },
-		...overrides,
+		...overrides
 	};
 }
 
@@ -55,7 +55,9 @@ describe('scenarioState', () => {
 			const scenario = createMockScenario();
 			scenarioState.setScenario(scenario);
 
-			expect(scenarioState.currentScenario).toBe(scenario);
+			// Svelte 5 $state deeply proxies objects, so identity is not preserved.
+			// Compare by structural equality instead.
+			expect(scenarioState.currentScenario).toEqual(scenario);
 		});
 
 		test('setScenario can be called with different scenarios', () => {
@@ -63,16 +65,16 @@ describe('scenarioState', () => {
 			const second = createMockScenario({ id: 'second', name: 'Second' });
 
 			scenarioState.setScenario(first);
-			expect(scenarioState.currentScenario).toBe(first);
+			expect(scenarioState.currentScenario).toEqual(first);
 
 			scenarioState.setScenario(second);
-			expect(scenarioState.currentScenario).toBe(second);
+			expect(scenarioState.currentScenario).toEqual(second);
 		});
 
 		test('setScenarios updates the scenarios list', () => {
 			const scenarios = [
 				createMockScenario({ id: 'a', name: 'A' }),
-				createMockScenario({ id: 'b', name: 'B' }),
+				createMockScenario({ id: 'b', name: 'B' })
 			];
 			scenarioState.setScenarios(scenarios);
 
@@ -108,7 +110,11 @@ describe('scenarioState', () => {
 
 		test('addToStaged deduplicates by id or scenario_id', () => {
 			const a = createMockScenario({ id: 'same-id', scenario_id: undefined });
-			const b = createMockScenario({ id: 'same-id', scenario_id: undefined, name: 'Different Name' });
+			const b = createMockScenario({
+				id: 'same-id',
+				scenario_id: undefined,
+				name: 'Different Name'
+			});
 			scenarioState.addToStaged(a);
 			scenarioState.addToStaged(b);
 
@@ -318,7 +324,7 @@ describe('scenarioState', () => {
 		const scenariosWithParams = [
 			createMockScenario({ id: 'low', parameters: { housing_growth: 0, transport_flex: 0 } }),
 			createMockScenario({ id: 'high', parameters: { housing_growth: 1, transport_flex: 1 } }),
-			createMockScenario({ id: 'mixed', parameters: { housing_growth: 1, transport_flex: 0 } }),
+			createMockScenario({ id: 'mixed', parameters: { housing_growth: 1, transport_flex: 0 } })
 		];
 
 		beforeEach(() => {
@@ -326,7 +332,10 @@ describe('scenarioState', () => {
 		});
 
 		test('finds a scenario matching all parameters', () => {
-			const result = scenarioState.findScenarioByParameters({ housing_growth: 1, transport_flex: 1 });
+			const result = scenarioState.findScenarioByParameters({
+				housing_growth: 1,
+				transport_flex: 1
+			});
 			expect(result).not.toBeNull();
 			expect(result!.id).toBe('high');
 		});
@@ -344,9 +353,7 @@ describe('scenarioState', () => {
 		});
 
 		test('returns null when scenarios have no parameters', () => {
-			scenarioState.setScenarios([
-				createMockScenario({ id: 'no-params', parameters: undefined }),
-			]);
+			scenarioState.setScenarios([createMockScenario({ id: 'no-params', parameters: undefined })]);
 
 			const result = scenarioState.findScenarioByParameters({ housing_growth: 0 });
 			expect(result).toBeNull();

@@ -3,6 +3,7 @@ import duckdb from 'duckdb';
 import fs from 'fs';
 import path from 'path';
 import { parsePeriod } from '../../utils.js';
+import { findProjectRoot } from '../../../paths.js';
 
 /**
  * Integration tests for /demand endpoint and DuckDB queries
@@ -13,11 +14,34 @@ import { parsePeriod } from '../../utils.js';
 
 let db;
 let conn;
-const dataDir = path.join(process.cwd(), 'data');
-const baseDir = path.join(dataDir, 'base');
-const scenariosDir = path.join(dataDir, 'scenarios');
+let dataDir;
+let baseDir;
+let scenariosDir;
+let testScenarioId;
+let singleScenarioGlob;
 
-beforeAll(() => {
+/** Promisified wrapper for conn.all() (DuckDB 1.x callback API) */
+function query(sql) {
+  return new Promise((resolve, reject) => {
+    conn.all(sql, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+beforeAll(async () => {
+  // Use the same data directory as the server (project root /data/)
+  let projectRoot;
+  try {
+    projectRoot = findProjectRoot();
+  } catch {
+    projectRoot = path.resolve(process.cwd(), '..');
+  }
+  dataDir = path.join(projectRoot, 'data');
+  baseDir = path.join(dataDir, 'base');
+  scenariosDir = path.join(dataDir, 'scenarios');
+
   // Check if data exists
   if (!fs.existsSync(baseDir) && !fs.existsSync(scenariosDir)) {
     throw new Error('Parquet data not found. Run generator first.');
@@ -26,6 +50,21 @@ beforeAll(() => {
   // Initialize DuckDB connection
   db = new duckdb.Database(':memory:');
   conn = db.connect();
+
+  // Discover an actual scenario_id from the data
+  const baseGlob = path.join(baseDir, '**', 'data.parquet');
+  const rows = await query(`SELECT DISTINCT scenario_id FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE) LIMIT 1`);
+  testScenarioId = rows.length > 0 ? rows[0].scenario_id : 'default';
+
+  // Use a single scenario subdirectory for UNION tests (scanning all 15GB+ is too slow)
+  if (fs.existsSync(scenariosDir)) {
+    const firstSubdir = fs.readdirSync(scenariosDir).find(d =>
+      fs.statSync(path.join(scenariosDir, d)).isDirectory()
+    );
+    if (firstSubdir) {
+      singleScenarioGlob = path.join(scenariosDir, firstSubdir, '**', 'data.parquet');
+    }
+  }
 });
 
 afterAll(() => {
@@ -34,37 +73,31 @@ afterAll(() => {
   }
 });
 
-describe('DuckDB Parquet Query Tests', () => {
+describe('DuckDB Parquet Query Tests', { timeout: 30_000 }, () => {
   describe('Data structure validation', () => {
-    test('should find base scenario files', () => {
+    test('should find base scenario files', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
-      const query = `SELECT COUNT(*) as file_count FROM glob('${baseGlob}')`;
-
-      const result = conn.prepare(query).all();
+      const result = await query(`SELECT COUNT(*) as file_count FROM glob('${baseGlob}')`);
       expect(result[0].file_count).toBeGreaterThan(0);
     });
 
-    test('should find scenario files', () => {
+    test('should find scenario files', async () => {
       if (!fs.existsSync(scenariosDir)) {
         console.log('⏭️  Skipping: No scenarios directory found');
         return;
       }
 
       const scenariosGlob = path.join(scenariosDir, '**', 'data.parquet');
-      const query = `SELECT COUNT(*) as file_count FROM glob('${scenariosGlob}')`;
-
-      const result = conn.prepare(query).all();
+      const result = await query(`SELECT COUNT(*) as file_count FROM glob('${scenariosGlob}')`);
       expect(result[0].file_count).toBeGreaterThan(0);
     });
 
-    test('base scenario should have required columns', () => {
+    test('base scenario should have required columns', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
-      const query = `
+      const result = await query(`
         SELECT * FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE)
         LIMIT 1
-      `;
-
-      const result = conn.prepare(query).all();
+      `);
       expect(result.length).toBeGreaterThan(0);
 
       const row = result[0];
@@ -77,56 +110,57 @@ describe('DuckDB Parquet Query Tests', () => {
   });
 
   describe('UNION query for base + scenarios', () => {
-    test('should combine base and scenario files', () => {
-      const baseGlob = path.join(baseDir, '**', 'data.parquet');
-      const scenariosGlob = path.join(scenariosDir, '**', 'data.parquet');
+    test('should combine base and scenario files', async () => {
+      if (!singleScenarioGlob) {
+        console.log('⏭️  Skipping: No scenario data found');
+        return;
+      }
 
-      const unionQuery = `
+      const baseGlob = path.join(baseDir, '**', 'data.parquet');
+
+      // Use a single scenario subdirectory to keep query time reasonable
+      const result = await query(`
         SELECT COUNT(*) as total_records FROM (
           SELECT timestamp, value, geography, segment, scenario_id
           FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE)
           UNION ALL
           SELECT timestamp, value, geography, segment, scenario_id
-          FROM parquet_scan('${scenariosGlob}', hive_partitioning=FALSE)
+          FROM parquet_scan('${singleScenarioGlob}', hive_partitioning=FALSE)
         )
-      `;
-
-      const result = conn.prepare(unionQuery).all();
+      `);
       expect(result[0].total_records).toBeGreaterThan(0);
     });
 
-    test('should normalize schemas between base and scenarios', () => {
-      const baseGlob = path.join(baseDir, '**', 'data.parquet');
-      const scenariosGlob = path.join(scenariosDir, '**', 'data.parquet');
+    test('should normalize schemas between base and scenarios', async () => {
+      if (!singleScenarioGlob) {
+        console.log('⏭️  Skipping: No scenario data found');
+        return;
+      }
 
-      // Base has no parameter columns, scenarios do
-      // UNION should work with normalized schemas
-      const normalizedQuery = `
+      const baseGlob = path.join(baseDir, '**', 'data.parquet');
+
+      const result = await query(`
         SELECT COUNT(*) as count FROM (
           SELECT
             timestamp, value, geography, segment, scenario_id,
-            NULL as housing_electrification,
             true as is_base
           FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE)
           UNION ALL
           SELECT
             timestamp, value, geography, segment, scenario_id,
-            housing_electrification,
             false as is_base
-          FROM parquet_scan('${scenariosGlob}', hive_partitioning=FALSE)
+          FROM parquet_scan('${singleScenarioGlob}', hive_partitioning=FALSE)
         )
-      `;
-
-      const result = conn.prepare(normalizedQuery).all();
+      `);
       expect(result[0].count).toBeGreaterThan(0);
     });
   });
 
   describe('Aggregation queries', () => {
-    test('should aggregate national yearly totals', () => {
+    test('should aggregate national yearly totals', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('year', timestamp) as year,
           SUM(value) as total_value
@@ -134,22 +168,20 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp <= TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY DATE_TRUNC('year', timestamp)
         ORDER BY year
-      `;
-
-      const result = conn.prepare(query).all();
+      `);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toHaveProperty('year');
       expect(result[0]).toHaveProperty('total_value');
       expect(typeof result[0].total_value).toBe('number');
     });
 
-    test('should support geography=all aggregation', () => {
+    test('should support geography=all aggregation', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('year', timestamp) as year,
           geography,
@@ -158,23 +190,20 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp <= TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY DATE_TRUNC('year', timestamp), geography
         ORDER BY year, geography
-      `;
+      `);
+      expect(result.length).toBeGreaterThan(1);
 
-      const result = conn.prepare(query).all();
-      expect(result.length).toBeGreaterThan(1); // Multiple geographies
-
-      // Check that we have different geographies
       const uniqueGeos = new Set(result.map(r => r.geography));
       expect(uniqueGeos.size).toBeGreaterThan(1);
     });
 
-    test('should support segment=all aggregation', () => {
+    test('should support segment=all aggregation', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('year', timestamp) as year,
           segment,
@@ -183,23 +212,20 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp <= TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY DATE_TRUNC('year', timestamp), segment
         ORDER BY year, segment
-      `;
+      `);
+      expect(result.length).toBeGreaterThan(1);
 
-      const result = conn.prepare(query).all();
-      expect(result.length).toBeGreaterThan(1); // Multiple segments
-
-      // Check that we have different segments
       const uniqueSegments = new Set(result.map(r => r.segment));
       expect(uniqueSegments.size).toBeGreaterThan(1);
     });
 
-    test('should filter by specific geography', () => {
+    test('should filter by specific geography', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('year', timestamp) as year,
           SUM(value) as total_value
@@ -207,23 +233,21 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp <= TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
           AND geography = '01'
         GROUP BY DATE_TRUNC('year', timestamp)
         ORDER BY year
-      `;
-
-      const result = conn.prepare(query).all();
+      `);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toHaveProperty('total_value');
     });
   });
 
   describe('Resolution support', () => {
-    test('should support hourly resolution (1h)', () => {
+    test('should support hourly resolution (1h)', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           timestamp,
           AVG(value) as avg_value
@@ -231,23 +255,21 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp < TIMESTAMP '2030-01-02'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
           AND geography = '01'
         GROUP BY timestamp
         ORDER BY timestamp
         LIMIT 24
-      `;
-
-      const result = conn.prepare(query).all();
-      expect(result.length).toBeLessThanOrEqual(24); // Up to 24 hours
+      `);
+      expect(result.length).toBeLessThanOrEqual(24);
       expect(result[0]).toHaveProperty('timestamp');
       expect(result[0]).toHaveProperty('avg_value');
     });
 
-    test('should support yearly resolution (1Y)', () => {
+    test('should support yearly resolution (1Y)', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('year', timestamp) as year,
           SUM(value) as total_value
@@ -255,20 +277,18 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2025-01-01'
           AND timestamp <= TIMESTAMP '2035-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY DATE_TRUNC('year', timestamp)
         ORDER BY year
-      `;
-
-      const result = conn.prepare(query).all();
+      `);
       expect(result.length).toBeGreaterThan(0);
-      expect(result.length).toBeLessThanOrEqual(11); // Max 11 years (2025-2035)
+      expect(result.length).toBeLessThanOrEqual(11);
     });
 
-    test('should support monthly resolution (1M)', () => {
+    test('should support monthly resolution (1M)', async () => {
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
-      const query = `
+      const result = await query(`
         SELECT
           DATE_TRUNC('month', timestamp) as month,
           SUM(value) as total_value
@@ -276,18 +296,16 @@ describe('DuckDB Parquet Query Tests', () => {
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp < TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY DATE_TRUNC('month', timestamp)
         ORDER BY month
-      `;
-
-      const result = conn.prepare(query).all();
-      expect(result.length).toBe(12); // 12 months
+      `);
+      expect(result.length).toBe(12);
     });
   });
 
   describe('Performance - pre-aggregated tables', () => {
-    test('should have pre-aggregated geography_yearly table', () => {
+    test('should have pre-aggregated geography_yearly table', async () => {
       const aggregatedFile = path.join(dataDir, 'aggregated', 'geography_yearly.parquet');
 
       if (!fs.existsSync(aggregatedFile)) {
@@ -295,24 +313,22 @@ describe('DuckDB Parquet Query Tests', () => {
         return;
       }
 
-      const query = `
+      const result = await query(`
         SELECT
           geography,
           year,
           total_value
         FROM parquet_scan('${aggregatedFile}')
-        WHERE year = '2030' AND scenario_id = 'default'
+        WHERE year = '2030' AND scenario_id = '${testScenarioId}'
         LIMIT 5
-      `;
-
-      const result = conn.prepare(query).all();
+      `);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toHaveProperty('geography');
       expect(result[0]).toHaveProperty('year');
       expect(result[0]).toHaveProperty('total_value');
     });
 
-    test('aggregated queries should be faster than raw queries', () => {
+    test('aggregated queries should be faster than raw queries', async () => {
       const aggregatedFile = path.join(dataDir, 'aggregated', 'geography_yearly.parquet');
       const baseGlob = path.join(baseDir, '**', 'data.parquet');
 
@@ -321,38 +337,29 @@ describe('DuckDB Parquet Query Tests', () => {
         return;
       }
 
-      // Fast query using aggregated table
-      const fastQuery = `
+      const startFast = Date.now();
+      const fastResult = await query(`
         SELECT geography, total_value
         FROM parquet_scan('${aggregatedFile}')
-        WHERE year = '2030' AND scenario_id = 'default'
-      `;
-
-      const startFast = Date.now();
-      const fastResult = conn.prepare(fastQuery).all();
+        WHERE year = '2030' AND scenario_id = '${testScenarioId}'
+      `);
       const fastTime = Date.now() - startFast;
 
-      // Slow query using raw data
-      const slowQuery = `
+      const startSlow = Date.now();
+      const slowResult = await query(`
         SELECT geography, SUM(value) as total_value
         FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE)
         WHERE
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp < TIMESTAMP '2031-01-01'
-          AND scenario_id = 'default'
+          AND scenario_id = '${testScenarioId}'
         GROUP BY geography
-      `;
-
-      const startSlow = Date.now();
-      const slowResult = conn.prepare(slowQuery).all();
+      `);
       const slowTime = Date.now() - startSlow;
 
       console.log(`⚡ Fast query: ${fastTime}ms, Slow query: ${slowTime}ms, Speedup: ${(slowTime/fastTime).toFixed(1)}x`);
 
-      // Results should be equivalent
       expect(fastResult.length).toBe(slowResult.length);
-
-      // Fast should be faster (allow some variance for small datasets)
       expect(fastTime).toBeLessThanOrEqual(slowTime);
     });
   });

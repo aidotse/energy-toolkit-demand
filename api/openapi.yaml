@@ -89,10 +89,70 @@ components:
       $ref: './schemas/common-schemas.yaml#/components/schemas/GeoFeatureCollection'
     DemandRow:
       $ref: './schemas/common-schemas.yaml#/components/schemas/DemandRow'
+    Error:
+      $ref: './schemas/common-schemas.yaml#/components/schemas/Error'
 
   responses:
     InvalidCombination:
       $ref: './responses/common-responses.yaml#/components/responses/InvalidCombination'
+    BadRequest:
+      description: |
+        Request parameters failed validation. `details` contains the structured
+        AJV / OpenAPI schema errors — useful for debugging client code.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Bad request"
+            requestId: "4f1e6a1a-6b7c-4f1a-9c0d-0e7a5e3b4c2d"
+            details:
+              - keyword: "required"
+                instancePath: "/query"
+                schemaPath: "#/required"
+                params: { missingProperty: "period" }
+                message: "must have required property 'period'"
+    NotFound:
+      description: |
+        The requested endpoint or resource does not exist on this server.
+        Safe to retry after fixing the URL.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Not found"
+            requestId: "4f1e6a1a-6b7c-4f1a-9c0d-0e7a5e3b4c2d"
+    TooManyRequests:
+      description: |
+        Rate limit exceeded. Check `RateLimit-*` response headers for the
+        current window size and when to retry.
+      headers:
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Too many requests"
+            requestId: "4f1e6a1a-6b7c-4f1a-9c0d-0e7a5e3b4c2d"
+    ServerError:
+      description: |
+        The server failed to satisfy the request. The `error` field is a short
+        generic message — detailed diagnostics are logged server-side under
+        `requestId`. Please include the request ID when reporting bugs.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Query failed"
+            requestId: "4f1e6a1a-6b7c-4f1a-9c0d-0e7a5e3b4c2d"
 
 paths:
 
@@ -167,11 +227,19 @@ paths:
                         geometry:
                           type: "MultiPolygon"
                           coordinates: [[[18.0, 59.0], [18.1, 59.0], [18.1, 59.1], [18.0, 59.1], [18.0, 59.0]]]
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /config:
     get:
       operationId: getConfig
       summary: Data-generator configuration
+      description: |
+        Returns the generator configuration that produced the current dataset.
+        Baked at API-startup time and cached for 1 hour. Use this to discover
+        available segments, geographic granularity, and dataset metadata.
       responses:
         '200':
           description: JSON document
@@ -179,11 +247,18 @@ paths:
             application/json:
               schema:
                 type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /scenarios:
     get:
       operationId: getScenarios
       summary: Enumerated list of valid scenario permutations
+      description: |
+        Returns the list of scenarios this dataset contains. Baked at
+        API-startup time and cached for 1 hour.
       responses:
         '200':
           description: JSON array
@@ -192,24 +267,42 @@ paths:
               schema:
                 type: array
                 items: { type: object }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /parameters:
     get:
       operationId: getParameters
       summary: Lookup tables for every query-field
+      description: |
+        Returns the complete lookup tables for `/demand` query parameters:
+        base scenarios, segment-level parameter knobs (e.g. `housing_growth`,
+        `transport_flex`), valid years, resolutions, aggregations, and
+        geographies. Each parameter value carries its own index, label, and
+        numeric `value`, so clients can render UIs without re-reading the
+        generator source. Baked at API-startup time and cached for 1 hour.
       responses:
         '200':
-          description: JSON document of arrays
+          description: Complete parameter lookup tables.
           content:
             application/json:
               schema:
-                type: object
+                $ref: './schemas/common-schemas.yaml#/components/schemas/ParametersResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
 
   /aggregations:
     get:
       operationId: getAggregations
       summary: Available resolution-aggregation combinations
+      description: |
+        Returns the list of supported (resolution, aggregation) tuples that
+        `/demand` will accept. Baked at API-startup time.
       responses:
         '200':
           description: JSON array of aggregation options
@@ -217,6 +310,10 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/common-schemas.yaml#/components/schemas/AggregationsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /globals:
     get:
@@ -330,6 +427,10 @@ paths:
                             type: string
                             example: "Yearly national totals (for time series)"
                 required: [lower_bound, upper_bound, computed_at, bounds]
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /demand:
     get:
@@ -339,10 +440,30 @@ paths:
         Returns demand time-series data with flexible aggregation and filtering options.
         This endpoint uses DuckDB to query Parquet files stored in a nested directory structure.
 
+        **Query parameter encoding (important):**
+        The `period` parameter is an object with nested properties. Encode it
+        using `qs` bracket notation in the query string:
+
+        ```
+        GET /demand?period[start]=2030&period[end]=2031&period[resolution]=1Y&period[aggregation]=sum&geography=total&segment=total&baseScenario=beslutad-policy
+        ```
+
+        Equivalent curl example:
+        ```bash
+        curl -G http://localhost:4010/demand \
+          --data-urlencode 'period[start]=2030' \
+          --data-urlencode 'period[end]=2031' \
+          --data-urlencode 'period[resolution]=1Y' \
+          --data-urlencode 'period[aggregation]=sum' \
+          --data-urlencode 'geography=total' \
+          --data-urlencode 'segment=total' \
+          --data-urlencode 'baseScenario=beslutad-policy'
+        ```
+
         **Data Structure:**
         The API queries data from two directories:
         - `/data/base/` - Base scenario files (e.g., `base/current-policy/data.parquet`)
-        - `/data/scenarios/` - Parametric scenarios (e.g., `scenarios/housing_electrification=2/.../data.parquet`)
+        - `/data/parameters/` - Parameter delta files combined multiplicatively at query time
 
         **Query Performance:**
         - Uses DuckDB for efficient Parquet scanning with predicate pushdown
@@ -370,6 +491,22 @@ paths:
         - `geography`: Geography ID or 'total'
         - `segment`: Segment name or 'total'
         - `scenario_id`: Scenario identifier
+
+        **Caching:**
+        Responses are tagged with an ETag (MD5 of all query params + server
+        start time). Send `If-None-Match: <etag>` on repeat requests to get
+        a `304 Not Modified` and skip re-downloading the payload.
+
+        **Rate limiting:**
+        The `/demand` endpoint is rate-limited per client IP (default:
+        300 requests / minute, configurable via `RATE_LIMIT_MAX` +
+        `RATE_LIMIT_WINDOW_MS` env vars). Clients receive `429 Too Many
+        Requests` with standard `RateLimit-*` headers on exhaustion.
+
+        **CSV download:**
+        Append `format=csv` to receive `text/csv` output with a
+        `Content-Disposition: attachment` header. CSV fields containing
+        commas, newlines, or double quotes are RFC 4180 quoted + escaped.
 
       parameters:
         - $ref: '#/components/parameters/period'
@@ -446,3 +583,15 @@ paths:
                 period,geography,segment,scenario_id,value
                 2030-01-01T00:00:00Z,total,total,default,158031200000
                 2031-01-01T00:00:00Z,total,total,default,161209300000
+        '304':
+          description: |
+            Not Modified — client sent `If-None-Match` with a matching ETag.
+            Response body is empty; reuse the cached payload.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'

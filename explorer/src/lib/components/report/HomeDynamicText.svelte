@@ -34,8 +34,8 @@
 
 		fetchDemandData(query).then((data) => {
 			if (data.length === 0) return;
-			const val2025 = data.find((d) => d.timestamp.getFullYear() === 2025)?.value || 0;
-			const valTarget = data.find((d) => d.timestamp.getFullYear() === viewStore.year)?.value || 0;
+			const val2025 = data.find((d) => d.period.getFullYear() === 2025)?.value || 0;
+			const valTarget = data.find((d) => d.period.getFullYear() === viewStore.year)?.value || 0;
 			totalTargetYear = Math.round(valTarget / 1_000);
 			totalChangePercent = val2025 > 0 ? Math.round(((valTarget - val2025) / val2025) * 100) : 0;
 		});

@@ -60,7 +60,8 @@ describe('AreaChart', () => {
 		});
 
 		// Since data is empty and component will try to fetch, it should show loading or empty state
-		const loadingOrEmpty = container.querySelector('[role="status"]') || screen.queryByText(/Ingen data/i);
+		const loadingOrEmpty =
+			container.querySelector('[role="status"]') || screen.queryByText(/Ingen data/i);
 		expect(loadingOrEmpty).toBeTruthy();
 	});
 

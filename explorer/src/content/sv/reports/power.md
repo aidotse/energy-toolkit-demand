@@ -1,7 +1,7 @@
 ---
-title: "Effekt och energi"
-description: "Elsystemet handlar inte bara om hur mycket el vi använder, utan också om när vi använder den. För att förstå framtidens elbehov behöver vi skilja på två grundläggande begrepp: energi och effekt."
-lastUpdated: "2026-03-03"
+title: 'Effekt och energi'
+description: 'Elsystemet handlar inte bara om hur mycket el vi använder, utan också om när vi använder den. För att förstå framtidens elbehov behöver vi skilja på två grundläggande begrepp: energi och effekt.'
+lastUpdated: '2026-03-03'
 layout: reports
 ---
 
@@ -14,7 +14,7 @@ Du kan fylla samma badkar med en tunn stråle under lång tid, eller med kranen 
 På samma sätt med el:
 
 - **Energi** mäts i wattimmar (Wh) eller kilowattimmar (kWh). Det är den totala mängden el som förbrukas under en tidsperiod — en timme, en dag, ett år.
-- **Effekt** mäts i watt (W) eller kilowatt (kW). Det är den momentana förbrukningstakten — hur mycket el som dras *just nu*.
+- **Effekt** mäts i watt (W) eller kilowatt (kW). Det är den momentana förbrukningstakten — hur mycket el som dras _just nu_.
 
 En vattenkokare på 2 000 W som är på i en halvtimme förbrukar 1 kWh energi. En lampa på 10 W som lyser i hundra timmar förbrukar också 1 kWh. Samma energi — men helt olika krav på elnätet i varje ögonblick.
 
@@ -55,11 +55,11 @@ Tänk dig två framtidsscenarier som båda innebär samma totala elförbrukning 
 
 Båda scenarierna kräver samma mängd energi. Men scenario B kräver 50 % mer kapacitet i elnätet och i elproduktionen. Det är en enorm skillnad i kostnad och utbyggnadsbehov — som inte syns i den totala energisiffran.
 
-Därför visar vi i den här applikationen inte bara *hur mycket* el som behövs, utan också *när* den behövs — nedbrutet på timmar, dygn, säsonger, regioner och segment.
+Därför visar vi i den här applikationen inte bara _hur mycket_ el som behövs, utan också _när_ den behövs — nedbrutet på timmar, dygn, säsonger, regioner och segment.
 
 ### Segment formar profilen
 
-Var effektbehovet hamnar under dygnet beror på *vilka* som använder elen. Olika segment har helt olika tidsprofiler:
+Var effektbehovet hamnar under dygnet beror på _vilka_ som använder elen. Olika segment har helt olika tidsprofiler:
 
 - **Bostäder** har toppar morgon och kväll, med extra hög belastning kalla vinterdagar på grund av elvärme.
 - **Industri** har en jämnare profil som följer skift och produktionsplanering.
@@ -74,6 +74,7 @@ När dessa segment växer i olika takt förändras den samlade effektprofilen. M
 :::InsightBox{variant="info" title="Segmentmixen formar dygnskurvan"}
 Diagrammet ovan visar normaliserade lastprofiler per segment. Notera hur datacenter har en nästan helt platt profil medan bostäder och transporter har tydliga toppar. Det samlade effektbehovet avgörs av hur dessa profiler viktas — och det beror på hur varje segment växer i framtiden.
 :::
+
 <!-- -->
 
 ## Flexibilitet — samma energi, lägre toppeffekt
@@ -107,15 +108,16 @@ Men flex är inte gratis. Det kräver smart styrning, digitalisering, prissignal
 :::InsightBox{variant="insight" title="Flex förändrar behovet av ny kapacitet"}
 I den här applikationen kan du jämföra scenarier med olika nivåer av flexibilitet. Scenarierna med hög flex har samma totala energibehov men avsevärt lägre toppeffekt — vilket minskar behovet av nya nätinvesteringar och reservkraft.
 :::
+
 <!-- -->
 
 ## Sammanfattning
 
-| Begrepp | Enhet | Beskrivning |
-|---|---|---|
-| **Energi** | kWh, MWh, TWh | Total mängd el under en period |
-| **Effekt** | kW, MW, GW | Förbrukningstakt i ett givet ögonblick |
-| **Toppeffekt** | kW, MW, GW | Högsta effektbehovet under en period |
-| **Flexibilitet** | — | Förmåga att flytta förbrukning i tid |
+| Begrepp          | Enhet         | Beskrivning                            |
+| ---------------- | ------------- | -------------------------------------- |
+| **Energi**       | kWh, MWh, TWh | Total mängd el under en period         |
+| **Effekt**       | kW, MW, GW    | Förbrukningstakt i ett givet ögonblick |
+| **Toppeffekt**   | kW, MW, GW    | Högsta effektbehovet under en period   |
+| **Flexibilitet** | —             | Förmåga att flytta förbrukning i tid   |
 
 Att förstå skillnaden mellan energi och effekt är nyckeln till att förstå framtidens elbehov. Den här applikationen låter dig utforska båda dimensionerna — för olika regioner, segment, scenarier och tidshorisonter.

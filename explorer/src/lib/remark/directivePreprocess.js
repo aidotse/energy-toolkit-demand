@@ -20,7 +20,7 @@
  * @module directivePreprocess
  */
 
-/** Map of component names → import paths */
+/** @type {Record<string, string>} Map of component names → import paths */
 const COMPONENTS = {
 	InsightBox: '$lib/components/report/InsightBox.svelte',
 	ReportSection: '$lib/components/report/ReportSection.svelte',
@@ -38,6 +38,7 @@ const COMPONENTS = {
 	FlexIllustrationChart: '$lib/components/report/FlexIllustrationChart.svelte',
 	FlexFactorChart: '$lib/components/report/FlexFactorChart.svelte',
 	HomeFooterCTA: '$lib/components/report/HomeFooterCTA.svelte',
+	HomeFooter: '$lib/components/report/HomeFooter.svelte',
 	Comparison: '$lib/components/report/Comparison.svelte'
 };
 
@@ -45,6 +46,9 @@ const COMPONENTS = {
  * Find the matching closing brace for an opening `{` at position `start`.
  * Handles nested braces like `icon={Target}`.
  * Returns the index of the matching `}`, or -1 if not found.
+ * @param {string} str
+ * @param {number} start
+ * @returns {number}
  */
 function findMatchingBrace(str, start) {
 	let depth = 0;
@@ -61,6 +65,9 @@ function findMatchingBrace(str, start) {
 /**
  * Find and transform all container directives (:::Name{props}\n...\n:::)
  * in the given content string.
+ * @param {string} content
+ * @param {Set<string>} usedComponents
+ * @returns {string}
  */
 function transformContainers(content, usedComponents) {
 	// Match opening line: :::Name{ at start of line
@@ -115,6 +122,9 @@ function transformContainers(content, usedComponents) {
 
 /**
  * Find and transform all leaf directives (::Name{props}) in the given content string.
+ * @param {string} content
+ * @param {Set<string>} usedComponents
+ * @returns {string}
  */
 function transformLeaves(content, usedComponents) {
 	const openRe = /^(::(\w+)\{)/gm;
@@ -203,9 +213,7 @@ export function directivePreprocess(options = {}) {
 				if (fmMatch) {
 					const fmEnd = fmMatch[0].length;
 					result =
-						result.slice(0, fmEnd) +
-						`\n<script>\n${imports}\n</script>\n` +
-						result.slice(fmEnd);
+						result.slice(0, fmEnd) + `\n<script>\n${imports}\n</script>\n` + result.slice(fmEnd);
 				} else {
 					result = `<script>\n${imports}\n</script>\n\n` + result;
 				}

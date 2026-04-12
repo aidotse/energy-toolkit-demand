@@ -32,7 +32,7 @@
 	}: {
 		chart: string;
 		exportable?: boolean;
-		aggregationInit?: string;
+		aggregationInit?: 'sum' | 'mean' | 'max';
 		enableComparison?: boolean;
 		[key: string]: any;
 	} = $props();
@@ -107,7 +107,7 @@
 			geography={viewStore.geography}
 			segment={viewStore.activeSegment}
 			year={viewStore.year}
-			{aggregationInit}
+			aggregation={aggregationInit}
 			exportable={exportable}
 			{description}
 			height="h-[280px] sm:h-[350px] lg:h-[450px]"

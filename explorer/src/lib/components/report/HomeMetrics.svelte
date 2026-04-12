@@ -11,17 +11,18 @@
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { fetchDemandData } from '$lib/dataService';
 	import { makeDemandQuery } from '$lib/utilities';
+	import { getSegmentLabel } from '$lib/chartConfig';
 
 	// Reactive metrics that update with scenario and year changes
-	let timeSeriesData = $state<Array<{ timestamp: Date; value: number }>>([]);
+	let timeSeriesData = $state<Array<{ period: Date; value: number }>>([]);
 	let peakPower = $state(0);
 
 	let totalEnergy2025 = $derived(
-		timeSeriesData.find((d) => d.timestamp.getFullYear() === 2025)?.value || 0
+		timeSeriesData.find((d) => d.period.getFullYear() === 2025)?.value || 0
 	);
 
 	let totalEnergySelectedYear = $derived(
-		timeSeriesData.find((d) => d.timestamp.getFullYear() === viewStore.year)?.value || 0
+		timeSeriesData.find((d) => d.period.getFullYear() === viewStore.year)?.value || 0
 	);
 
 	let growthRate = $derived(
@@ -30,10 +31,20 @@
 			: 0
 	);
 
-	// Fetch time series data when scenario or parameters change
+	// Active filters from viewStore — drive both the queries and the filter text.
+	// Geography: 'total' means all Sweden; any other value is a geo_id.
+	// Segment: viewStore.segment is a string[]; the API accepts a comma-separated
+	// list ("housing,transport") so we forward whichever segments the user picked.
+	// segmentLabel returns 'total' when nothing specific is selected.
+	let activeGeography = $derived(viewStore.geography || 'total');
+	let activeSegmentParam = $derived(viewStore.segmentLabel);
+
+	// Fetch time series data when scenario, parameters, geography, or segment change
 	$effect(() => {
 		const baseScenario = parameterStore.baseScenario;
 		const _params = parameterStore.parameterValues;
+		const geo = activeGeography;
+		const seg = activeSegmentParam;
 
 		if (!baseScenario) return;
 
@@ -42,8 +53,8 @@
 			end: '2051',
 			resolution: '1Y',
 			aggregation: 'sum',
-			geography: 'total',
-			segment: 'total',
+			geography: geo,
+			segment: seg,
 			baseScenario: baseScenario,
 			parameterValues: parameterStore.isDefaultScenario
 				? parameterStore.parameterValues
@@ -52,16 +63,33 @@
 
 		fetchDemandData(query).then((data) => {
 			if (data.length > 0) {
-				timeSeriesData = data;
+				// API returns per-segment rows when a comma-separated segment list is
+				// passed (the outer query GROUPs BY segment). Collapse back to one row
+				// per period by summing across segments.
+				const byPeriod = new Map<number, { period: Date; value: number }>();
+				for (const row of data) {
+					const key = row.period.getTime();
+					const existing = byPeriod.get(key);
+					if (existing) {
+						existing.value += row.value || 0;
+					} else {
+						byPeriod.set(key, { period: row.period, value: row.value || 0 });
+					}
+				}
+				timeSeriesData = Array.from(byPeriod.values()).sort(
+					(a, b) => a.period.getTime() - b.period.getTime()
+				);
 			}
 		});
 	});
 
-	// Fetch hourly data for peak power when year changes
+	// Fetch hourly data for peak power when year / filters change
 	$effect(() => {
 		const baseScenario = parameterStore.baseScenario;
 		const _params = parameterStore.parameterValues;
 		const currentYear = viewStore.year;
+		const geo = activeGeography;
+		const seg = activeSegmentParam;
 
 		if (!baseScenario || !currentYear) return;
 
@@ -70,8 +98,8 @@
 			end: `${currentYear + 1}-01-01`,
 			resolution: '1h',
 			aggregation: 'sum',
-			geography: 'total',
-			segment: 'total',
+			geography: geo,
+			segment: seg,
 			baseScenario: baseScenario,
 			parameterValues: parameterStore.isDefaultScenario
 				? parameterStore.parameterValues
@@ -80,9 +108,49 @@
 
 		fetchDemandData(query).then((hourlyData) => {
 			if (hourlyData.length > 0) {
-				peakPower = hourlyData.reduce((max, d) => Math.max(max, d.value || 0), 0);
+				// Sum across segments for each hour before taking the peak, otherwise
+				// the max is just the largest single-segment hour, not the combined peak.
+				const byHour = new Map<number, number>();
+				for (const row of hourlyData) {
+					const key = row.period.getTime();
+					byHour.set(key, (byHour.get(key) || 0) + (row.value || 0));
+				}
+				peakPower = Math.max(0, ...byHour.values());
 			}
 		});
+	});
+
+	// Build a flowing Swedish description of the active filters:
+	//   "Industri och bostäder i Norrbottens län"
+	//   "Industri i Stockholms län"
+	//   "Industri och bostäder"
+	//   "I Norrbottens län"
+	// Falsy (empty string) when nothing is filtered — the card hides the line.
+	function joinSwedish(parts: string[]): string {
+		if (parts.length === 0) return '';
+		if (parts.length === 1) return parts[0];
+		if (parts.length === 2) return `${parts[0]} och ${parts[1]}`;
+		return `${parts.slice(0, -1).join(', ')} och ${parts[parts.length - 1]}`;
+	}
+
+	let filterText = $derived.by(() => {
+		const segs = viewStore.segment.filter((s) => s && s !== 'total');
+		const segmentPhrase = joinSwedish(segs.map((s) => getSegmentLabel(s).toLowerCase()));
+		const hasGeo = activeGeography !== 'total' && activeGeography !== '00';
+		const geoPhrase = hasGeo ? viewStore.geographyName : '';
+
+		if (segmentPhrase && geoPhrase) {
+			// Capitalize the first letter of the segment phrase
+			const head = segmentPhrase.charAt(0).toUpperCase() + segmentPhrase.slice(1);
+			return `${head} i ${geoPhrase}`;
+		}
+		if (segmentPhrase) {
+			return segmentPhrase.charAt(0).toUpperCase() + segmentPhrase.slice(1);
+		}
+		if (geoPhrase) {
+			return `I ${geoPhrase}`;
+		}
+		return '';
 	});
 
 	// Format numbers for display
@@ -108,6 +176,7 @@
 		icon={Zap}
 		trend={growthRate >= 0 ? 'up' : 'down'}
 		trendLabel={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}% sedan 2025`}
+		{filterText}
 	/>
 	<MetricCard
 		value={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}%`}
@@ -116,6 +185,7 @@
 		icon={TrendingUp}
 		trend={growthRate >= 0 ? 'up' : 'down'}
 		trendLabel="Elektrifiering driver"
+		{filterText}
 	/>
 	<MetricCard
 		value={formatPower(peakPower)}
@@ -124,5 +194,6 @@
 		icon={Activity}
 		trend="up"
 		trendLabel="Baserat på timdata"
+		{filterText}
 	/>
 </div>

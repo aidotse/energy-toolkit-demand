@@ -42,7 +42,7 @@ describe('Histogram', () => {
 			}
 		});
 
-		const titles = screen.getAllByText(/Histogram över elbehovet/i);
+		const titles = screen.getAllByText(/Histogram över effektbehovet/i);
 		expect(titles.length).toBeGreaterThan(0);
 	});
 

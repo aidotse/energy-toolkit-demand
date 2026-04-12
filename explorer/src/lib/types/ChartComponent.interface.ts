@@ -68,8 +68,8 @@ export interface TimeSeriesChartProps extends BaseChartProps {
 	/** Time resolution: '1h', '1d', '1w', '1M', '1Y' */
 	resolution?: '1h' | '1d' | '1w' | '1M' | '1Y';
 
-	/** Aggregation function: 'sum' or 'mean' */
-	aggregation?: 'sum' | 'mean';
+	/** Aggregation function: 'sum', 'mean', or 'max' */
+	aggregation?: 'sum' | 'mean' | 'max';
 
 	/** Start year for time range */
 	startYear?: number;
@@ -182,9 +182,7 @@ export interface ChartLifecycle {
  * 5. Be container-aware (responsive via container queries)
  */
 export interface StandardChartComponent
-	extends BaseChartProps,
-		ChartLifecycle,
-		ChartExportCapabilities {
+	extends BaseChartProps, ChartLifecycle, ChartExportCapabilities {
 	/** Component display name for debugging */
 	displayName?: string;
 

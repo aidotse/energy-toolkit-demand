@@ -77,10 +77,11 @@
 
 		<!-- Base Scenario Selector -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600">
+			<label for="base-scenario-select" class="block text-xs font-medium text-gray-600">
 				Basscenario
 			</label>
 			<select
+				id="base-scenario-select"
 				value={parameterStore.baseScenario}
 				onchange={handleBaseScenarioChange}
 				class="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -96,14 +97,14 @@
 
 		<!-- Parameter Groups by Segment -->
 		<div class="space-y-2">
-			<label class="block text-xs font-medium text-gray-600">
+			<div class="block text-xs font-medium text-gray-600">
 				Justeringar per sektor
 				{#if parameterStore.activeParameterCount > 0}
 					<span class="ml-1 px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-xs">
 						{parameterStore.activeParameterCount} aktiva
 					</span>
 				{/if}
-			</label>
+			</div>
 
 			<div class="space-y-1">
 				{#each Object.entries(parameterStore.parametersBySegment) as [segment, params]}
@@ -135,7 +136,7 @@
 									{@const currentValue = parameterStore.getParameterValue(param.name)}
 									<div class="space-y-1">
 										<div class="flex items-center justify-between">
-											<label class="text-xs text-gray-600">
+											<label for="param-{param.name}" class="text-xs text-gray-600">
 												{getParamLabel(param)}
 											</label>
 											<span class="text-xs font-medium text-gray-900">
@@ -143,6 +144,7 @@
 											</span>
 										</div>
 										<input
+											id="param-{param.name}"
 											type="range"
 											min="0"
 											max={param.values.length - 1}

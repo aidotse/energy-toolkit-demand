@@ -28,9 +28,9 @@
 
 <div class="space-y-2">
 	<!-- Group Label -->
-	<label class="text-xs uppercase font-medium text-gray-600">
+	<div class="text-xs uppercase font-medium text-gray-600">
 		{label}
-	</label>
+	</div>
 
 	<!-- Chips Container -->
 	<div class="flex flex-wrap gap-2">

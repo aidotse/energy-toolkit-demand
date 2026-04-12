@@ -11,13 +11,27 @@ import { makeDemandQuery } from '$lib/utilities';
 import type { PageLoad } from './$types';
 
 const FALLBACK = {
-	config: null, scenarios: [], parameters: {}, globals: {},
-	year: 2045, geography: 'total', segment: 'total',
-	scenario: null, scenarioId: 'default',
-	geographies: [], geojson: { type: 'FeatureCollection' as const, features: [] },
-	timeSeriesData: [], hourlyData: [], dailyData: [],
-	segmentData: [], geoData: [],
-	totalEnergy2050: 0, totalEnergy2025: 0, growthRate: 0, peakPower: 0, scenarioCount: 0
+	config: null,
+	scenarios: [],
+	parameters: {},
+	globals: {},
+	year: 2045,
+	geography: 'total',
+	segment: 'total',
+	scenario: null,
+	scenarioId: 'default',
+	geographies: [],
+	geojson: { type: 'FeatureCollection' as const, features: [] },
+	timeSeriesData: [],
+	hourlyData: [],
+	dailyData: [],
+	segmentData: [],
+	geoData: [],
+	totalEnergy2050: 0,
+	totalEnergy2025: 0,
+	growthRate: 0,
+	peakPower: 0,
+	scenarioCount: 0
 };
 
 export const load: PageLoad = async ({ fetch }) => {
@@ -31,7 +45,14 @@ export const load: PageLoad = async ({ fetch }) => {
 
 	try {
 		// 1) Fetch static configuration data
-		const [configResult, scenariosResult, parametersResult, globalsResult, geographiesResult, geojsonResult] = await Promise.all([
+		const [
+			configResult,
+			scenariosResult,
+			parametersResult,
+			globalsResult,
+			geographiesResult,
+			geojsonResult
+		] = await Promise.all([
 			fetchConfig(fetch),
 			fetchScenarios(fetch),
 			fetchParameters(fetch),
@@ -118,9 +139,8 @@ export const load: PageLoad = async ({ fetch }) => {
 
 		const totalEnergy2050 = latestYearData?.value || 0;
 		const totalEnergy2025 = firstYearData?.value || 0;
-		const growthRate = totalEnergy2025 > 0
-			? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100
-			: 0;
+		const growthRate =
+			totalEnergy2025 > 0 ? ((totalEnergy2050 - totalEnergy2025) / totalEnergy2025) * 100 : 0;
 
 		// Calculate peak power from hourly data
 		const peakPower = hourlyData.reduce((max, d) => Math.max(max, d.value || 0), 0);

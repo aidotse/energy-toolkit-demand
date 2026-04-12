@@ -66,10 +66,7 @@
 	</div>
 </section>
 
-<style>
-	.report-section {
-	}
-
+<style lang="postcss">
 	/* Card style for design system alignment */
 	.card-style {
 		@apply rounded shadow-sm border border-gray-200;

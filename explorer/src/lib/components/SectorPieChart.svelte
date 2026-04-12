@@ -6,7 +6,7 @@
 	 * - Color-coded segments (darkest to lightest, order from SEGMENT_ORDER)
 	 * - Smart label placement (inside for slices ≥10%, outside with leader lines otherwise)
 	 * - Custom SVG tooltips with segment details
-	 * - Optional side-by-side comparison: year mode (two years) or scenario mode (base vs adjusted)
+	 * - Optional side-by-side comparison: year mode (two years) or scenario mode (selected scenario vs default)
 	 *
 	 * Data flow: fetches demand data via `fetchDemandData` on mount and when
 	 * `year`, `geography`, or `parameterValues` change. Uses `parameterStore`
@@ -82,10 +82,8 @@
 	let hoveredSegment = $state<string | null>(null);
 	let hoveredPieIndex = $state<number>(-1);
 	let tooltipPosition = $state<{ x: number; y: number } | null>(null);
+	// svelte-ignore state_referenced_locally
 	let comparisonMode = $state<'year' | 'base'>(initialComparisonMode);
-
-	// For base scenario comparison: which scenario to compare against
-	let comparisonScenarioId = $state<string>('');
 
 	// Per-chart scenario/parameter overrides (fall back to global store)
 	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
@@ -93,19 +91,13 @@
 		parameterValuesOverride ?? (parameterStore.isDefaultScenario ? parameterStore.parameterValues : undefined)
 	);
 
-	// Available scenarios for the base comparison dropdown (exclude current)
-	const otherScenarios = $derived(
-		parameterStore.baseScenarios.filter((s) => s.id !== baseScenario)
+	// Default scenario ID ("Beslutad policy") used as the left-pie reference in base mode
+	const defaultScenarioId = $derived(parameterStore.defaultScenario?.id);
+	const hasParameterOverrides = $derived(
+		parameterValuesOverride
+			? Object.values(parameterValuesOverride).some((v) => v > 0)
+			: parameterStore.hasActiveParameters
 	);
-
-	// Auto-select first other scenario when entering base mode or when current changes
-	$effect(() => {
-		if (comparisonMode === 'base' && otherScenarios.length > 0) {
-			if (!comparisonScenarioId || !otherScenarios.find((s) => s.id === comparisonScenarioId)) {
-				comparisonScenarioId = otherScenarios[0].id;
-			}
-		}
-	});
 
 	// Use shared segment order (re-typed as string[] for indexOf checks)
 	const segmentOrder: string[] = [...SEGMENT_ORDER];
@@ -119,39 +111,43 @@
 	let loading = $derived(leftRawData.length === 0 && leftLoading);
 
 	// Whether to show dual pies
+	// Base mode: show only when the selection actually differs from the default reference —
+	// either a non-default base scenario is picked, or parameters have been adjusted on the default.
 	let showComparison = $derived(
 		enableComparison &&
 			(comparisonMode === 'year'
 				? year !== comparisonYear
-				: !!comparisonScenarioId)
+				: baseScenario !== defaultScenarioId || hasParameterOverrides)
 	);
 
 	// Labels above each pie (scenario names from config, not hardcoded)
+	const defaultScenarioName = $derived(
+		parameterStore.baseScenarios.find((s) => s.id === defaultScenarioId)?.name || ''
+	);
+	const activeScenarioName = $derived(
+		parameterStore.baseScenarios.find((s) => s.id === baseScenario)?.name || ''
+	);
+	const rightLabelBase = $derived(
+		baseScenario === defaultScenarioId && hasParameterOverrides
+			? `${activeScenarioName} (justerat)`
+			: activeScenarioName
+	);
+
 	let leftLabel = $derived(
-		comparisonMode === 'year'
-			? String(comparisonYear)
-			: parameterStore.baseScenarios.find((s) => s.id === baseScenario)?.name || ''
+		comparisonMode === 'year' ? String(comparisonYear) : defaultScenarioName
 	);
 	let rightLabel = $derived(
-		comparisonMode === 'year'
-			? String(year)
-			: parameterStore.baseScenarios.find((s) => s.id === comparisonScenarioId)?.name || ''
+		comparisonMode === 'year' ? String(year) : rightLabelBase
 	);
 
 	// Dynamic description based on comparison mode
 	const geoName = $derived(viewStore.geographyName);
 	let effectiveDescription = $derived.by(() => {
 		if (!showComparison) return description;
-		const scenarioName = parameterStore.baseScenarios.find(
-			(s) => s.id === parameterStore.baseScenario
-		)?.name || '';
 		if (comparisonMode === 'year') {
-			return `Sektorsfördelning för ${geoName} ${comparisonYear} jämfört med ${year} i scenariot ${scenarioName}.`;
+			return `Sektorsfördelning för ${geoName} ${comparisonYear} jämfört med ${year} i scenariot ${activeScenarioName}.`;
 		}
-		const otherName = parameterStore.baseScenarios.find(
-			(s) => s.id === comparisonScenarioId
-		)?.name || '';
-		return `Sektorsfördelning för ${geoName} år ${year}: ${scenarioName} jämfört med ${otherName}.`;
+		return `Sektorsfördelning för ${geoName} år ${year}: ${rightLabelBase} jämfört med ${defaultScenarioName}.`;
 	});
 
 	async function fetchForYear(targetYear: number, withParams: boolean, scenarioOverride?: string) {
@@ -169,9 +165,8 @@
 	}
 
 	// Left pie: stable reference data
-	// - Year mode: comparisonYear baseline (no params) → only refetches when comparisonYear or baseScenario changes
-	// - Scenario mode: current year baseline (no params) → only refetches when year or baseScenario changes
-	// - Base mode: current year with current baseScenario (no params)
+	// - Year mode: comparisonYear baseline (no params) in the current baseScenario
+	// - Base mode: default scenario ("Beslutad policy") at current year, no params
 	// - Single mode: current year with params → refetches on any change
 	$effect(() => {
 		if (!baseScenario) return;
@@ -180,9 +175,9 @@
 			// Left = comparisonYear baseline. Does NOT read `year` or `parameterValues`.
 			fetchLeftPie(comparisonYear, false);
 		} else if (enableComparison && comparisonMode === 'base') {
-			// Left = current year, current baseScenario, no params
-			if (!year) return;
-			fetchLeftPie(year, false);
+			// Left = default scenario at current year, no params — always the reference
+			if (!year || !defaultScenarioId) return;
+			fetchLeftPie(year, false, defaultScenarioId);
 		} else {
 			// Single mode: read everything
 			if (!year) return;
@@ -206,19 +201,23 @@
 			const _params = parameterValues;
 			fetchRightPie(year, true);
 		} else if (comparisonMode === 'base') {
-			if (!comparisonScenarioId) {
+			// Right = current baseScenario with params (params only apply when on default scenario).
+			// If selection equals the default and no params are active, showComparison is false and
+			// we skip the fetch to keep the reactive graph clean.
+			if (baseScenario === defaultScenarioId && !hasParameterOverrides) {
 				rightRawData = [];
 				return;
 			}
-			fetchRightPie(year, false, comparisonScenarioId);
+			const _params = parameterValues;
+			fetchRightPie(year, true);
 		}
 	});
 
-	async function fetchLeftPie(targetYear: number, withParams: boolean) {
+	async function fetchLeftPie(targetYear: number, withParams: boolean, scenarioOverride?: string) {
 		try {
 			leftLoading = true;
 			error = null;
-			const data = await fetchForYear(targetYear, withParams);
+			const data = await fetchForYear(targetYear, withParams, scenarioOverride);
 			leftRawData = data;
 		} catch (err: any) {
 			error = err?.message || 'Ett oväntat fel inträffade';
@@ -509,16 +508,6 @@
 					Jmf. scenarier
 				</button>
 			</div>
-			{#if comparisonMode === 'base' && otherScenarios.length > 0}
-				<select
-					class="text-xs border border-gray-200 rounded-full px-3 py-1 bg-white text-gray-700"
-					bind:value={comparisonScenarioId}
-				>
-					{#each otherScenarios as scenario}
-						<option value={scenario.id}>{scenario.name}</option>
-					{/each}
-				</select>
-			{/if}
 		</div>
 	{/if}
 	{#if headerControls}
@@ -534,7 +523,7 @@
 			y="-5"
 			text-anchor="middle"
 			fill={viz.label}
-			style="font-size: 24px; font-weight: 500;"
+			style="font-size: 20px; font-weight: 500;"
 		>
 			{label}
 		</text>
@@ -583,16 +572,16 @@
 			y={lbl.y}
 			text-anchor={lbl.textAnchor}
 			dominant-baseline="middle"
-			fill={lbl.fitsInside ? slice.textColor : '#000000'}
+			fill={lbl.fitsInside ? slice.textColor : viz.text}
 			class="font-medium pointer-events-none"
-			style="font-size: 18px;"
+			style="font-size: 14px;"
 		>
 			{#if lbl.fitsInside}
-				<tspan x={lbl.x} dy="-0.6em" style="font-size: 18px;">{slice.displayName}</tspan>
-				<tspan x={lbl.x} dy="1.4em" style="font-size: 16px;">{Math.round(slice.value / 1000)} TWh</tspan>
+				<tspan x={lbl.x} dy="-0.6em" style="font-size: 14px;">{slice.displayName}</tspan>
+				<tspan x={lbl.x} dy="1.4em" style="font-size: 12px;">{Math.round(slice.value / 1000)} TWh</tspan>
 			{:else}
-				<tspan dy="-0.6em" style="font-size: 16px;">{slice.displayName}</tspan>
-				<tspan x={lbl.x} dy="1.4em" style="font-size: 14px;">{Math.round(slice.value / 1000)} TWh</tspan>
+				<tspan dy="-0.6em" style="font-size: 13px;">{slice.displayName}</tspan>
+				<tspan x={lbl.x} dy="1.4em" style="font-size: 11px;">{Math.round(slice.value / 1000)} TWh</tspan>
 			{/if}
 		</text>
 	{/each}
@@ -615,13 +604,13 @@
 			<rect
 				width={tooltipWidth}
 				height={tooltipHeight}
-				fill="#f5f5f5"
-				stroke="#000000"
+				fill={viz.subtleBg}
+				stroke={viz.text}
 				stroke-width="1"
 				rx="4"
 			/>
 			<!-- Tooltip content -->
-			<text x="12" y="24" fill="#000000" style="font-size: 17px; font-weight: 600;">
+			<text x="12" y="24" fill={viz.text} style="font-size: 17px; font-weight: 600;">
 				{hoveredData.displayName}
 			</text>
 			<text x="12" y="46" fill={viz.label} style="font-size: 15px;">
@@ -643,6 +632,7 @@
 	chartData={exportData}
 	{exportable}
 	headerControls={internalHeaderControls}
+	exportPadding={{ top: 24 }}
 	class={className}
 >
 	<div class="p-2">
@@ -661,17 +651,17 @@
 			/>
 		{:else if showComparison}
 			<!-- Dual pie layout -->
-			<div class="flex flex-col sm:flex-row items-start gap-2">
+			<div class="flex flex-col sm:flex-row items-center justify-center gap-1">
 				<!-- Left pie (reference: 2025 / baseline) -->
-				<div class="flex-1 min-w-0">
-					<svg viewBox="0 -30 500 450" class="w-full h-auto">
+				<div class="flex-1 min-w-0 max-w-[360px] mx-auto">
+					<svg viewBox="40 -30 420 450" class="w-full h-auto">
 						{@render renderPie(leftPieSlices, leftLabels, leftLabel, 0)}
 					</svg>
 				</div>
 
 				<!-- Delta column (between pies, visible on sm+) -->
 				<div
-					class="hidden sm:flex flex-col items-center justify-center self-center gap-1.5 px-2 py-4 min-w-[110px]"
+					class="hidden sm:flex flex-col items-center justify-center self-center gap-1.5 px-1 py-4 min-w-[96px]"
 				>
 					{#each deltas as delta}
 						<div class="flex items-center gap-1.5 text-xs whitespace-nowrap">
@@ -723,16 +713,16 @@
 				</div>
 
 				<!-- Right pie (selected year / adjusted scenario) -->
-				<div class="flex-1 min-w-0">
-					<svg viewBox="0 -30 500 450" class="w-full h-auto">
+				<div class="flex-1 min-w-0 max-w-[360px] mx-auto">
+					<svg viewBox="40 -30 420 450" class="w-full h-auto">
 						{@render renderPie(rightPieSlices, rightLabels, rightLabel, 1)}
 					</svg>
 				</div>
 			</div>
 		{:else}
 			<!-- Single pie (original layout) -->
-			<div class="relative w-full h-[320px] sm:h-[400px] lg:h-[450px]">
-				<svg viewBox="0 0 500 420" class="w-full h-full">
+			<div class="relative mx-auto w-full max-w-[440px] h-[280px] sm:h-[320px] lg:h-[360px]">
+				<svg viewBox="40 0 420 420" class="w-full h-full">
 					{@render renderPie(leftPieSlices, leftLabels, '', 0)}
 				</svg>
 			</div>

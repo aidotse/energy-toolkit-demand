@@ -109,7 +109,7 @@
 	{/if}
 </div>
 
-<style>
+<style lang="postcss">
 	.content :global(p) {
 		@apply mb-3 last:mb-0;
 	}

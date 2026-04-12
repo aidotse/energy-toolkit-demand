@@ -15,18 +15,24 @@ export { SEGMENT_COLORS };
  * Canonical segment ordering for charts (largest/most important first).
  * LoadProfileChart intentionally uses a different order (housing first).
  */
-export const SEGMENT_ORDER = ['industry', 'housing', 'services', 'transport', 'datacenters'] as const;
+export const SEGMENT_ORDER = [
+	'industry',
+	'housing',
+	'services',
+	'transport',
+	'datacenters'
+] as const;
 
 /**
  * Static segment labels (Swedish). Kept for backward compatibility.
  * Prefer getSegmentLabel() for locale-aware labels.
  */
 export const SEGMENT_LABELS: Record<string, string> = {
-	'industry': 'Industri',
-	'housing': 'Bostäder',
-	'services': 'Service',
-	'transport': 'Transport',
-	'datacenters': 'Datacenter',
+	industry: 'Industri',
+	housing: 'Bostäder',
+	services: 'Service',
+	transport: 'Transport',
+	datacenters: 'Datacenter'
 } as const;
 
 /**
@@ -40,7 +46,7 @@ export function getSegmentLabel(segment: string): string {
 		services: m.segment_services,
 		transport: m.segment_transport,
 		datacenters: m.segment_datacenters,
-		total: m.segment_total,
+		total: m.segment_total
 	};
 	return labels[segment]?.() ?? segment;
 }
@@ -54,7 +60,11 @@ export function getSegmentColor(segment: string): { bg: string; text: string } {
 }
 import { getEnergyPrefix, getPowerPrefix } from '$lib/stores/units.svelte';
 
+// AxisConfig is a permissive subset of layerchart's Axis props. We use
+// `[key: string]: any` so StandardAxisConfig can be spread into layerchart's
+// `props.xAxis` / `props.yAxis` without running into strict prop mismatches.
 export interface AxisConfig {
+	[key: string]: any;
 	format?: ((value: number) => string) | string;
 	ticks?: unknown[] | ((scale: { domain(): unknown[] }) => unknown[]);
 	labels?: boolean;
@@ -100,7 +110,12 @@ export function getTimeSeriesAxisConfig(
 			}
 		},
 		yAxis: {
-			format: (num: number) => formatNumber(num, aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(), aggregation === 'sum' ? 'Wh' : 'W').replace(/\.\d+/, ''),
+			format: (num: number) =>
+				formatNumber(
+					num,
+					aggregation === 'sum' ? getEnergyPrefix() : getPowerPrefix(),
+					aggregation === 'sum' ? 'Wh' : 'W'
+				).replace(/\.\d+/, ''),
 			tweened: false,
 			rule: { class: 'stroke-black [stroke-width:1.5px]' }
 		},
@@ -235,21 +250,24 @@ export const CHART_PADDING = {
 	/** For charts with horizontal x-axis labels */
 	standard: { top: 16, right: 16, bottom: 36, left: 48 },
 	/** For charts with rotated x-axis labels (county names, etc.) */
-	rotatedX: { top: 16, right: 16, bottom: 80, left: 48 },
+	rotatedX: { top: 16, right: 16, bottom: 80, left: 48 }
 } as const;
 
 /**
  * Standard props configuration for bar charts
  */
-export function getBarChartProps(config?: {
-	displayAxes?: boolean;
-	resolution?: string;
-}): { xAxis: AxisConfig; yAxis: AxisConfig; bars: Record<string, unknown> } {
+export function getBarChartProps(config?: { displayAxes?: boolean; resolution?: string }): {
+	xAxis: AxisConfig;
+	yAxis: AxisConfig;
+	bars: Record<string, unknown>;
+} {
 	const { displayAxes = true, resolution = '1d' } = config || {};
 
 	return {
 		xAxis: displayAxes ? { tweened: false } : { ticks: [], labels: false, rule: false },
-		yAxis: displayAxes ? { format: 'metric', tweened: false } : { ticks: [], labels: false, rule: false },
+		yAxis: displayAxes
+			? { format: 'metric', tweened: false }
+			: { ticks: [], labels: false, rule: false },
 		bars: { tweened: false, radius: 2, stroke: 'none' }
 	};
 }

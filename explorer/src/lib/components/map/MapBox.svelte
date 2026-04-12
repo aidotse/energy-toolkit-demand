@@ -21,7 +21,7 @@
     const currentScenario = $derived(scenarioState.currentScenario || scenario);
 
     let mapLoaded = $state(false);
-    let hoveredFeatureId = $state(null);
+    let hoveredFeatureId = $state<string | number | null>(null);
     let fetchedYearData = $state<any[]>([]);
 
     let map: mapboxgl.Map;
@@ -48,7 +48,7 @@
         fetchedYearData.length > 0 ? fetchedYearData : yearDataProp
     );
 
-    const handleMapClick = (e) => {
+    const handleMapClick = (e: any) => {
             if (stickyPopup) {
                 // Check if click was outside the popup
                 const features = map.queryRenderedFeatures(e.point, {
@@ -159,8 +159,7 @@
 
         yearData
             .filter((row: any) => {
-                const dateField = row.period || row.timestamp;
-                const rowYear = row.timestamp_year || (dateField ? new Date(dateField).getFullYear() : null);
+                const rowYear = row.timestamp_year || (row.period ? new Date(row.period).getFullYear() : null);
                 return rowYear === year;
             })
             .filter((row: any) => segments.includes(row.segment)) // Only include selected segments
@@ -224,7 +223,7 @@
     };
 
     // Open popup
-    const openPopup = (lngLat, properties, sticky = false) => {
+    const openPopup = (lngLat: any, properties: any, sticky = false) => {
         popup.setLngLat(lngLat)
             .setDOMContent(createPopupContent(properties, sticky))
             .addTo(map);
@@ -333,16 +332,18 @@
                 });
 
                 // Hover behavior
-                map.on('mouseenter', 'county-fill', (e) => {
-                    if (!stickyPopup && e.features.length > 0) {
+                map.on('mouseenter', 'county-fill', (e: any) => {
+                    if (!stickyPopup && e.features && e.features.length > 0) {
                         const feature = e.features[0];
                         openPopup(e.lngLat, feature.properties);
                     }
                     map.getCanvas().style.cursor = 'pointer';
                 });
 
-                map.on('mousemove', 'county-fill', (e) => {
+                map.on('mousemove', 'county-fill', (e: any) => {
+                    if (!e.features || e.features.length === 0) return;
                     const id = e.features[0].id;
+                    if (id === undefined) return;
 
                     if (hoveredFeatureId !== null && hoveredFeatureId !== id) {
                         map.setFeatureState({ source: 'counties', id: hoveredFeatureId }, { hover: false });
@@ -370,8 +371,10 @@
                 });
 
                 // Sticky popup on click
-                map.on('click', 'county-fill', (e) => {
+                map.on('click', 'county-fill', (e: any) => {
+                    if (!e.features || e.features.length === 0) return;
                     const properties = e.features[0].properties;
+                    if (!properties) return;
                     // Update geography to properties.geo_id unless properties.geo_id is null in which case it should be '00'
                     geography = properties.geo_id;
                     openPopup(e.lngLat, properties, true);
@@ -393,7 +396,7 @@
             }
 
             if (stickyPopup) {
-                const feature = mergedData.features.find(f => f.properties.geo_id === geography);
+                const feature = mergedData.features.find((f: any) => f.properties?.geo_id === geography);
                 if (feature) {
                     popup.setDOMContent(createPopupContent(feature.properties, true));
                 }
@@ -416,11 +419,11 @@
         }
 
         const feature = mergedData.features.find(
-            (f) => f.properties?.geo_id === geography
+            (f: any) => f.properties?.geo_id === geography
         );
 
         if (feature) {
-            const bbox = turf.bbox(feature);
+            const bbox = turf.bbox(feature) as [number, number, number, number];
             map.fitBounds(bbox, {
                 padding: 40,
                 duration: 1000

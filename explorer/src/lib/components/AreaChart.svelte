@@ -71,6 +71,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
+	// svelte-ignore state_referenced_locally
 	let aggregation = $state(aggregationInit);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -109,7 +110,7 @@
 							? new Date(d.period).getFullYear()
 							: d.period instanceof Date
 								? d.period.getFullYear()
-								: d.timestamp?.getFullYear?.() || d.timestamp || d.period,
+								: d.period,
 					total: d.value || d.total || 0
 				}))
 			: []
@@ -128,7 +129,7 @@
 										? new Date(d.period)
 										: d.period instanceof Date
 											? d.period
-											: d.timestamp || new Date(d.period),
+											: new Date(d.period),
 								value: d.value || d.total || 0
 							}))
 						])
@@ -284,6 +285,7 @@
 	chartData={exportData}
 	{exportable}
 	{headerControls}
+	exportPadding={{ top: 24, bottom: 16 }}
 	class={className}
 	{contentClass}
 >
@@ -304,7 +306,7 @@
             xDomain={xMin === xMax ? [xMin,xMax+1] : [xMin,xMax]}
             yDomain={xMin === xMax ? [yMin,yMax*1.1] : [yMin,yMax]}
             grid={false}
-            props={{
+            props={({
 				...getTimeSeriesAxisConfig(displayAxes, aggregation),
 				line: { fill: 'none', stroke: viz.teal[900], strokeWidth: 2 },
 				area: { fill: viz.teal[500], fillOpacity: 0.3 },
@@ -314,7 +316,7 @@
 					points: { class: '!fill-transparent !stroke-black ![stroke-width:1.5px]' }
 				},
 				rule: { class: 'stroke-black [stroke-width:1.5px]' }
-			}}
+			}) as any}
             {...(xMin === xMax ? { points: true } : {})}
         >
             <svelte:fragment slot="tooltip" let:x let:y let:height let:padding>
@@ -377,7 +379,7 @@
 			xDomain={xMin === xMax ? [xMin, xMax + 1] : [xMin, xMax]}
 			yDomain={xMin === xMax ? [yMin, yMax * 1.1] : [yMin, yMax]}
 			grid={false}
-			props={{
+			props={({
 				...getTimeSeriesAxisConfig(displayAxes, aggregation),
 				highlight: {
 					lines: { class: 'stroke-black [stroke-width:1.5px] [stroke-dasharray:6_4]' },
@@ -385,7 +387,7 @@
 					points: { class: '!fill-transparent !stroke-black ![stroke-width:1.5px]' }
 				},
 				rule: { class: 'stroke-black [stroke-width:1.5px]' }
-			}}
+			}) as any}
 			{...(xMin === xMax ? { points: true } : {})}
 		>
 
@@ -407,7 +409,7 @@
 					{#if value !== undefined}
 						<Tooltip.Root
 							x={padding.left}
-							y={() => y({ [scenarioId]: value })}
+							y={y({ [scenarioId]: value })}
 							anchor="right"
 							contained={false}
 							class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"

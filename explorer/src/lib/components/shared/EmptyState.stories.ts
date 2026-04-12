@@ -40,11 +40,12 @@ const meta = {
 		layout: 'padded',
 		docs: {
 			description: {
-				component: 'A reusable empty state component with customizable icon and optional call-to-action. Provides consistent messaging when content is unavailable.'
+				component:
+					'A reusable empty state component with customizable icon and optional call-to-action. Provides consistent messaging when content is unavailable.'
 			}
 		}
 	}
-} satisfies Meta<EmptyState>;
+} satisfies Meta<typeof EmptyState>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -89,7 +90,7 @@ export const WithAction: Story = {
 export const NoResults: Story = {
 	args: {
 		message: 'No results found',
-		description: 'We couldn\'t find any data matching your search criteria.',
+		description: "We couldn't find any data matching your search criteria.",
 		icon: Search,
 		actionLabel: 'Clear Search',
 		action: () => {

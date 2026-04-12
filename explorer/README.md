@@ -28,12 +28,14 @@ Explorer is a modular visual framework built with SvelteKit that provides intera
 ### Prerequisites
 
 1. Start the API server (from project root):
+
 ```bash
 cd api
 npm start  # Runs on port 4010
 ```
 
 2. Ensure data has been generated:
+
 ```bash
 cd api
 node generate-api.js --defaults
@@ -112,6 +114,7 @@ npm run preview  # Preview production build
 ### Chart Library Page
 
 The `/charts` route displays all available visualizations with:
+
 - **Responsive grid layout**: 2-column on desktop, 1-column on mobile
 - **Individual parameter controls**: Each chart can override global parameters
 - **Visual indicators**: Blue pill badges show when chart has custom parameters
@@ -120,6 +123,7 @@ The `/charts` route displays all available visualizations with:
 ### Parameter Control System
 
 Charts use a hierarchical parameter system:
+
 1. **Global parameters**: Default values for all charts (geography, year, segment, etc.)
 2. **Chart-specific overrides**: Individual charts can override any parameter
 3. **Visual feedback**: Parameter pills show blue badge with override count
@@ -128,6 +132,7 @@ Charts use a hierarchical parameter system:
 ### Scenario Comparison
 
 Compare multiple forecast scenarios:
+
 - **Side-by-side visualization**: Overlaid charts with color-coded scenarios
 - **Interactive legend**: Hover/click to highlight specific scenarios
 - **Consistent colors**: Scenarios maintain colors across all charts
@@ -136,6 +141,7 @@ Compare multiple forecast scenarios:
 ### Component Standardization
 
 All chart components follow consistent patterns:
+
 - **Hybrid data loading**: Accept data as props OR fetch internally
 - **Shared UI components**: LoadingSkeleton, ErrorState, EmptyState
 - **TypeScript interfaces**: Standardized props via ChartComponent.interface.ts
@@ -147,17 +153,22 @@ All chart components follow consistent patterns:
 Explorer communicates with the API server via `dataService.ts`:
 
 ```typescript
-import { fetchDemandData, makeDemandQuery, fetchGeographies, fetchScenarios } from '$lib/dataService';
+import {
+	fetchDemandData,
+	makeDemandQuery,
+	fetchGeographies,
+	fetchScenarios
+} from '$lib/dataService';
 
 // Fetch time series data
 const query = makeDemandQuery({
-  start: '2025-01-01',
-  end: '2026-01-01',
-  resolution: '1d',
-  aggregation: 'sum',
-  geography: 'SE01',
-  segment: 'housing',
-  scenarioId: 'housing_electrification=2,...'
+	start: '2025-01-01',
+	end: '2026-01-01',
+	resolution: '1d',
+	aggregation: 'sum',
+	geography: 'SE01',
+	segment: 'housing',
+	scenarioId: 'housing_electrification=2,...'
 });
 const data = await fetchDemandData(query);
 
@@ -171,6 +182,7 @@ const scenarios = await fetchScenarios();
 ### Svelte 5 Runes
 
 Always use modern Svelte 5 syntax:
+
 - `$state()` for reactive state
 - `$derived()` for computed values
 - `$effect()` for side effects
@@ -180,21 +192,16 @@ Always use modern Svelte 5 syntax:
 ### Component Data Pattern
 
 ```typescript
-let {
-  data = [],
-  geography,
-  year,
-  scenario
-}: TimeSeriesChartProps = $props();
+let { data = [], geography, year, scenario }: TimeSeriesChartProps = $props();
 
 let loading = $state(false);
 let error = $state<string | null>(null);
 
 // Fetch data when parameters change
 $effect(() => {
-  if (geography && year && scenario) {
-    fetchData();
-  }
+	if (geography && year && scenario) {
+		fetchData();
+	}
 });
 ```
 
@@ -227,16 +234,19 @@ PUBLIC_MAPBOX_TOKEN=your_token_here      # Mapbox access token
 ## Troubleshooting
 
 ### Charts not loading
+
 - Verify API server is running on port 4010
 - Check browser console for API errors
 - Ensure data has been generated with `node api/generate-api.js --defaults`
 
 ### Map not displaying
+
 - Verify Mapbox token is set in `.env`
 - Check that geographies.geojson exists in `/data/`
 - Ensure geography IDs match between data and GeoJSON
 
 ### Parameters not updating
+
 - Check that all dependencies are included in `$effect()` hooks
 - Verify chartParametersStore is updating correctly
 - Check browser console for reactivity issues
@@ -244,6 +254,7 @@ PUBLIC_MAPBOX_TOKEN=your_token_here      # Mapbox access token
 ## Documentation
 
 For detailed architecture and development guidelines, see:
+
 - `/CLAUDE.md` - Project overview and patterns
 - `/api/README.md` - API documentation
 - `/api/openapi.yaml` - API specification

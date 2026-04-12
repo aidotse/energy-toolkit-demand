@@ -37,14 +37,18 @@ class ScenarioState {
 
 	// Staged comparison methods (scenarios prepared but not yet applied)
 	addToStaged(scenario: Scenario) {
-		if (!this.stagedComparisonScenarios.find(s => (s.id || s.scenario_id) === (scenario.id || scenario.scenario_id))) {
+		if (
+			!this.stagedComparisonScenarios.find(
+				(s) => (s.id || s.scenario_id) === (scenario.id || scenario.scenario_id)
+			)
+		) {
 			this.stagedComparisonScenarios = [...this.stagedComparisonScenarios, scenario];
 		}
 	}
 
 	removeFromStaged(scenario: Scenario) {
 		this.stagedComparisonScenarios = this.stagedComparisonScenarios.filter(
-			s => (s.id || s.scenario_id) !== (scenario.id || scenario.scenario_id)
+			(s) => (s.id || s.scenario_id) !== (scenario.id || scenario.scenario_id)
 		);
 	}
 
@@ -62,7 +66,11 @@ class ScenarioState {
 
 	// Active comparison methods (for backwards compatibility and direct manipulation)
 	addToComparison(scenario: Scenario) {
-		if (!this.comparisonScenarios.find(s => (s.id || s.scenario_id) === (scenario.id || scenario.scenario_id))) {
+		if (
+			!this.comparisonScenarios.find(
+				(s) => (s.id || s.scenario_id) === (scenario.id || scenario.scenario_id)
+			)
+		) {
 			this.comparisonScenarios = [...this.comparisonScenarios, scenario];
 		}
 		if (this.comparisonScenarios.length >= 2) {
@@ -72,7 +80,7 @@ class ScenarioState {
 
 	removeFromComparison(scenario: Scenario) {
 		this.comparisonScenarios = this.comparisonScenarios.filter(
-			s => (s.id || s.scenario_id) !== (scenario.id || scenario.scenario_id)
+			(s) => (s.id || s.scenario_id) !== (scenario.id || scenario.scenario_id)
 		);
 		if (this.comparisonScenarios.length < 2) {
 			this.comparisonMode = false;
@@ -95,12 +103,12 @@ class ScenarioState {
 
 	// Find scenario by parameters
 	findScenarioByParameters(parameters: Record<string, number>): Scenario | null {
-		return this.scenarios.find((scenario) => {
-			if (!scenario.parameters) return false;
-			return Object.keys(parameters).every(
-				(key) => scenario.parameters[key] === parameters[key]
-			);
-		}) ?? null;
+		return (
+			this.scenarios.find((scenario) => {
+				if (!scenario.parameters) return false;
+				return Object.keys(parameters).every((key) => scenario.parameters[key] === parameters[key]);
+			}) ?? null
+		);
 	}
 
 	// Get scenario ID for API calls

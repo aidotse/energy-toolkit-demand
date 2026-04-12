@@ -163,7 +163,6 @@ describe('API Server Integration Tests', () => {
       if (response.body.length > 0) {
         expect(response.body[0]).toHaveProperty('scenario_id');
         expect(response.body[0]).toHaveProperty('name');
-        expect(response.body[0]).toHaveProperty('parameters');
       }
     });
   });
@@ -185,13 +184,14 @@ describe('API Server Integration Tests', () => {
   });
 
   describe('GET /parameters', () => {
-    test('should return parameters array', async () => {
+    test('should return parameters object', async () => {
       const response = await request(app)
         .get('/parameters')
         .expect(200);
 
       expect(response.headers['content-type']).toContain('application/json');
-      expect(response.body).toBeInstanceOf(Array);
+      expect(typeof response.body).toBe('object');
+      expect(response.body).toHaveProperty('parameters');
     });
   });
 

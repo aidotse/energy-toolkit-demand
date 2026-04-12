@@ -4,15 +4,15 @@
 
     let {geography, aggregation, scenario, startYear, year, allYearsData = [], percentage} = $props();
     let loading = $state(false);
-    let error = $state(null);
+    let error = $state<string | null>(null);
     let hasFetched = $state(false);
 
     // Transform data to expected format (already aggregated by server)
     let transformedData = $derived(
-        (allYearsData || []).map(d => ({
+        (allYearsData || []).map((d: any) => ({
             timestamp: typeof d.period === 'string' ? new Date(d.period).getFullYear() :
                       d.period instanceof Date ? d.period.getFullYear() :
-                      d.timestamp?.getFullYear?.() || d.timestamp || d.period,
+                      d.period,
             total: d.value || d.total || 0
         }))
     );
@@ -44,7 +44,7 @@
             const data = await fetchDemandData(query);
             allYearsData = data;
         } catch (err) {
-            error = err.message;
+            error = err instanceof Error ? err.message : String(err);
             console.error('Error fetching change data:', err);
             allYearsData = []; // Fallback to empty array
         } finally {

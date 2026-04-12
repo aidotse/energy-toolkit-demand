@@ -22,7 +22,7 @@
 	} = $props();
 
 	// Local state
-	let dropdownRef: HTMLDivElement | undefined;
+	let dropdownRef = $state<HTMLDivElement | undefined>(undefined);
 
 	// Click outside handler
 	function handleClickOutside(event: MouseEvent) {

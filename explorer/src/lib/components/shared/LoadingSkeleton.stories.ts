@@ -28,11 +28,12 @@ const meta = {
 		layout: 'padded',
 		docs: {
 			description: {
-				component: 'A reusable loading skeleton component with animated pulse effect. Provides visual feedback while content is being loaded.'
+				component:
+					'A reusable loading skeleton component with animated pulse effect. Provides visual feedback while content is being loaded.'
 			}
 		}
 	}
-} satisfies Meta<LoadingSkeleton>;
+} satisfies Meta<typeof LoadingSkeleton>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
