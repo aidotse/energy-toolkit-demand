@@ -8,6 +8,8 @@
     "build:static-endpoints": "node scripts/generate-endpoints.js",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "start": "node --watch local-server.js",

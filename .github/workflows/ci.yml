@@ -28,9 +28,13 @@ jobs:
         working-directory: ./api
         run: npm ci
 
-      - name: Run tests
+      - name: Run unit tests
         working-directory: ./api
-        run: npm test
+        # Integration tests need parquet files from data/ (gitignored, 16GB).
+        # They'll be covered by a follow-up job that syncs from S3; for now
+        # CI runs unit tests only and relies on the staging deploy's own
+        # health check as the integration smoke test.
+        run: npm run test:unit
 
   explorer-tests:
     name: Explorer tests and build

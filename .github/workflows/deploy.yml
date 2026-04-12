@@ -62,9 +62,10 @@ jobs:
       - name: Install
         working-directory: ./api
         run: npm ci
-      - name: Test
+      - name: Test (unit only)
         working-directory: ./api
-        run: npm test
+        # See ci.yml — integration tests require data/ (not in repo).
+        run: npm run test:unit
 
   test-explorer:
     name: Explorer tests and build
