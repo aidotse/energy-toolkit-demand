@@ -51,6 +51,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Explorer unit tests run in real Chromium via vitest-browser-svelte,
+      # so the Playwright chromium binary must be installed on the runner.
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: ./explorer
+
       - name: Run explorer unit tests
         working-directory: ./explorer
         run: npm test
