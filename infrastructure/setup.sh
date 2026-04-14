@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Behovskartan Infrastructure Setup
+# Energy Toolkit Demand — Infrastructure Setup
 #
 # This script creates the AWS resources needed for deployment:
 # - ECR repository for API Docker images
@@ -8,19 +8,20 @@
 # - CloudFront distribution for Explorer CDN
 # - App Runner service for API
 #
-# Usage: ./setup.sh [dev|staging|production]
+# Usage: PROJECT_NAME=my-impl AWS_REGION=eu-central-1 ./setup.sh [dev|staging|production]
 #
 # Prerequisites:
 # - AWS CLI configured with appropriate credentials
 # - Sufficient IAM permissions to create resources
+# - PROJECT_NAME environment variable set — this determines the resource names
 #
 
 set -e
 
-# Configuration
+# Configuration — override via environment variables
 ENVIRONMENT=${1:-dev}
-AWS_REGION="eu-central-1"
-PROJECT_NAME="behovskartan"
+AWS_REGION="${AWS_REGION:-eu-central-1}"
+PROJECT_NAME="${PROJECT_NAME:-energy-toolkit-demand}"
 
 # Derived names
 ECR_REPO="${PROJECT_NAME}-api"
@@ -29,7 +30,8 @@ S3_DATA_BUCKET="${PROJECT_NAME}-data-${ENVIRONMENT}"
 APP_RUNNER_SERVICE="${PROJECT_NAME}-api-${ENVIRONMENT}"
 
 echo "================================================"
-echo "Behovskartan Infrastructure Setup"
+echo "Energy Toolkit Demand — Infrastructure Setup"
+echo "Project: ${PROJECT_NAME}"
 echo "Environment: ${ENVIRONMENT}"
 echo "Region: ${AWS_REGION}"
 echo "================================================"
@@ -157,7 +159,7 @@ else
     cat > /tmp/cloudfront-config.json << EOF
 {
     "CallerReference": "${S3_BUCKET}-$(date +%s)",
-    "Comment": "Behovskartan Explorer - ${ENVIRONMENT}",
+    "Comment": "${PROJECT_NAME} Explorer - ${ENVIRONMENT}",
     "Enabled": true,
     "DefaultRootObject": "index.html",
     "Origins": {

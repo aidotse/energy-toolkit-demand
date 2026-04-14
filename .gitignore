@@ -177,15 +177,6 @@ terraform/
 
 # Other
 UPDATE.md
-EXPLORER_PAGE_LAYOUT.md
-EXPLORER_PLAN.md
-CHART_LIBRARY_REDESIGN.md
-CLAUDE.md
-PLANS.md
-GENERATOR_PLAN.md
-TODO_TRANSPORT.md
-TODO.md
-WEEKEND.md
 .vscode/
 layerchart_docs/
 *storybook.log

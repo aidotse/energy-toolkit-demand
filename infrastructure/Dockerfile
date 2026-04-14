@@ -1,4 +1,4 @@
-# Behovskartan API
+# Energy Toolkit Demand API
 # Node.js + Express + DuckDB — data downloaded from S3 at startup
 # Build context: repo root (docker build -f infrastructure/Dockerfile .)
 

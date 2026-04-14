@@ -20,7 +20,8 @@ permissions:
 
 env:
   AWS_REGION: eu-central-1
-  ECR_REPOSITORY: behovskartan-api
+  # Replace with your own ECR repository name, or set at the job level per environment.
+  ECR_REPOSITORY: energy-toolkit-demand-api
 
 jobs:
   # Resolve which environment this run targets based on branch or dispatch input.

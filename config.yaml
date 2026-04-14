@@ -1,8 +1,8 @@
 useGenerator: true
 useAPI: true
 useExplorer: true
-name: behovskartan2
-version: 0.1.0
+name: energy-toolkit-demand
+version: 1.0.0-rc1
 access: public
 start: '2025-01-01T00:00:00Z'
 end: '2050-12-31T23:00:00Z'
@@ -13,130 +13,58 @@ baseAggregation: mean
 units:
   energy:
     prefix: G      # SI prefix: '', k, M, G, T (base unit is Wh)
-    unit: Wh       # Base unit
+    unit: Wh
   power:
     prefix: G      # SI prefix: '', k, M, G, T (base unit is W)
-    unit: W        # Base unit
+    unit: W
+
+# Demand segments. Keep the segment names here matched to the profile CSVs
+# your generator notebook consumes. The example notebook (coming in v1.0)
+# will ship with housing/industry/services as a starting point.
 segment:
   description: Segments
   values:
     - name: housing
       label: housing
-    - name: transport
-      label: transport
     - name: industry
       label: industry
     - name: services
       label: services
-    - name: datacenters
-      label: datacenters
+
+# Base scenarios are the starting points your generator emits. Each one
+# produces a base parquet per segment. Parameters (below) layer on top.
 scenario:
   useBaseAsDefaultScenario: true
-  scenarios:
-    - name: housing_electrification
-      type: index
-      items:
-        - value: 0
-          label: '0'
-        - value: 1
-          label: '1'
-        - value: 2
-          label: '2'
-        - value: 3
-          label: '3'
-        - value: 4
-          label: '4'
-      description: ''
-    - name: transport_electrification
-      type: index
-      items:
-        - value: 0
-          label: '0'
-        - value: 1
-          label: '1'
-        - value: 2
-          label: '2'
-        - value: 3
-          label: '3'
-        - value: 4
-          label: '4'
-      description: ''
-    - name: industry_transition
-      type: index
-      items:
-        - value: 0
-          label: '0'
-        - value: 1
-          label: '1'
-        - value: 2
-          label: '2'
-      description: ''
+  scenarios: []
+
+# Geographies shown on the map. `file` is the geojson feature collection;
+# each entry's `id` must match the feature's `geo_id` property.
+# Replace the four toy regions below with your own geography.
 geography:
-  file: generator/input/geographies/sweden-counties.geojson
+  file: generator/input/example/regions.geojson
   geographies:
-    - id: '01'
-      name: Stockholms län
-      type: county
-    - id: '03'
-      name: Uppsala län
-      type: county
-    - id: '04'
-      name: Södermanlands län
-      type: county
-    - id: '05'
-      name: Östergötlands län
-      type: county
-    - id: '06'
-      name: Jönköpings län
-      type: county
-    - id: '07'
-      name: Kronobergs län
-      type: county
-    - id: '08'
-      name: Kalmar län
-      type: county
-    - id: '09'
-      name: Gotlands län
-      type: county
-    - id: '10'
-      name: Blekinge län
-      type: county
-    - id: '12'
-      name: Skåne län
-      type: county
-    - id: '13'
-      name: Hallands län
-      type: county
-    - id: '14'
-      name: Västra Götalands län
-      type: county
-    - id: '17'
-      name: Värmlands län
-      type: county
-    - id: '18'
-      name: Örebro län
-      type: county
-    - id: '19'
-      name: Västmanlands län
-      type: county
-    - id: '20'
-      name: Dalarnas län
-      type: county
-    - id: '21'
-      name: Gävleborgs län
-      type: county
-    - id: '22'
-      name: Västernorrlands län
-      type: county
-    - id: '23'
-      name: Jämtlands län
-      type: county
-    - id: '24'
-      name: Västerbottens län
-      type: county
-    - id: '25'
-      name: Norrbottens län
-      type: county
+    - id: A
+      name: Region A
+      type: region
+    - id: B
+      name: Region B
+      type: region
+    - id: C
+      name: Region C
+      type: region
+    - id: D
+      name: Region D
+      type: region
+
+# Default map camera — read by explorer/src/lib/mapConfig.ts.
+# Replace with the extent of your own geography.
+map:
+  style: mapbox://styles/mapbox/light-v11
+  bounds: [[-1, -1], [5, 5]]
+  center: [2, 2]
+  zoom: 6
+  featureIdProperty: geo_id
+
 generator:
   rowGroupSize: 100000
   partitionKeys:
@@ -145,8 +73,9 @@ generator:
     - segment
     - timestamp_year
   profiles:
-    noise_amplitude: 0.02  # ±2% random variation per year
-    noise_seed: 42         # Random seed for reproducibility
+    noise_amplitude: 0.02
+    noise_seed: 42
+
 api:
   resolutions:
     - 1h
@@ -158,382 +87,9 @@ api:
     - mean
     - max
 
-# Independent parameter system (Strategy 2)
-# Each parameter generates segment-only parquet files
-# API combines them at query time
+# Parameters are independent multipliers applied at query time.
+# See docs and the example notebook for how to author curves.
 parameters:
-  strategy: 2                          # 1=precomputed, 2=independent, 3=query-time
-  baseScenario: current-policy         # Base for parameter calculations
-  baseScenarios:
-    - id: current-policy
-      label: Beslutad Policy
-      default: true
-    - id: local-environment
-      label: Lokal Miljöhänsyn
-    - id: international-growth
-      label: Internationell Tillväxt
-
-  definitions:
-    # Pattern: {segment}_{type} where type is 'growth' or 'flex'
-    # Growth parameters: 0% (baseline), -15%, -10%, -5%, +5%, +10%, +15%
-    # The index values map to S-curve data, value is for UI sorting
-    housing_growth:
-      type: independent
-      description: "Housing demand growth rate"
-      segments: [housing]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "-15%"
-          value: -15
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "-10%"
-          value: -10
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 2"
-        - index: 3
-          label: "-5%"
-          value: -5
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 3"
-        - index: 4
-          label: "+5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 4"
-        - index: 5
-          label: "+10%"
-          value: 10
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 5"
-        - index: 6
-          label: "+15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/housing_growth/curves.parquet
-            filter: "index == 6"
-
-    # Flex parameters: 0% (none), 5%, 15%
-    housing_flex:
-      type: independent
-      description: "Housing demand flexibility"
-      segments: [housing]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/housing_flex/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/housing_flex/curves.parquet
-            filter: "index == 2"
-
-    transport_growth:
-      type: independent
-      description: "Transport demand growth rate"
-      segments: [transport]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "-15%"
-          value: -15
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "-10%"
-          value: -10
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 2"
-        - index: 3
-          label: "-5%"
-          value: -5
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 3"
-        - index: 4
-          label: "+5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 4"
-        - index: 5
-          label: "+10%"
-          value: 10
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 5"
-        - index: 6
-          label: "+15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/transport_growth/curves.parquet
-            filter: "index == 6"
-
-    transport_flex:
-      type: independent
-      description: "Transport demand flexibility"
-      segments: [transport]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/transport_flex/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/transport_flex/curves.parquet
-            filter: "index == 2"
-
-    industry_growth:
-      type: independent
-      description: "Industry demand growth rate"
-      segments: [industry]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "-15%"
-          value: -15
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "-10%"
-          value: -10
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 2"
-        - index: 3
-          label: "-5%"
-          value: -5
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 3"
-        - index: 4
-          label: "+5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 4"
-        - index: 5
-          label: "+10%"
-          value: 10
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 5"
-        - index: 6
-          label: "+15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/industry_growth/curves.parquet
-            filter: "index == 6"
-
-    industry_flex:
-      type: independent
-      description: "Industry demand flexibility"
-      segments: [industry]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/industry_flex/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/industry_flex/curves.parquet
-            filter: "index == 2"
-
-    services_growth:
-      type: independent
-      description: "Services demand growth rate"
-      segments: [services]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "-15%"
-          value: -15
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "-10%"
-          value: -10
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 2"
-        - index: 3
-          label: "-5%"
-          value: -5
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 3"
-        - index: 4
-          label: "+5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 4"
-        - index: 5
-          label: "+10%"
-          value: 10
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 5"
-        - index: 6
-          label: "+15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/services_growth/curves.parquet
-            filter: "index == 6"
-
-    services_flex:
-      type: independent
-      description: "Services demand flexibility"
-      segments: [services]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/services_flex/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/services_flex/curves.parquet
-            filter: "index == 2"
-
-    datacenters_growth:
-      type: independent
-      description: "Datacenters demand growth rate"
-      segments: [datacenters]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "-15%"
-          value: -15
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "-10%"
-          value: -10
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 2"
-        - index: 3
-          label: "-5%"
-          value: -5
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 3"
-        - index: 4
-          label: "+5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 4"
-        - index: 5
-          label: "+10%"
-          value: 10
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 5"
-        - index: 6
-          label: "+15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/datacenters_growth/curves.parquet
-            filter: "index == 6"
-
-    datacenters_flex:
-      type: independent
-      description: "Datacenters demand flexibility"
-      segments: [datacenters]
-      geographies: all
-      how: multiply
-      values:
-        - index: 0
-          label: "0%"
-          value: 0
-          curve: null
-        - index: 1
-          label: "5%"
-          value: 5
-          curve:
-            file: generator/input/scenarios/datacenters_flex/curves.parquet
-            filter: "index == 1"
-        - index: 2
-          label: "15%"
-          value: 15
-          curve:
-            file: generator/input/scenarios/datacenters_flex/curves.parquet
-            filter: "index == 2"
+  strategy: 2
+  baseScenarios: []
+  definitions: {}

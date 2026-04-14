@@ -1,6 +1,6 @@
 # Deployment Infrastructure
 
-This directory contains scripts and documentation for deploying Behovskartan to AWS.
+This directory contains scripts and documentation for deploying Energy Toolkit Demand to AWS.
 
 ## Architecture
 
@@ -55,8 +55,8 @@ aws ecr get-login-password --region eu-central-1 | \
   <account-id>.dkr.ecr.eu-central-1.amazonaws.com
 
 # Build and push
-docker build -t <account-id>.dkr.ecr.eu-central-1.amazonaws.com/behovskartan-api:latest .
-docker push <account-id>.dkr.ecr.eu-central-1.amazonaws.com/behovskartan-api:latest
+docker build -t <account-id>.dkr.ecr.eu-central-1.amazonaws.com/${PROJECT_NAME:-energy-toolkit-demand}-api:latest .
+docker push <account-id>.dkr.ecr.eu-central-1.amazonaws.com/${PROJECT_NAME:-energy-toolkit-demand}-api:latest
 ```
 
 ### 3. Configure GitHub
@@ -75,7 +75,7 @@ docker push <account-id>.dkr.ecr.eu-central-1.amazonaws.com/behovskartan-api:lat
 |----------|---------------|
 | `API_URL` | `https://xxx.eu-central-1.awsapprunner.com` |
 | `APP_RUNNER_SERVICE_ARN` | `arn:aws:apprunner:eu-central-1:...` |
-| `S3_BUCKET_EXPLORER` | `behovskartan-explorer-dev` |
+| `S3_BUCKET_EXPLORER` | `${PROJECT_NAME:-energy-toolkit-demand}-explorer-dev` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `E1234567890ABC` |
 | `CLOUDFRONT_DOMAIN` | `d1234567890.cloudfront.net` |
 | `ALLOWED_ORIGINS` | `https://d1234567890.cloudfront.net` |
@@ -96,7 +96,7 @@ Or manually trigger via GitHub Actions > Deploy > Run workflow.
 
 ```bash
 cd api
-docker build -t behovskartan-api .
+docker build -t ${PROJECT_NAME:-energy-toolkit-demand}-api .
 # Push to ECR and update App Runner
 ```
 
@@ -105,7 +105,7 @@ docker build -t behovskartan-api .
 ```bash
 cd explorer
 VITE_API_BASE_URL=https://xxx.awsapprunner.com npm run build
-aws s3 sync build/ s3://behovskartan-explorer-dev/ --delete
+aws s3 sync build/ s3://${PROJECT_NAME:-energy-toolkit-demand}-explorer-dev/ --delete
 aws cloudfront create-invalidation --distribution-id E1234 --paths "/*"
 ```
 
@@ -119,14 +119,14 @@ aws cloudfront create-invalidation --distribution-id E1234 --paths "/*"
 
 ### App Runner deployment fails
 
-1. Check ECR image exists: `aws ecr describe-images --repository-name behovskartan-api`
+1. Check ECR image exists: `aws ecr describe-images --repository-name ${PROJECT_NAME:-energy-toolkit-demand}-api`
 2. Check App Runner logs in CloudWatch
 3. Verify IAM role has ECR access permissions
 
 ### Explorer shows old content
 
 1. Invalidate CloudFront cache: `aws cloudfront create-invalidation --distribution-id <id> --paths "/*"`
-2. Check S3 bucket contents: `aws s3 ls s3://behovskartan-explorer-dev/`
+2. Check S3 bucket contents: `aws s3 ls s3://${PROJECT_NAME:-energy-toolkit-demand}-explorer-dev/`
 
 ### API returns CORS errors
 

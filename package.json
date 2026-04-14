@@ -1,12 +1,11 @@
 {
   "type": "module",
-  "name": "demand-toolkit",
-  "version": "0.1.0",
-  "description": "The demand toolkit",
+  "name": "energy-toolkit-demand",
+  "version": "1.0.0-rc1",
+  "description": "Open framework for generating, serving, and visualizing energy demand forecasts",
   "workspaces": [
     "api",
-    "explorer",
-    "site"
+    "explorer"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
