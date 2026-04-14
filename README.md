@@ -4,7 +4,7 @@ An open framework for generating, serving, and visualizing energy demand forecas
 
 This is a **GitHub template repository**. Click "Use this template" (or clone it) and then point a coding agent at the fresh fork to configure it for your implementation.
 
-> **Status: `v1.0.0-rc1`.** The stack is in place, stripped of the original Sweden-specific implementation, and parameterized. A working multi-geography / multi-segment example with the map widget rendering end-to-end is on the way for the final `v1.0.0` tag.
+> **Status: `v1.0.0`.** The stack is in place, stripped of the original Sweden-specific implementation, parameterized, and ships with a working multi-geography / multi-segment example — fork it and `node api/generate-api.js --defaults && (cd api && npm start) && (cd explorer && npm run dev)` boots the map end-to-end.
 
 ## What's in the box
 

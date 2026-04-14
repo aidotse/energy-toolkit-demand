@@ -18,6 +18,7 @@ let dataDir;
 let baseDir;
 let scenariosDir;
 let testScenarioId;
+let testGeography;
 let singleScenarioGlob;
 
 /** Promisified wrapper for conn.all() (DuckDB 1.x callback API) */
@@ -51,10 +52,16 @@ beforeAll(async () => {
   db = new duckdb.Database(':memory:');
   conn = db.connect();
 
-  // Discover an actual scenario_id from the data
+  // Discover actual scenario_id + geography values from the data so the
+  // tests work against any implementation's parquet files. Previously the
+  // geography was hardcoded to '01' (Stockholm county), which broke every
+  // non-Sweden implementation of the template.
   const baseGlob = path.join(baseDir, '**', 'data.parquet');
   const rows = await query(`SELECT DISTINCT scenario_id FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE) LIMIT 1`);
   testScenarioId = rows.length > 0 ? rows[0].scenario_id : 'default';
+
+  const geoRows = await query(`SELECT DISTINCT geography FROM parquet_scan('${baseGlob}', hive_partitioning=FALSE) LIMIT 1`);
+  testGeography = geoRows.length > 0 ? geoRows[0].geography : 'all';
 
   // Use a single scenario subdirectory for UNION tests (scanning all 15GB+ is too slow)
   if (fs.existsSync(scenariosDir)) {
@@ -234,7 +241,7 @@ describe('DuckDB Parquet Query Tests', { timeout: 30_000 }, () => {
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp <= TIMESTAMP '2031-01-01'
           AND scenario_id = '${testScenarioId}'
-          AND geography = '01'
+          AND geography = '${testGeography}'
         GROUP BY DATE_TRUNC('year', timestamp)
         ORDER BY year
       `);
@@ -256,7 +263,7 @@ describe('DuckDB Parquet Query Tests', { timeout: 30_000 }, () => {
           timestamp >= TIMESTAMP '2030-01-01'
           AND timestamp < TIMESTAMP '2030-01-02'
           AND scenario_id = '${testScenarioId}'
-          AND geography = '01'
+          AND geography = '${testGeography}'
         GROUP BY timestamp
         ORDER BY timestamp
         LIMIT 24

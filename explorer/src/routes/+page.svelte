@@ -94,8 +94,8 @@
 </script>
 
 <svelte:head>
-	<title>Sveriges framtida elbehov — Behovskartan</title>
-	<meta name="description" content="Utforska scenarier för Sveriges framtida elanvändning uppdelat på regioner, sektorer och tid." />
+	<title>Energy Toolkit — Demand</title>
+	<meta name="description" content="Open framework for generating, serving, and visualizing energy demand forecasts." />
 </svelte:head>
 
 <!-- Mobile: two-panel layout with pull tabs -->
@@ -107,18 +107,6 @@
 		<div class="bg-white px-4 py-4 sm:px-6 sm:py-6">
 			<!-- Title Section -->
 			<div class="mb-6">
-				<div class="flex justify-end mb-4">
-					<div class="flex flex-col items-start gap-1">
-						<p class="text-xs text-gray-900">Utvecklat med stöd av</p>
-						<a href="https://www.energimyndigheten.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
-							<img
-								src="/SV Primär Energimyndigheten logo EM-SVART png (RGB).png"
-								alt="Energimyndigheten"
-								class="h-6 w-auto"
-							/>
-						</a>
-					</div>
-				</div>
 				{#if content}
 					<div in:fade={{ duration: 200 }}>
 						<h1 class="text-2xl font-bold text-gray-900 mt-4 mb-3">
@@ -228,21 +216,6 @@
 			<div class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg px-8 py-6 sm:px-14 sm:py-8 xl:px-20">
 			<!-- Title Section -->
 			<div class="mb-12">
-				<!-- Partner logos - right-aligned, at top -->
-				<div class="flex justify-end mb-6">
-					<div class="flex flex-col items-start gap-2">
-						<p class="text-sm text-gray-900">
-							Utvecklat med stöd av
-						</p>
-						<a href="https://www.energimyndigheten.se/" target="_blank" rel="noopener noreferrer" class="transition-opacity hover:opacity-80">
-							<img
-								src="/SV Primär Energimyndigheten logo EM-SVART png (RGB).png"
-								alt="Energimyndigheten"
-								class="h-8 w-auto"
-							/>
-						</a>
-					</div>
-				</div>
 				{#if content}
 					<div in:fade={{ duration: 200 }}>
 						<h1 class="text-3xl font-bold text-gray-900 mt-10 mb-6">

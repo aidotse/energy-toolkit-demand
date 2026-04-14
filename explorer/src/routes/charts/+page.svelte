@@ -268,7 +268,7 @@
 </script>
 
 <svelte:head>
-	<title>Grafer — Behovskartan</title>
+	<title>Graphs — Energy Toolkit</title>
 </svelte:head>
 
 <!-- Custom layout — sidebar positioned outside the content card flow -->

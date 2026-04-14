@@ -2,7 +2,7 @@ useGenerator: true
 useAPI: true
 useExplorer: true
 name: energy-toolkit-demand
-version: 1.0.0-rc1
+version: 1.0.0
 access: public
 start: '2025-01-01T00:00:00Z'
 end: '2050-12-31T23:00:00Z'
@@ -35,7 +35,7 @@ segment:
 # produces a base parquet per segment. Parameters (below) layer on top.
 scenario:
   useBaseAsDefaultScenario: true
-  scenarios: []
+  scenarios: []  # Strategy 2: base scenarios live under parameters.baseScenarios
 
 # Geographies shown on the map. `file` is the geojson feature collection;
 # each entry's `id` must match the feature's `geo_id` property.
@@ -91,5 +91,45 @@ api:
 # See docs and the example notebook for how to author curves.
 parameters:
   strategy: 2
-  baseScenarios: []
-  definitions: {}
+  baseScenario: example
+  baseScenarios:
+    - id: example
+      label: Example
+      default: true
+
+  definitions:
+    housing_growth:
+      type: independent
+      description: "Housing demand growth (multiplier applied over 2025-2050)"
+      segments: [housing]
+      geographies: all
+      how: multiply
+      values:
+        - { index: 0, label: "baseline", value: 0,    curve: null }
+        - { index: 1, label: "low",      value: -50,  curve: { file: generator/input/example/curves/housing_growth.parquet, filter: "curve_id == 'low'"  } }
+        - { index: 2, label: "mid",      value: 0,    curve: { file: generator/input/example/curves/housing_growth.parquet, filter: "curve_id == 'mid'"  } }
+        - { index: 3, label: "high",     value: 100,  curve: { file: generator/input/example/curves/housing_growth.parquet, filter: "curve_id == 'high'" } }
+
+    industry_growth:
+      type: independent
+      description: "Industry demand growth (multiplier applied over 2025-2050)"
+      segments: [industry]
+      geographies: all
+      how: multiply
+      values:
+        - { index: 0, label: "baseline", value: 0,    curve: null }
+        - { index: 1, label: "low",      value: -50,  curve: { file: generator/input/example/curves/industry_growth.parquet, filter: "curve_id == 'low'"  } }
+        - { index: 2, label: "mid",      value: 0,    curve: { file: generator/input/example/curves/industry_growth.parquet, filter: "curve_id == 'mid'"  } }
+        - { index: 3, label: "high",     value: 100,  curve: { file: generator/input/example/curves/industry_growth.parquet, filter: "curve_id == 'high'" } }
+
+    services_growth:
+      type: independent
+      description: "Services demand growth (multiplier applied over 2025-2050)"
+      segments: [services]
+      geographies: all
+      how: multiply
+      values:
+        - { index: 0, label: "baseline", value: 0,    curve: null }
+        - { index: 1, label: "low",      value: -50,  curve: { file: generator/input/example/curves/services_growth.parquet, filter: "curve_id == 'low'"  } }
+        - { index: 2, label: "mid",      value: 0,    curve: { file: generator/input/example/curves/services_growth.parquet, filter: "curve_id == 'mid'"  } }
+        - { index: 3, label: "high",     value: 100,  curve: { file: generator/input/example/curves/services_growth.parquet, filter: "curve_id == 'high'" } }

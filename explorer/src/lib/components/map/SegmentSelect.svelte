@@ -1,14 +1,22 @@
 <script lang="ts">
     import { getSegmentLabel, SEGMENT_ORDER } from '$lib/chartConfig';
+    import { segmentsState } from '$lib/stores/segments.svelte';
 
     let { segments = $bindable(['total']), embedded = false }: { segments: string[]; embedded?: boolean } = $props();
 
     let expanded = $state(false);
 
-    const AVAILABLE_SEGMENTS = [
+    // Prefer segments from the loaded config (config.yaml → /config endpoint)
+    // so the picker only shows what the current implementation models. Fall
+    // back to the static SEGMENT_ORDER list if config hasn't initialized yet
+    // (e.g. first render before /config has resolved).
+    const AVAILABLE_SEGMENTS = $derived([
         { id: 'total', label: 'Total' },
-        ...SEGMENT_ORDER.map(id => ({ id, label: getSegmentLabel(id) }))
-    ];
+        ...(segmentsState.segments.length > 0
+            ? segmentsState.segments
+            : SEGMENT_ORDER
+        ).map((id: string) => ({ id, label: getSegmentLabel(id) || id }))
+    ]);
 
     // Display text when collapsed
     let displayText = $derived(

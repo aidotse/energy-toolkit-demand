@@ -57,7 +57,7 @@
 		<div class="flex items-center justify-between px-5 h-14 bg-white border-b border-gray-200">
 			<div class="flex items-center gap-2">
 				<img src="/logo.svg" alt="Logo" class="h-6" />
-				<span class="text-base font-bold text-gray-900">Behovskartan</span>
+				<span class="text-base font-bold text-gray-900">Energy Toolkit</span>
 			</div>
 			<button
 				onclick={closeMenu}

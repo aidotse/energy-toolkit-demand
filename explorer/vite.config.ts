@@ -13,6 +13,11 @@ export default defineConfig({
 	],
 
 	optimizeDeps: {
-		include: ['mapbox-gl']
+		// Pre-bundle these on vite startup. `@inlang/paraglide-sveltekit/internal`
+		// is otherwise discovered on the first request, which invalidates already-
+		// loaded chunks mid-hydration and crashes the page with a svelte internal
+		// "undefined.call()" error. Including it here makes the cold start
+		// deterministic.
+		include: ['mapbox-gl', '@inlang/paraglide-sveltekit/internal']
 	}
 });

@@ -1,0 +1,58 @@
+# Example base scenario for the v1.0 toy end-to-end.
+#
+# Declares 2025 annual totals per (region x segment) in GWh/year, the growth
+# trajectory baked into the base scenario, and the growth-parameter variants
+# that the notebook emits as separate parquet files under data/parameters/.
+
+scenario_id: example
+
+# 2025 annual totals per region per segment. Units: GWh/year.
+# Chosen so the four regions are visibly different on the map.
+base_totals:
+  A:
+    housing: 100
+    industry: 50
+    services: 70
+  B:
+    housing: 150
+    industry: 80
+    services: 60
+  C:
+    housing: 80
+    industry: 120
+    services: 90
+  D:
+    housing: 60
+    industry: 200
+    services: 40
+
+# Growth trajectory baked into the base scenario, 2025 -> 2050.
+# NEXT_STEPS requires two segments via generate_linear and one via generate_s_curve.
+base_growth:
+  housing:
+    curve: linear
+    y0: 1.0
+    y1: 1.3
+  industry:
+    curve: linear
+    y0: 1.0
+    y1: 1.1
+  services:
+    curve: s_curve
+    y0: 1.0
+    y1: 1.5
+    steepness: "5y"
+
+# Growth parameter variants. Each variant is a multiplier curve on top of the
+# base. Values match parameters.definitions.{segment}_growth in config.yaml:
+#   index 1 = low,  y1 = 0.5  (-50% by 2050)
+#   index 2 = mid,  y1 = 1.0  ( 0%    by 2050)
+#   index 3 = high, y1 = 2.0  (+100% by 2050)
+# Shape: linear ramp from 1.0 in 2025 to y1 in 2050. Applied uniformly to all
+# three segments; the generator notebook emits one curves.parquet per segment
+# for bookkeeping symmetry with the behovskartan reference.
+growth_parameter:
+  indices:
+    - { index: 1, id: low,  y0: 1.0, y1: 0.5 }
+    - { index: 2, id: mid,  y0: 1.0, y1: 1.0 }
+    - { index: 3, id: high, y0: 1.0, y1: 2.0 }

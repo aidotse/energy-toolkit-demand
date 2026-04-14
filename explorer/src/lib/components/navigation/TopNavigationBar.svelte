@@ -54,7 +54,7 @@
 		<!-- Left: Logo + Brand -->
 		<a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
 			<img src="/logo.svg" alt="Logo" class="h-8" />
-			<span class="text-lg font-bold">Behovskartan 2</span>
+			<span class="text-lg font-bold">Energy Toolkit</span>
 		</a>
 
 		<!-- Center: Navigation Links -->

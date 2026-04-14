@@ -5,6 +5,7 @@ import cors from 'cors';
 import { OpenAPIBackend } from 'openapi-backend';
 import fs from 'fs';
 import path from 'path';
+import { getDataDir } from '../../../paths.js';
 
 // Create a test instance of the server
 let app;
@@ -15,8 +16,12 @@ beforeAll(async () => {
   app = express();
   api = new OpenAPIBackend({ definition: './openapi.yaml' });
 
-  // Make sure data files exist before running tests
-  const dataDir = path.join(process.cwd(), 'data');
+  // getDataDir() walks up to the project root; generate-endpoints.js writes
+  // the static JSON/GeoJSON to that same directory, so this is the only
+  // place the server reads from. Earlier versions of this test used
+  // path.join(process.cwd(), 'data'), which silently resolved to api/data/
+  // and 404'd every endpoint.
+  const dataDir = getDataDir();
   if (!fs.existsSync(dataDir)) {
     throw new Error('Data directory not found. Run npm run build:static-endpoints first.');
   }
@@ -30,7 +35,7 @@ beforeAll(async () => {
   api.register('getGeographies', (c, req, res) => {
     const fmt = (c.request.query.format === 'geojson' ? 'geojson' : 'json');
     const filename = `geographies.${fmt}`;
-    const filepath = path.join(process.cwd(), 'data', filename);
+    const filepath = path.join(dataDir, filename);
 
     if (!fs.existsSync(filepath)) {
       return res.status(404).json({ error: 'Not found' });
@@ -47,7 +52,7 @@ beforeAll(async () => {
   staticOps.forEach((op) => {
     api.register(op, (c, req, res) => {
       const base = op.replace(/^get/, '').toLowerCase();
-      const filepath = path.join(process.cwd(), 'data', `${base}.json`);
+      const filepath = path.join(dataDir, `${base}.json`);
       if (!fs.existsSync(filepath)) {
         return res.status(404).json({ error: 'Not found' });
       }
@@ -118,7 +123,7 @@ describe('API Server Integration Tests', () => {
 
     test('should handle 404 for missing files gracefully', async () => {
       // Temporarily rename the file to test 404
-      const jsonPath = path.join(process.cwd(), 'data', 'geographies.json');
+      const jsonPath = path.join(getDataDir(), 'geographies.json');
       const backupPath = `${jsonPath}.bak`;
 
       if (fs.existsSync(jsonPath)) {

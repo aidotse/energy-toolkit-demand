@@ -318,13 +318,18 @@ function getSegments() {
   const configPath = path.join(dataDir, 'config.json');
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (config.segments) {
+    // config.segment.values[] is the shape emitted by endpoint-config.js.
+    // Accept the legacy top-level config.segments too for backwards compat.
+    if (Array.isArray(config.segment?.values)) {
+      _cachedSegments = config.segment.values.map((s) => s.name);
+      return _cachedSegments;
+    }
+    if (Array.isArray(config.segments)) {
       _cachedSegments = config.segments;
       return _cachedSegments;
     }
   }
-  _cachedSegments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
-  return _cachedSegments;
+  throw new Error('Unable to resolve segment list from config.json');
 }
 
 /* Query builders imported from ./query-builder.js */

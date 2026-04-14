@@ -56,7 +56,7 @@ function createViewStore() {
 
 		/** Look up geography display name from pageData */
 		get geographyName(): string {
-			if (geography === 'total' || geography === '00') return 'Sverige';
+			if (geography === 'total' || geography === '00') return 'Total';
 			const geos = (pageData as any)?.geographies || [];
 			const geo = geos.find((g: any) => g.geo_id === geography || g.id === geography);
 			return geo?.geo_name || geo?.name || geography;

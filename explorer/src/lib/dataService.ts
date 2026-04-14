@@ -15,6 +15,7 @@ import type {
 	ParameterValues
 } from '../types/api';
 import { unitsState } from './stores/units.svelte';
+import { segmentsState } from './stores/segments.svelte';
 
 /**
  * Result type for fetch operations that may fail
@@ -222,6 +223,14 @@ export const fetchConfig = async (customFetch?: typeof fetch): Promise<FetchResu
 		// Initialize units store with loaded configuration
 		if (config.units) {
 			unitsState.initialize(config.units);
+		}
+		// Initialize segments store from the nested config.segment.values[] shape
+		// emitted by api/scripts/endpoints/endpoint-config.js.
+		const segmentValues = (config as any).segment?.values;
+		if (Array.isArray(segmentValues)) {
+			segmentsState.initialize(
+				segmentValues.map((v: { name: string }) => v.name)
+			);
 		}
 		return { data: config };
 	} catch (error) {

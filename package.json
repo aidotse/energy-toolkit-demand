@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "energy-toolkit-demand",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0",
   "description": "Open framework for generating, serving, and visualizing energy demand forecasts",
   "workspaces": [
     "api",

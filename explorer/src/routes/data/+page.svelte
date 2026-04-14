@@ -63,8 +63,8 @@
 </script>
 
 <svelte:head>
-	<title>Data & API — Behovskartan</title>
-	<meta name="description" content="Tillgång till data och information om hur du använder vårt API" />
+	<title>Data & API — Energy Toolkit</title>
+	<meta name="description" content="Access to the data and information on how to use the API" />
 </svelte:head>
 
 <PageContainer maxWidth="max-w-5xl">

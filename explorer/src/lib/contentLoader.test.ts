@@ -21,9 +21,9 @@ describe('contentLoader', () => {
 
 	describe('loadContent', () => {
 		it(
-			'should load Swedish page content file with frontmatter',
+			'should load a page content file with frontmatter',
 			async () => {
-				const content = await loadContent('sv', 'pages/about');
+				const content = await loadContent('en', 'pages/about');
 
 				expect(content).not.toBeNull();
 				expect(content?.default).toBeDefined();
@@ -33,9 +33,9 @@ describe('contentLoader', () => {
 		);
 
 		it(
-			'should load Swedish report content file with frontmatter',
+			'should load a report content file with frontmatter',
 			async () => {
-				const content = await loadContent('sv', 'reports/methodology');
+				const content = await loadContent('en', 'reports/methodology');
 
 				expect(content).not.toBeNull();
 				expect(content?.default).toBeDefined();
@@ -47,7 +47,7 @@ describe('contentLoader', () => {
 		it(
 			'should extract frontmatter metadata correctly',
 			async () => {
-				const content = await loadContent('sv', 'pages/about');
+				const content = await loadContent('en', 'pages/about');
 
 				expect(content?.metadata.title).toBeDefined();
 				expect(content?.metadata.description).toBeDefined();
@@ -56,7 +56,7 @@ describe('contentLoader', () => {
 		);
 
 		it('should return null for non-existent content', async () => {
-			const content = await loadContent('sv', 'non-existent-file');
+			const content = await loadContent('en', 'non-existent-file');
 
 			expect(content).toBeNull();
 		});
@@ -65,15 +65,15 @@ describe('contentLoader', () => {
 			'should cache loaded content',
 			async () => {
 				// Load content first time
-				const content1 = await loadContent('sv', 'pages/about');
+				const content1 = await loadContent('en', 'pages/about');
 
 				// Check it's cached
-				const cached = getCachedContent('sv', 'pages/about');
+				const cached = getCachedContent('en', 'pages/about');
 				expect(cached).not.toBeNull();
 				expect(cached).toBe(content1);
 
 				// Load again - should return cached version
-				const content2 = await loadContent('sv', 'pages/about');
+				const content2 = await loadContent('en', 'pages/about');
 				expect(content2).toBe(content1);
 			},
 			LOAD_TIMEOUT
@@ -82,14 +82,14 @@ describe('contentLoader', () => {
 
 	describe('getCachedContent', () => {
 		it('should return null for uncached content', () => {
-			const cached = getCachedContent('sv', 'pages/about');
+			const cached = getCachedContent('en', 'pages/about');
 			expect(cached).toBeNull();
 		});
 
 		it('should return cached content after loading', async () => {
-			await loadContent('sv', 'pages/about');
+			await loadContent('en', 'pages/about');
 
-			const cached = getCachedContent('sv', 'pages/about');
+			const cached = getCachedContent('en', 'pages/about');
 			expect(cached).not.toBeNull();
 		});
 	});
@@ -97,19 +97,19 @@ describe('contentLoader', () => {
 	describe('clearContentCache', () => {
 		it('should clear all cached content', async () => {
 			// Load some content
-			await loadContent('sv', 'pages/about');
-			await loadContent('sv', 'reports/methodology');
+			await loadContent('en', 'pages/about');
+			await loadContent('en', 'reports/methodology');
 
 			// Verify it's cached
-			expect(getCachedContent('sv', 'pages/about')).not.toBeNull();
-			expect(getCachedContent('sv', 'reports/methodology')).not.toBeNull();
+			expect(getCachedContent('en', 'pages/about')).not.toBeNull();
+			expect(getCachedContent('en', 'reports/methodology')).not.toBeNull();
 
 			// Clear cache
 			clearContentCache();
 
 			// Verify it's gone
-			expect(getCachedContent('sv', 'pages/about')).toBeNull();
-			expect(getCachedContent('sv', 'reports/methodology')).toBeNull();
+			expect(getCachedContent('en', 'pages/about')).toBeNull();
+			expect(getCachedContent('en', 'reports/methodology')).toBeNull();
 		});
 	});
 
@@ -118,8 +118,8 @@ describe('contentLoader', () => {
 		// Svelte components via `::Component{}` syntax fail to load in the test
 		// browser because the preprocessor-resolved components are not wired up.
 		const testCases: Array<{ locale: Locale; slug: string }> = [
-			{ locale: 'sv', slug: 'pages/about' },
-			{ locale: 'sv', slug: 'pages/data' }
+			{ locale: 'en', slug: 'pages/about' },
+			{ locale: 'en', slug: 'pages/data' }
 		];
 
 		testCases.forEach(({ locale, slug }) => {
@@ -140,7 +140,7 @@ describe('contentLoader', () => {
 			const slugs = ['pages/about', 'pages/data'];
 
 			for (const slug of slugs) {
-				const content = await loadContent('sv', slug);
+				const content = await loadContent('en', slug);
 
 				// Required fields present across all content
 				expect(content?.metadata.title).toBeDefined();

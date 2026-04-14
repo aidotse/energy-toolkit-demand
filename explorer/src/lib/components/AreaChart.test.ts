@@ -45,8 +45,9 @@ describe('AreaChart', () => {
 			}
 		});
 
-		// Title should show "Årlig energi" for sum aggregation
-		const titles = screen.getAllByText(/Årlig energi/i);
+		// Title should show the yearly chart title for sum aggregation
+		// ("Yearly energy ..." in the en source language).
+		const titles = screen.getAllByText(/yearly energy/i);
 		expect(titles.length).toBeGreaterThan(0);
 	});
 
@@ -89,8 +90,8 @@ describe('AreaChart', () => {
 			}
 		});
 
-		// Title should reflect mean aggregation
-		const titles = screen.getAllByText(/medeleffekt/i);
+		// Title should reflect mean aggregation (measure_mean_power = "mean power")
+		const titles = screen.getAllByText(/mean power/i);
 		expect(titles.length).toBeGreaterThan(0);
 	});
 
@@ -104,8 +105,8 @@ describe('AreaChart', () => {
 			}
 		});
 
-		// Title should reflect max aggregation
-		const titles = screen.getAllByText(/maxeffekt/i);
+		// Title should reflect max aggregation (measure_max_power = "max power")
+		const titles = screen.getAllByText(/max power/i);
 		expect(titles.length).toBeGreaterThan(0);
 	});
 

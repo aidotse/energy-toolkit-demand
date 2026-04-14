@@ -268,7 +268,7 @@
     }
 
     onMount(() => {
-        // When fadeLeft is active, shift Sweden right so it renders
+        // When fadeLeft is active, shift the default view right so it renders
         // in the visible (non-masked) portion of the container.
         if (fadeLeft) {
             fadeLeftPad = Math.round(mapContainer.clientWidth * 0.45);
@@ -437,7 +437,7 @@
         if (!mapLoaded || !map || !mergedData) return;
 
         if (geography === 'total') {
-            // Reset to Sweden view instead of fixed center/zoom
+            // Reset to the configured default view instead of fixed center/zoom
             map.fitBounds(DEFAULT_MAP_BOUNDS, {
                 ...FIT_BOUNDS_OPTIONS,
                 padding: getFitPadding(),
@@ -484,16 +484,14 @@
         : ''}
     ></div>
     {#if !mapReady}
-        <!-- Placeholder: a pre-rendered PNG of the mapbox style at the default
-             Sweden view. Users see a styled map from the first frame instead
-             of a flat rectangle; the fade-out to the real interactive map is
-             visually near-imperceptible because the image matches the default
-             view. Regenerate with `npm run fetch-map-snapshot` if the style
-             URL changes. The bg-slate-100 fallback covers the gap if the PNG
-             is ever missing. -->
+        <!-- Placeholder fill while mapbox-gl loads and the first choropleth
+             data renders. A full pre-rendered PNG of the implementation's
+             default view can be dropped at /data/map-snapshot.png (generate
+             via `npm run fetch-map-snapshot` in behovskartan's reference
+             explorer) to replace the flat fill, but a neutral colour works
+             fine as a default for the template. -->
         <div
-            class="absolute inset-0 pointer-events-none bg-slate-100 bg-cover bg-center"
-            style="background-image: url(/data/map-snapshot.png)"
+            class="absolute inset-0 pointer-events-none bg-slate-100"
             out:fade={{ duration: 350 }}
         ></div>
     {/if}
