@@ -234,7 +234,7 @@
 >
 	<!-- Header with title and export menu -->
 	{#if title || exportable || headerControls}
-		<div class="chart-header flex items-center justify-between gap-4 mb-3">
+		<div class="chart-header flex flex-col @sm:flex-row @sm:items-center @sm:justify-between gap-2 @sm:gap-4 mb-3">
 			<div class="flex-1 min-w-0">
 				{#if title}
 					<h3 class="text-sm font-medium text-gray-900 flex-shrink-0">

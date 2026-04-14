@@ -325,6 +325,24 @@ export const fetchGeographies = async (
 	format: 'json' | 'geojson' = 'json',
 	customFetch?: typeof fetch
 ): Promise<FetchResult<GeoJsonFeatureCollection | unknown[]>> => {
+	// The geojson ships as a static asset in explorer/static/data/ so it's served
+	// from the same CloudFront distribution as the rest of the site — no API
+	// round-trip, no DuckDB spin-up, global edge cache. Try the static path
+	// first and fall back to the API handler if the file is missing (which
+	// happens in local dev with a fresh clone before the first build).
+	if (format === 'geojson') {
+		try {
+			const staticFetch = customFetch || fetch;
+			const res = await staticFetch('/data/geographies.geojson');
+			if (res.ok) {
+				const geojson = (await res.json()) as GeoJsonFeatureCollection;
+				return { data: geojson };
+			}
+		} catch {
+			// Fall through to API fetch below
+		}
+	}
+
 	try {
 		const geographies = (await fetchJSON(
 			`${API_BASE_URL}/geographies?format=${format}`,

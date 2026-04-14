@@ -187,7 +187,7 @@
 			parameterStore.parameterValues,
 			parameterStore.getParameter.bind(parameterStore)
 		);
-		return CHART_DESCRIPTIONS[chartId]?.(params.year || 2030, geo, seg, suffix) || '';
+		return CHART_DESCRIPTIONS[chartId]?.(params.year || 2050, geo, seg, suffix) || '';
 	}
 
 	// Filter toggle button helpers
@@ -414,7 +414,7 @@
 									<Map
 										geojsonData={geojson}
 										yearData={geoData}
-										year={getEffectiveParams(CHART_IDS.MAP).year || 2030}
+										year={getEffectiveParams(CHART_IDS.MAP).year || 2050}
 										geography={getEffectiveParams(CHART_IDS.MAP).geography}
 										scenario={scenario}
 										lower_bound={(globals as any)?.bounds?.map_yearly_geography?.lower_bound || (globals as any)?.lower_bound || 0}
@@ -576,7 +576,7 @@
 					<div class="bg-white rounded-xl shadow-sm p-6">
 					<LazyChart height="350px">
 								<GeoBarChart
-									year={getEffectiveParams(CHART_IDS.GEO_BAR).year || 2030}
+									year={getEffectiveParams(CHART_IDS.GEO_BAR).year || 2050}
 									segment={getActiveSegment(CHART_IDS.GEO_BAR)}
 									parameterData={{ geographies: geographiesMeta }}
 									baseScenarioOverride={getEffectiveParams(CHART_IDS.GEO_BAR).scenarioId}

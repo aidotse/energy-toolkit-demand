@@ -73,7 +73,7 @@
 
 	// svelte-ignore state_referenced_locally
 	let aggregation = $state(aggregationInit);
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let dataByScenario = $state<Record<string, any[]>>({});
 	let hoveredScenarioId = $state<string | null>(null);
@@ -325,7 +325,7 @@
                     y="data"
                     anchor="right"
                     contained={false}
-                    class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+                    class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-1.5 py-0.5 border border-chart-900 rounded whitespace-nowrap"
                     let:data
                 >
                     {formatNumber(y(data ?? defaultTooltipData), getEnergyPrefix(), 'Wh')}
@@ -334,7 +334,7 @@
                     x="data"
                     y={height}
                     anchor="top"
-                    class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-2 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+                    class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-2 py-0.5 border border-chart-900 rounded whitespace-nowrap"
                     contained={false}
                     let:data
                 >
@@ -397,7 +397,7 @@
 					x="data"
 					y={height}
 					anchor="top"
-					class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-2 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+					class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-2 py-0.5 border border-chart-900 rounded whitespace-nowrap"
 					contained={false}
 				>
 					{x(data)}
@@ -412,7 +412,7 @@
 							y={y({ [scenarioId]: value })}
 							anchor="right"
 							contained={false}
-							class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+							class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-1.5 py-0.5 border border-chart-900 rounded whitespace-nowrap"
 						>
 							{scenario.name}: {formatNumber(value, getEnergyPrefix(), 'Wh')}
 						</Tooltip.Root>

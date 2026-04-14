@@ -151,8 +151,12 @@ node_modules
 /build
 output
 
-# Data (generated parquet/JSON files shared between generator and API)
-data/
+# Data (generated parquet/JSON files shared between generator and API).
+# Ignore the root /data/ and api/data/ (big, generated). Small static assets
+# committed into explorer/static/data/ (geographies.geojson, map-snapshot.png,
+# load-profiles.json) are tracked and intentionally not listed here.
+/data/
+/api/data/
 
 # OS
 .DS_Store

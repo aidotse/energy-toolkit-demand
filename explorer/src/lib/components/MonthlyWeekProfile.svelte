@@ -79,7 +79,7 @@
 	);
 
 	// State
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let profileData = $state<WeekProfilePoint[]>([]);
 	let dataByScenario = $state<Record<string, AggregatedWeekProfilePoint[]>>({});

@@ -17,6 +17,13 @@
 	let timeSeriesData = $state<Array<{ period: Date; value: number }>>([]);
 	let peakPower = $state(0);
 
+	// Loading state: true until BOTH the time-series and hourly-peak fetches
+	// have resolved at least once. After that, filter changes re-fetch without
+	// flashing the skeleton — the stale numbers stay visible while new data loads.
+	let timeSeriesLoaded = $state(false);
+	let peakLoaded = $state(false);
+	const loading = $derived(!(timeSeriesLoaded && peakLoaded));
+
 	let totalEnergy2025 = $derived(
 		timeSeriesData.find((d) => d.period.getFullYear() === 2025)?.value || 0
 	);
@@ -80,6 +87,7 @@
 					(a, b) => a.period.getTime() - b.period.getTime()
 				);
 			}
+			timeSeriesLoaded = true;
 		});
 	});
 
@@ -117,6 +125,7 @@
 				}
 				peakPower = Math.max(0, ...byHour.values());
 			}
+			peakLoaded = true;
 		});
 	});
 
@@ -177,6 +186,7 @@
 		trend={growthRate >= 0 ? 'up' : 'down'}
 		trendLabel={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}% sedan 2025`}
 		{filterText}
+		{loading}
 	/>
 	<MetricCard
 		value={`${growthRate >= 0 ? '+' : ''}${Math.round(growthRate)}%`}
@@ -186,6 +196,7 @@
 		trend={growthRate >= 0 ? 'up' : 'down'}
 		trendLabel="Elektrifiering driver"
 		{filterText}
+		{loading}
 	/>
 	<MetricCard
 		value={formatPower(peakPower)}
@@ -195,5 +206,6 @@
 		trend="up"
 		trendLabel="Baserat på timdata"
 		{filterText}
+		{loading}
 	/>
 </div>

@@ -80,8 +80,8 @@
 				: baseScenario !== defaultScenarioId || hasParameterOverrides)
 	);
 
-	let leftLoading = $state(false);
-	let rightLoading = $state(false);
+	let leftLoading = $state(true);
+	let rightLoading = $state(true);
 	let error = $state<string | null>(null);
 	// Left pie: default scenario reference (only populated in comparison mode)
 	let leftRawData = $state<any[]>([]);

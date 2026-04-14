@@ -63,7 +63,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let fetchedYearData = $state<any[]>([]);
 	let dataByScenario = $state<Record<string, any[]>>({});
@@ -102,6 +102,9 @@
 	$effect(() => {
 		if (normalizedScenarios.length > 0 && year !== undefined) {
 			fetchGeoData();
+		} else {
+			// No fetch possible — release the skeleton so empty/error states can render.
+			loading = false;
 		}
 	});
 

@@ -65,7 +65,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let hourData = $state<any[]>([]);
 	let dataByScenario = $state<Record<string, any[]>>({});
@@ -103,6 +103,7 @@
 	$effect(() => {
 		if (hourDataProp && hourDataProp.length > 0) {
 			hourData = hourDataProp;
+			loading = false;
 			return;
 		}
 		// Only fetch if no prop data provided
@@ -110,6 +111,9 @@
 		if (normalizedScenarios.length > 0 && geography && year && aggregation && baseScenario) {
 			const _params = parameterValues;
 			fetchHistogramData();
+		} else {
+			// No fetch possible — release the skeleton so empty/error states can render.
+			loading = false;
 		}
 	});
 
@@ -329,7 +333,8 @@
 		},
 		tooltip: {
 			header: {
-				format: (v: any) => formatPowerRounded(v)
+				format: (v: any) => formatPowerRounded(v),
+				class: 'font-semibold text-gray-900'
 			},
 			root: {
 				variant: 'none',

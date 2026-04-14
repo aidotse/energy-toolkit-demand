@@ -75,7 +75,7 @@
 		return segment.split(',').map(s => s.trim()).filter(s => (SEGMENT_ORDER as readonly string[]).includes(s));
 	});
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let fetchedData = $state<any[]>([]);
 	let dataByScenario = $state<Record<string, any[]>>({});

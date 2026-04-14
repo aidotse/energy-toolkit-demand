@@ -10,8 +10,9 @@
 	 */
 	import Map from '$lib/components/map/Map.svelte';
 	import { MapIcon, FileText } from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
 	import { viewStore } from '$lib/stores/viewStore.svelte';
-	import { loadLocalizedContent } from '$lib/contentLoader';
+	import { loadLocalizedContentSync } from '$lib/contentLoader';
 	import type { ContentFile } from '$lib/contentLoader';
 	import type { PageData } from './$types';
 
@@ -40,11 +41,10 @@
 	$effect(() => { viewStore.segment = segments; });
 	$effect(() => { viewStore.pageData = data; });
 
-	// Load markdown content
-	let content = $state<ContentFile | null>(null);
-	$effect(() => {
-		loadLocalizedContent('pages/home').then((r) => (content = r));
-	});
+	// Load markdown content. Synchronous because contentLoader uses an eager
+	// glob import — the modules are in memory at bundle time, so there's no
+	// microtask gap where the skeleton would be visible.
+	const content: ContentFile | null = loadLocalizedContentSync('pages/home');
 
 	// Mobile panel toggle
 	let showMap = $state(false);
@@ -103,18 +103,35 @@
 					</div>
 				</div>
 				{#if content}
-					<h1 class="text-2xl font-bold text-gray-900 mt-4 mb-3">
-						{content.metadata.title}
-					</h1>
-					<p class="text-sm text-gray-600">
-						{content.metadata.description}
-					</p>
+					<div in:fade={{ duration: 200 }}>
+						<h1 class="text-2xl font-bold text-gray-900 mt-4 mb-3">
+							{content.metadata.title}
+						</h1>
+						<p class="text-sm text-gray-600">
+							{content.metadata.description}
+						</p>
+					</div>
+				{:else}
+					<div class="mt-4 mb-3 space-y-3 animate-pulse" aria-hidden="true">
+						<div class="h-7 bg-gray-200 rounded w-5/6"></div>
+						<div class="h-4 bg-gray-200 rounded w-full"></div>
+						<div class="h-4 bg-gray-200 rounded w-4/5"></div>
+					</div>
 				{/if}
 			</div>
 
 			{#if content}
 				{@const ContentComponent = content.default}
-				<ContentComponent />
+				<div in:fade={{ duration: 200 }}>
+					<ContentComponent />
+				</div>
+			{:else}
+				<div class="min-h-[60vh] space-y-6 animate-pulse" aria-hidden="true">
+					<div class="h-3 bg-gray-200 rounded w-full"></div>
+					<div class="h-3 bg-gray-200 rounded w-11/12"></div>
+					<div class="h-3 bg-gray-200 rounded w-10/12"></div>
+					<div class="h-48 bg-gray-100 rounded-lg mt-6"></div>
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -215,19 +232,46 @@
 					</div>
 				</div>
 				{#if content}
-					<h1 class="text-3xl font-bold text-gray-900 mt-10 mb-6">
-						{content.metadata.title}
-					</h1>
-					<p class="text-base text-gray-600">
-						{content.metadata.description}
-					</p>
+					<div in:fade={{ duration: 200 }}>
+						<h1 class="text-3xl font-bold text-gray-900 mt-10 mb-6">
+							{content.metadata.title}
+						</h1>
+						<p class="text-base text-gray-600">
+							{content.metadata.description}
+						</p>
+					</div>
+				{:else}
+					<div class="mt-10 mb-6 space-y-4 animate-pulse" aria-hidden="true">
+						<div class="h-10 bg-gray-200 rounded w-4/5"></div>
+						<div class="h-5 bg-gray-200 rounded w-full"></div>
+						<div class="h-5 bg-gray-200 rounded w-5/6"></div>
+					</div>
 				{/if}
 			</div>
 
 			<!-- Content from home.md (metrics, charts, text, InsightBox) -->
 			{#if content}
 				{@const ContentComponent = content.default}
-				<ContentComponent />
+				<div in:fade={{ duration: 200 }}>
+					<ContentComponent />
+				</div>
+			{:else}
+				<div class="min-h-[70vh] space-y-6 animate-pulse" aria-hidden="true">
+					<!-- Metrics row placeholder -->
+					<div class="grid grid-cols-3 gap-4">
+						<div class="h-28 bg-gray-100 rounded-xl"></div>
+						<div class="h-28 bg-gray-100 rounded-xl"></div>
+						<div class="h-28 bg-gray-100 rounded-xl"></div>
+					</div>
+					<!-- Text block placeholder -->
+					<div class="space-y-3">
+						<div class="h-4 bg-gray-200 rounded w-full"></div>
+						<div class="h-4 bg-gray-200 rounded w-11/12"></div>
+						<div class="h-4 bg-gray-200 rounded w-10/12"></div>
+					</div>
+					<!-- Chart placeholder -->
+					<div class="h-80 bg-gray-100 rounded-lg"></div>
+				</div>
 			{/if}
 
 			</div>

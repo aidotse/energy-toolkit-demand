@@ -74,7 +74,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let heatmapData = $state<PeriodHeatmapCell[]>([]);
 	let dataByScenario = $state<Record<string, PeriodHeatmapCell[]>>({});
@@ -498,20 +498,20 @@
 				<!-- Tooltip -->
 				{#if hoveredCell}
 					<div
-						class="absolute bg-white shadow-lg rounded-lg px-3 py-2 text-sm pointer-events-none z-10 border border-gray-200"
+						class="absolute bg-white/95 shadow-lg rounded px-2 py-1 text-xs pointer-events-none z-10 border border-gray-200 backdrop-blur-sm"
 						style="
 							left: {labelWidth + hoveredCell.periodIndex * cellWidth + cellWidth / 2}px;
 							top: {headerHeight + (hoveredCell.month - 1) * cellHeight - 10}px;
 							transform: translate(-50%, -100%);
 						"
 					>
-						<div class="font-medium text-gray-900">
+						<div class="font-semibold text-gray-900">
 							{hoveredCell.monthName}
 						</div>
 						<div class="text-gray-600">
 							{hoveredCell.periodLabel.replace('\n', ' ')}
 						</div>
-						<div class="font-semibold text-primary mt-1">
+						<div class="font-semibold text-primary">
 							{formatValue(hoveredCell.value)}
 						</div>
 					</div>

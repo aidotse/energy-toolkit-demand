@@ -50,7 +50,7 @@
 	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
 	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let baselinePeak = $state(0);
 	let flexPeak = $state(0);

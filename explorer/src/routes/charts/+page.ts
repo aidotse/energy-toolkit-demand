@@ -16,7 +16,7 @@ const FALLBACK = {
 	geographies: [],
 	geojson: { type: 'FeatureCollection' as const, features: [] },
 	geoData: [],
-	year: 2030,
+	year: 2050,
 	geography: 'total',
 	segment: 'total'
 };
@@ -45,7 +45,7 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 		const geojson = geojsonResult.data;
 
 		// Set initial defaults for controls
-		const year = 2030;
+		const year = 2050;
 		const geography = 'total';
 		const segment = 'total';
 
@@ -89,7 +89,7 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 			geographies: [],
 			geojson: { type: 'FeatureCollection', features: [] },
 			geoData: [],
-			year: 2030,
+			year: 2050,
 			geography: 'total',
 			segment: 'total'
 		};

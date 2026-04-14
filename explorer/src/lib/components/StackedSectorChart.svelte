@@ -61,7 +61,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let rawData = $state<any[]>([]);
 	let dataByScenario = $state<Record<string, any[]>>({});

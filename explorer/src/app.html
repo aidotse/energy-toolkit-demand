@@ -4,6 +4,10 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- Warm DNS + TLS to mapbox while the rest of the page is parsing,
+		     so the base-map style/tiles arrive ~50-200 ms sooner on cold loads. -->
+		<link rel="preconnect" href="https://api.mapbox.com" crossorigin />
+		<link rel="preconnect" href="https://events.mapbox.com" crossorigin />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

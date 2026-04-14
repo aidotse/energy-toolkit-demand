@@ -18,6 +18,7 @@
 		trend,
 		trendLabel,
 		filterText,
+		loading = false,
 		class: className = ''
 	}: {
 		value: string | number;
@@ -27,6 +28,7 @@
 		trend?: 'up' | 'down' | 'neutral';
 		trendLabel?: string;
 		filterText?: string;
+		loading?: boolean;
 		class?: string;
 	} = $props();
 
@@ -59,7 +61,11 @@
 
 	<!-- Main value -->
 	<div class="metric-value text-3xl font-bold text-white mb-0.5">
-		{formattedValue()}
+		{#if loading}
+			<span class="inline-block h-8 w-24 bg-white/20 rounded animate-pulse align-middle" aria-hidden="true"></span>
+		{:else}
+			{formattedValue()}
+		{/if}
 	</div>
 
 	<!-- Label -->

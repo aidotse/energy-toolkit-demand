@@ -53,7 +53,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let fetchedYearData = $state<any[]>([]);
 	let dataByScenario = $state<Record<string, any[]>>({});
@@ -97,6 +97,9 @@
 		if (normalizedScenarios.length > 0 && year && baseScenario) {
 			const _params = parameterValues;
 			fetchSegmentData();
+		} else {
+			// No fetch possible — release the skeleton so empty/error states can render.
+			loading = false;
 		}
 	});
 
@@ -275,10 +278,20 @@
 		normalizedScenarios.length === 1 ? chartData : comparisonSegmentData
 	);
 
-	// Shared tooltip and highlight props (matches Histogram pattern)
-	const tooltipProps = {
+	// Shared tooltip: styled to match SectorPieChart's custom tooltip and
+	// translates the x-axis segment key via getSegmentLabel. In single-scenario
+	// mode we also show the percentage of the year's total.
+	const singleTotal = $derived(
+		chartData.reduce((sum, d) => sum + (d.value || 0), 0)
+	);
+
+	const tooltipProps: any = $derived({
 		highlight: { area: { fill: 'rgba(0,0,0,0.05)' } },
 		tooltip: {
+			header: {
+				format: (v: any) => getSegmentLabel(String(v)),
+				class: 'font-semibold text-gray-900'
+			},
 			root: {
 				variant: 'none' as const,
 				contained: 'window' as const,
@@ -286,10 +299,17 @@
 			},
 			item: {
 				label: '',
-				format: (v: number) => formatNumber(v, getEnergyPrefix(), 'Wh')
+				format: (v: number) => {
+					const energy = formatNumber(v, getEnergyPrefix(), 'Wh');
+					if (singleTotal > 0) {
+						const pct = Math.round((v / singleTotal) * 100);
+						return `${energy} · ${pct}%`;
+					}
+					return energy;
+				}
 			}
 		}
-	};
+	});
 </script>
 
 <ChartContainer

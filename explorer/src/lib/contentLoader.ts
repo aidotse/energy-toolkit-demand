@@ -34,11 +34,24 @@ export interface ContentFile {
 	metadata: ContentMetadata; // Frontmatter from file
 }
 
-// Use Vite's glob import to statically import all content files
-// Eager: false means they're lazy-loaded on demand
-const contentModules = import.meta.glob('../content/**/*.{md,svx}', { eager: false });
+// Vite glob import with eager:true — all content modules are bundled at build
+// time and inlined into the chunk, so loadContent() becomes a synchronous map
+// lookup. On prerendered pages (home, reports, etc.) the content is in the
+// initial HTML from the first byte, eliminating the async-fetch gap that
+// Phase 2c's title/content skeletons were there to hide.
+//
+// Trade-off: every .md/.svx file ships in the main bundle even if some pages
+// never get visited. The content tree is small enough (~handful of markdown
+// files) that the size hit is negligible. If it grows, narrow the glob to
+// pages/ only and keep reports/ lazy.
+const contentModules = import.meta.glob('../content/**/*.{md,svx}', { eager: true }) as Record<
+	string,
+	any
+>;
 
-// In-memory cache for loaded content
+// In-memory cache for loaded content. Less critical with eager imports (the
+// modules themselves are already cached by the bundler), but keeps the
+// extractMetadata call from re-running on every request.
 const contentCache = new Map<string, ContentFile>();
 
 /**
@@ -93,25 +106,20 @@ export async function loadContent(locale: Locale, slug: string): Promise<Content
 	const extensions = ['.svx', '.md'];
 
 	for (const ext of extensions) {
-		try {
-			const path = `../content/${locale}/${slug}${ext}`;
-			const importFn = contentModules[path];
+		const path = `../content/${locale}/${slug}${ext}`;
+		const module = contentModules[path];
 
-			if (!importFn) continue;
+		if (!module) continue;
 
-			const module = (await importFn()) as any;
-			const metadata = extractMetadata(module);
+		const metadata = extractMetadata(module);
 
-			const content: ContentFile = {
-				default: module.default,
-				metadata
-			};
+		const content: ContentFile = {
+			default: module.default,
+			metadata
+		};
 
-			contentCache.set(cacheKey, content);
-			return content;
-		} catch (error) {
-			console.error(`Failed to load content: ${locale}/${slug}${ext}`, error);
-		}
+		contentCache.set(cacheKey, content);
+		return content;
 	}
 
 	console.error(`Content file not found: ${locale}/${slug}`);
@@ -142,6 +150,37 @@ export async function loadLocalizedContent(slug: string): Promise<ContentFile | 
 }
 
 /**
+ * Synchronous variant of {@link loadLocalizedContent}. Works because the glob
+ * import is `eager: true`, so every content module is already in memory when
+ * the bundle loads. Prefer this in callers that want the content to render on
+ * the first frame (e.g. the home page) — using the async variant introduces a
+ * microtask gap that briefly shows a loading skeleton.
+ */
+export function loadLocalizedContentSync(slug: string): ContentFile | null {
+	const locale = languageTag() as Locale;
+
+	const tryLoad = (loc: Locale): ContentFile | null => {
+		const cacheKey = `${loc}/${slug}`;
+		if (contentCache.has(cacheKey)) return contentCache.get(cacheKey)!;
+
+		for (const ext of ['.svx', '.md']) {
+			const path = `../content/${loc}/${slug}${ext}`;
+			const module = contentModules[path];
+			if (!module) continue;
+			const content: ContentFile = {
+				default: module.default,
+				metadata: extractMetadata(module)
+			};
+			contentCache.set(cacheKey, content);
+			return content;
+		}
+		return null;
+	};
+
+	return tryLoad(locale) ?? (locale !== 'sv' ? tryLoad('sv') : null);
+}
+
+/**
  * Load all content files for a given locale
  *
  * @param locale - Language locale (sv or en)
@@ -153,22 +192,16 @@ export async function loadAllContent(
 	const prefix = `../content/${locale}/`;
 	const results: Array<{ slug: string; content: ContentFile }> = [];
 
-	for (const [path, importFn] of Object.entries(contentModules)) {
+	for (const [path, module] of Object.entries(contentModules)) {
 		if (!path.startsWith(prefix)) continue;
 
 		// Extract slug: remove prefix and extension
 		const slug = path.slice(prefix.length).replace(/\.(svx|md)$/, '');
-
-		try {
-			const module = (await importFn()) as any;
-			const metadata = extractMetadata(module);
-			results.push({
-				slug,
-				content: { default: module.default, metadata }
-			});
-		} catch (error) {
-			console.error(`Failed to load content: ${path}`, error);
-		}
+		const metadata = extractMetadata(module);
+		results.push({
+			slug,
+			content: { default: module.default, metadata }
+		});
 	}
 
 	return results;

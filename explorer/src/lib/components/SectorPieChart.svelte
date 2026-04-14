@@ -74,8 +74,8 @@
 		parameterValuesOverride?: Record<string, number>;
 	} = $props();
 
-	let leftLoading = $state(false);
-	let rightLoading = $state(false);
+	let leftLoading = $state(true);
+	let rightLoading = $state(true);
 	let error = $state<string | null>(null);
 	let leftRawData = $state<any[]>([]);
 	let rightRawData = $state<any[]>([]);
@@ -588,8 +588,8 @@
 
 	<!-- Tooltip -->
 	{#if hoveredPieIndex === pieIndex && hoveredData && tooltipPosition}
-		{@const tooltipWidth = 170}
-		{@const tooltipHeight = 82}
+		{@const tooltipWidth = 150}
+		{@const tooltipHeight = 66}
 		{@const tooltipX = Math.min(
 			Math.max(tooltipPosition.x - tooltipWidth / 2, 10),
 			490 - tooltipWidth
@@ -610,13 +610,13 @@
 				rx="4"
 			/>
 			<!-- Tooltip content -->
-			<text x="12" y="24" fill={viz.text} style="font-size: 17px; font-weight: 600;">
+			<text x="10" y="18" fill={viz.text} style="font-size: 13px; font-weight: 600;">
 				{hoveredData.displayName}
 			</text>
-			<text x="12" y="46" fill={viz.label} style="font-size: 15px;">
+			<text x="10" y="36" fill={viz.label} style="font-size: 12px;">
 				{Math.round(hoveredData.value / 1000)} TWh
 			</text>
-			<text x="12" y="66" fill={viz.label} style="font-size: 15px;">
+			<text x="10" y="54" fill={viz.label} style="font-size: 12px;">
 				{hoveredData.percentage.toFixed(1)}% av totalt
 			</text>
 		</g>

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { fade } from 'svelte/transition';
     import mapboxgl from 'mapbox-gl';
     import 'mapbox-gl/dist/mapbox-gl.css';
     import * as turf from '@turf/turf';
@@ -23,6 +24,15 @@
     let mapLoaded = $state(false);
     let hoveredFeatureId = $state<string | number | null>(null);
     let fetchedYearData = $state<any[]>([]);
+
+    // Flipped true one frame after source.setData() runs for the first time,
+    // so the overlay doesn't fade out while the map is still rendering an
+    // uncoloured base layer. See the setData effect below.
+    let dataRendered = $state(false);
+
+    // Ready = style loaded AND first choropleth data is actually painted.
+    // Drives the placeholder overlay fade-out.
+    const mapReady = $derived(mapLoaded && dataRendered);
 
     let map: mapboxgl.Map;
     let mapContainer: HTMLDivElement;
@@ -393,6 +403,13 @@
             const source = map?.getSource('counties') as mapboxgl.GeoJSONSource;
             if (source) {
                 source.setData(mergedData);
+                // Wait one paint so the browser draws the coloured features
+                // before we start fading out the overlay. Without this the
+                // overlay starts disappearing while the base tiles are still
+                // uncoloured and it reads as a flicker.
+                if (!dataRendered && mergedData.features?.length > 0) {
+                    requestAnimationFrame(() => { dataRendered = true; });
+                }
             }
 
             if (stickyPopup) {
@@ -444,8 +461,24 @@
     
 </script>
 
-<div bind:this={mapContainer} class="size-full"
-  style={fadeLeft
-    ? 'mask-image: linear-gradient(to right, transparent, black 50%); -webkit-mask-image: linear-gradient(to right, transparent, black 50%);'
-    : ''}
-></div>
+<div class="relative size-full">
+    <div bind:this={mapContainer} class="size-full"
+      style={fadeLeft
+        ? 'mask-image: linear-gradient(to right, transparent, black 50%); -webkit-mask-image: linear-gradient(to right, transparent, black 50%);'
+        : ''}
+    ></div>
+    {#if !mapReady}
+        <!-- Placeholder: a pre-rendered PNG of the mapbox style at the default
+             Sweden view. Users see a styled map from the first frame instead
+             of a flat rectangle; the fade-out to the real interactive map is
+             visually near-imperceptible because the image matches the default
+             view. Regenerate with `npm run fetch-map-snapshot` if the style
+             URL changes. The bg-slate-100 fallback covers the gap if the PNG
+             is ever missing. -->
+        <div
+            class="absolute inset-0 pointer-events-none bg-slate-100 bg-cover bg-center"
+            style="background-image: url(/data/map-snapshot.png)"
+            out:fade={{ duration: 350 }}
+        ></div>
+    {/if}
+</div>

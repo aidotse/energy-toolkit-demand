@@ -359,6 +359,116 @@ async function generateParamYearly(conn, config) {
   return comboCount;
 }
 
+/**
+ * Generate param_monthly.parquet - monthly totals for every parameter combination.
+ * Mirror of generateParamYearly but grouped by (year, month) instead of just year.
+ * Schema: scenario_id, geography, segment, year, month, growth_index, flex_index, total_value
+ */
+async function generateParamMonthly(conn, config) {
+  const baseScenarios = loadBaseScenarios(config);
+  const segments = ['housing', 'transport', 'industry', 'services', 'datacenters'];
+  const definitions = config.parameters.definitions;
+
+  fs.mkdirSync(aggregatedDir, { recursive: true });
+  const outFile = path.join(aggregatedDir, 'param_monthly.parquet');
+
+  await runQuery(conn, `
+    CREATE OR REPLACE TABLE param_monthly_tmp (
+      scenario_id VARCHAR,
+      geography VARCHAR,
+      segment VARCHAR,
+      year VARCHAR,
+      month INTEGER,
+      growth_index INTEGER,
+      flex_index INTEGER,
+      total_value DOUBLE
+    )
+  `);
+
+  let comboCount = 0;
+
+  for (const scenario of baseScenarios) {
+    for (const segment of segments) {
+      const basePath = path.join(baseDir, scenario.id, segment, 'data.parquet');
+      if (!fs.existsSync(basePath)) {
+        console.warn(`  SKIP ${scenario.id}/${segment}: base file not found`);
+        continue;
+      }
+
+      const growthParam = `${segment}_growth`;
+      const flexParam = `${segment}_flex`;
+      const growthDef = definitions[growthParam];
+      const flexDef = definitions[flexParam];
+
+      const maxGrowth = growthDef ? Math.max(...growthDef.values.map(v => v.index)) : 0;
+      const maxFlex = flexDef ? Math.max(...flexDef.values.map(v => v.index)) : 0;
+
+      const growthCurvesPath = path.join(projectRoot, `generator/input/scenarios/${growthParam}/curves.parquet`);
+      const flexCurvesPath = path.join(projectRoot, `generator/input/scenarios/${flexParam}/curves.parquet`);
+      const hasGrowthCurves = fs.existsSync(growthCurvesPath);
+      const hasFlexCurves = fs.existsSync(flexCurvesPath);
+
+      const combos = (maxGrowth + 1) * (maxFlex + 1);
+      console.log(`  ${scenario.id}/${segment}: ${combos} combos (growth 0-${maxGrowth} × flex 0-${maxFlex})`);
+
+      for (let gi = 0; gi <= maxGrowth; gi++) {
+        for (let fi = 0; fi <= maxFlex; fi++) {
+          let selectValue = 'b.value';
+          let fromClause = `read_parquet('${basePath}') b`;
+          const joins = [];
+
+          if (gi > 0 && hasGrowthCurves) {
+            joins.push(`LEFT JOIN (SELECT timestamp, value FROM read_parquet('${growthCurvesPath}') WHERE CAST(index AS INTEGER) = ${gi}) g ON b.timestamp = g.timestamp`);
+            selectValue = `${selectValue} * COALESCE(g.value, 1.0)`;
+          }
+
+          if (fi > 0 && hasFlexCurves) {
+            joins.push(`LEFT JOIN (SELECT timestamp, value FROM read_parquet('${flexCurvesPath}') WHERE CAST(index AS INTEGER) = ${fi}) f ON b.timestamp = f.timestamp`);
+            selectValue = `${selectValue} * COALESCE(f.value, 1.0)`;
+          }
+
+          const sql = `
+            INSERT INTO param_monthly_tmp
+            SELECT
+              '${scenario.id}' AS scenario_id,
+              b.geography,
+              '${segment}' AS segment,
+              CAST(EXTRACT(YEAR FROM b.timestamp) AS VARCHAR) AS year,
+              CAST(EXTRACT(MONTH FROM b.timestamp) AS INTEGER) AS month,
+              ${gi} AS growth_index,
+              ${fi} AS flex_index,
+              SUM(${selectValue}) AS total_value
+            FROM ${fromClause}
+            ${joins.join('\n            ')}
+            GROUP BY b.geography, EXTRACT(YEAR FROM b.timestamp), EXTRACT(MONTH FROM b.timestamp)
+          `;
+
+          await runQuery(conn, sql);
+          comboCount++;
+        }
+      }
+    }
+  }
+
+  await runQuery(conn, `
+    COPY (SELECT * FROM param_monthly_tmp ORDER BY scenario_id, segment, geography, year, month, growth_index, flex_index)
+    TO '${outFile}'
+    (FORMAT PARQUET, COMPRESSION ZSTD)
+  `);
+
+  const stats = await allQuery(conn,
+    `SELECT COUNT(*) as cnt, COUNT(DISTINCT scenario_id) as scenarios,
+            COUNT(DISTINCT segment) as segs, COUNT(DISTINCT geography) as geos
+     FROM read_parquet('${outFile}')`
+  );
+  const s = stats[0];
+  console.log(`  Generated: ${s.cnt} rows (${s.scenarios} scenarios × ${s.geos} geos × ${s.segs} segments, ${comboCount} combos)`);
+
+  await runQuery(conn, 'DROP TABLE IF EXISTS param_monthly_tmp');
+
+  return comboCount;
+}
+
 async function main() {
   console.log('='.repeat(60));
   console.log('Regenerating parameter parquet files');
@@ -394,6 +504,11 @@ async function main() {
     // Step 4: Generate param_yearly aggregated table (all parameter combos)
     console.log('Step 4: Generate param_yearly aggregated table');
     await generateParamYearly(conn, config);
+    console.log('');
+
+    // Step 5: Generate param_monthly aggregated table for 1M resolution queries
+    console.log('Step 5: Generate param_monthly aggregated table');
+    await generateParamMonthly(conn, config);
     console.log('');
 
     console.log('='.repeat(60));

@@ -415,6 +415,143 @@ function buildParamAggregatedQuery(opts) {
 }
 
 /**
+ * Build SQL for the pre-aggregated monthly parameter table (`param_monthly.parquet`).
+ * Mirror of {@link buildParamAggregatedQuery} with `month` added to the grouping
+ * and the period reconstructed via `MAKE_TIMESTAMP(year, month, 1, 0, 0, 0)`.
+ *
+ * Returns null if the parquet is missing, so the caller can fall back to the
+ * raw-scan Strategy 2 path.
+ *
+ * @param {Object} opts
+ * @param {string} opts.baseScenario
+ * @param {string[]} opts.segments
+ * @param {string} opts.geoFilter
+ * @param {string} opts.segFilter
+ * @param {string} opts.start
+ * @param {string} opts.end
+ * @param {Record<string, number>} opts.parameterValues
+ * @param {string} opts.aggregatedDir
+ */
+function buildParamMonthlyAggregatedQuery(opts) {
+  const {
+    baseScenario,
+    segments,
+    geoFilter,
+    segFilter,
+    start,
+    end,
+    parameterValues,
+    aggregatedDir
+  } = opts;
+
+  const safeGeoFilter = sanitizeSqlValue(geoFilter);
+  const safeBaseScenario = sanitizeSqlValue(baseScenario);
+
+  let safeSegFilter;
+  let segFilterList = null;
+  if (segFilter.includes(',')) {
+    segFilterList = segFilter.split(',').map((s) => sanitizeSqlValue(s.trim()));
+    safeSegFilter = segFilterList.join(',');
+  } else {
+    safeSegFilter = sanitizeSqlValue(segFilter);
+  }
+
+  const paramMonthlyPath = safeDataPath(aggregatedDir, 'param_monthly.parquet');
+  if (!fs.existsSync(paramMonthlyPath)) return null;
+
+  const scenarioName = getScenarioName(safeBaseScenario);
+
+  const selectExtras = [];
+  const selectParams = [];
+  // Month grouping is the only structural difference from the yearly version.
+  const groupBy = ['year', 'month'];
+
+  if (safeGeoFilter === 'total') {
+    selectExtras.push("'total' AS geography");
+  } else if (safeGeoFilter === 'all') {
+    selectExtras.push('geography');
+    groupBy.push('geography');
+  } else {
+    selectExtras.push('? AS geography');
+    selectParams.push(safeGeoFilter);
+  }
+
+  if (safeSegFilter === 'total') {
+    selectExtras.push("'total' AS segment");
+  } else if (safeSegFilter === 'all' || segFilterList) {
+    selectExtras.push('segment');
+    groupBy.push('segment');
+  } else {
+    selectExtras.push('? AS segment');
+    selectParams.push(safeSegFilter);
+  }
+
+  const whereParams = [];
+  const wheres = [
+    'CAST(year AS INTEGER) >= ?',
+    'CAST(year AS INTEGER) <= ?',
+    'scenario_id = ?',
+  ];
+  // Inclusive upper bound on the year so a single-year query (e.g. 2030-01 to 2031-01)
+  // still returns all 12 months for that year.
+  whereParams.push(
+    new Date(start).getFullYear(),
+    new Date(end).getFullYear(),
+    scenarioName
+  );
+
+  const segmentConditions = [];
+  for (const segment of segments) {
+    if (safeSegFilter !== 'all' && safeSegFilter !== 'total') {
+      if (segFilterList) {
+        if (!segFilterList.includes(segment)) continue;
+      } else if (safeSegFilter !== segment) {
+        continue;
+      }
+    }
+
+    const growthParam = `${segment}_growth`;
+    const flexParam = `${segment}_flex`;
+    const growthIndex = parameterValues[growthParam] || 0;
+    const flexIndex = parameterValues[flexParam] || 0;
+
+    segmentConditions.push(
+      `(segment = '${sanitizeSqlValue(segment)}' AND growth_index = ? AND flex_index = ?)`
+    );
+    whereParams.push(growthIndex, flexIndex);
+  }
+
+  if (segmentConditions.length === 0) return null;
+
+  wheres.push(`(${segmentConditions.join(' OR ')})`);
+
+  if (safeGeoFilter !== 'all' && safeGeoFilter !== 'total') {
+    wheres.push('geography = ?');
+    whereParams.push(safeGeoFilter);
+  }
+
+  const sql = `
+    SELECT
+      MAKE_TIMESTAMP(CAST(year AS INTEGER), CAST(month AS INTEGER), 1, 0, 0, 0) AS period,
+      ${selectExtras.join(', ')},
+      ? AS scenario_id,
+      SUM(total_value) AS value
+    FROM read_parquet('${paramMonthlyPath}')
+    WHERE ${wheres.join(' AND ')}
+    GROUP BY ${groupBy.join(', ')}
+    ORDER BY period
+  `;
+
+  const params = [
+    ...selectParams,
+    safeBaseScenario,
+    ...whereParams,
+  ];
+
+  return { sql, params };
+}
+
+/**
  * Build SQL for the baseline pre-aggregated yearly tables (no parameters).
  * Picks the right `national_yearly` / `geography_yearly` / `segment_yearly`
  * / `geo_segment_yearly` parquet depending on filter shape — the caller
@@ -526,6 +663,7 @@ export {
   safeDataPath,
   buildStrategy2Query,
   buildParamAggregatedQuery,
+  buildParamMonthlyAggregatedQuery,
   buildBaselineAggregatedQuery,
   getScenarioName
 };

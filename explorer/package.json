@@ -7,6 +7,7 @@
 		"dev": "vite dev --host",
 		"dev:api": "vite dev --mode production",
 		"build": "vite build",
+		"fetch-map-snapshot": "node scripts/fetch-map-snapshot.js",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

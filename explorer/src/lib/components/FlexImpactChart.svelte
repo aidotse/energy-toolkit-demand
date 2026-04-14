@@ -54,7 +54,7 @@
 	const baseScenario = $derived(baseScenarioOverride || parameterStore.baseScenario);
 	const parameterValues = $derived(parameterValuesOverride || parameterStore.parameterValues);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let durationData = $state<{ rank: number; baseline: number; flex: number }[]>([]);
 	let baselinePeak = $state(0);
@@ -201,7 +201,7 @@
 					x="data"
 					y={height}
 					anchor="top"
-					class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-2 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+					class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-2 py-0.5 border border-chart-900 rounded whitespace-nowrap"
 					contained={false}
 				>
 					{x(data)}h
@@ -215,7 +215,7 @@
 							y={y({ [key]: value })}
 							anchor="right"
 							contained={false}
-							class="text-[10px] font-semibold text-white bg-chart-900 mt-[2px] px-1 py-[2px] border border-chart-900 rounded whitespace-nowrap"
+							class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-1.5 py-0.5 border border-chart-900 rounded whitespace-nowrap"
 						>
 							{SERIES_LABELS[key]}: {formatNumber(value, getPowerPrefix(), 'W')}
 						</Tooltip.Root>

@@ -42,6 +42,7 @@ import {
   safeDataPath,
   buildStrategy2Query,
   buildParamAggregatedQuery,
+  buildParamMonthlyAggregatedQuery,
   buildBaselineAggregatedQuery,
   getScenarioName,
 } from './query-builder.js';
@@ -423,6 +424,7 @@ api.register('getDemand', async (c, req, res) => {
     // Try aggregated tables for yearly resolution queries
     const hasNonZeroParams = Object.values(parameterValues).some(v => v > 0);
     const canUseAggregated = resolution === '1Y' && fs.existsSync(aggregatedDir);
+    const canUseMonthlyAggregated = resolution === '1M' && fs.existsSync(aggregatedDir);
 
     // `preparedQuery` is `{ sql, params }` — a parameterized statement body.
     let preparedQuery;
@@ -436,6 +438,18 @@ api.register('getDemand', async (c, req, res) => {
       if (preparedQuery) {
         debugLog('📊 Using param-aware aggregated tables');
         req.queryPath = 'param_yearly';
+      }
+    }
+
+    if (!preparedQuery && canUseMonthlyAggregated && hasNonZeroParams) {
+      // Parameter-aware monthly aggregated query (param_monthly.parquet)
+      const segments = getSegments();
+      preparedQuery = buildParamMonthlyAggregatedQuery({
+        baseScenario, segments, geoFilter, segFilter, start, end, parameterValues, aggregatedDir
+      });
+      if (preparedQuery) {
+        debugLog('📊 Using param-aware monthly aggregated table');
+        req.queryPath = 'param_monthly';
       }
     }
 

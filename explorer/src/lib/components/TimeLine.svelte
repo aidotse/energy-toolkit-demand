@@ -95,7 +95,7 @@
 			: assignScenarioColors(getNormalizedScenarios(currentScenario ?? undefined, scenariosProp))
 	);
 
-	let loading = $state(false);
+	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let dataByScenario = $state<Record<string, any[]>>({});
 
@@ -277,11 +277,15 @@
 	$effect(() => {
 		if (dayDataProp && dayDataProp.length > 0) {
 			rawData = dayDataProp;
+			loading = false;
 			return;
 		}
 		if (normalizedScenarios.length > 0 && resolvedGeographies.length > 0 && year && resolution && resolvedSegments.length > 0 && baseScenario) {
 			const _params = parameterValues;
 			fetchTimelineData();
+		} else {
+			// No fetch possible (missing deps or explicit empty prop) — release the skeleton.
+			loading = false;
 		}
 	});
 
@@ -415,7 +419,8 @@
 				class: 'text-xs py-1 px-2 rounded shadow-lg bg-white/95 border border-gray-200 backdrop-blur-sm'
 			},
 			header: {
-				format: (v: any) => formatTimestamp(v)
+				format: (v: any) => formatTimestamp(v),
+				class: 'font-semibold text-gray-900'
 			},
 			item: {
 				format: (v: number) => '\u00A0' + formatNumber(v, getPowerPrefix(), 'W')
