@@ -9,12 +9,12 @@
     import { formatNumber, makeDemandQuery } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
     import { fetchDemandData, mergeGeoData } from '$lib/dataService';
-    import { SWEDEN_BOUNDS, FIT_BOUNDS_OPTIONS } from '$lib/mapConfig';
+    import { DEFAULT_MAP_BOUNDS, FIT_BOUNDS_OPTIONS } from '$lib/mapConfig';
     import { scenarioState } from '$lib/stores/scenario.svelte';
     import { parameterStore } from '$lib/stores/parameterStore.svelte';
     import { viz } from '$lib/colors';
 
-    const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE_LIGHT || 'mapbox://styles/viktorbengtsson/cm34o762h00a801o09g4q99uq';
+    const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE_LIGHT || 'mapbox://styles/mapbox/light-v11';
 
     let { geojsonData, yearData: yearDataProp, year, geography = $bindable(), scenario, lower_bound, upper_bound, segments = ['total'], fadeLeft = false } = $props();
 
@@ -278,7 +278,7 @@
                 if (newPad !== fadeLeftPad) {
                     fadeLeftPad = newPad;
                     if (map && mapLoaded && geography === 'total') {
-                        map.fitBounds(SWEDEN_BOUNDS, {
+                        map.fitBounds(DEFAULT_MAP_BOUNDS, {
                             ...FIT_BOUNDS_OPTIONS,
                             padding: getFitPadding(),
                             duration: 0
@@ -293,7 +293,7 @@
             container: mapContainer,
             accessToken: import.meta.env.VITE_MAPBOX_TOKEN,
             style: MAPBOX_STYLE,
-            bounds: SWEDEN_BOUNDS,
+            bounds: DEFAULT_MAP_BOUNDS,
             fitBoundsOptions: { ...FIT_BOUNDS_OPTIONS, padding: getFitPadding() },
             attributionControl: false // Hide Mapbox logo and info button
         });
@@ -438,7 +438,7 @@
 
         if (geography === 'total') {
             // Reset to Sweden view instead of fixed center/zoom
-            map.fitBounds(SWEDEN_BOUNDS, {
+            map.fitBounds(DEFAULT_MAP_BOUNDS, {
                 ...FIT_BOUNDS_OPTIONS,
                 padding: getFitPadding(),
                 duration: 1000
