@@ -4,7 +4,7 @@
     import mapboxgl from 'mapbox-gl';
     import 'mapbox-gl/dist/mapbox-gl.css';
     import * as turf from '@turf/turf';
-    import { mount } from 'svelte';
+    import { mount, unmount } from 'svelte';
     import Popup from '$lib/components/map/Popup.svelte';
     import { formatNumber, makeDemandQuery } from '$lib/utilities';
     import { getEnergyPrefix } from '$lib/stores/units.svelte';
@@ -205,6 +205,12 @@
         return { ...geojsonData, features: updatedFeatures };
     });
 
+    // Tracks the currently-mounted Popup Svelte instance so we can unmount()
+    // it before creating a new one (or on component destroy). Without this,
+    // every call to createPopupContent leaks a Svelte component that mapbox
+    // has already detached from the DOM.
+    let popupInstance: ReturnType<typeof mount> | null = null;
+
     // Create popup content
     const createPopupContent = (properties: any, sticky: boolean) => {
         const geoName = properties.geo_name;
@@ -212,15 +218,21 @@
         const year = properties.year;
         const demand = formatNumber(properties.total, getEnergyPrefix(), 'Wh');
 
+        // Unmount the previous popup component before mounting a new one.
+        if (popupInstance) {
+            try { unmount(popupInstance); } catch { /* already torn down */ }
+            popupInstance = null;
+        }
+
         const popupDiv = document.createElement('div');
-        mount(Popup, {
+        popupInstance = mount(Popup, {
             target: popupDiv,
             props: {
                 geoName,
                 geoID,
                 year,
                 demand,
-                sticky, 
+                sticky,
                 onClose: () => {
                     popup.remove();
                     geography = 'total';
@@ -455,6 +467,10 @@
     onDestroy(() => {
         resizeObserver?.disconnect();
         map?.off('click', handleMapClick); // Detach the event
+        if (popupInstance) {
+            try { unmount(popupInstance); } catch { /* already torn down */ }
+            popupInstance = null;
+        }
         map?.remove();
     });
 

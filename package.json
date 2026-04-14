@@ -3,7 +3,6 @@
   "name": "demand-toolkit",
   "version": "0.1.0",
   "description": "The demand toolkit",
-  "main": "setup-project.js",
   "workspaces": [
     "api",
     "explorer",
@@ -11,7 +10,6 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "setup": "node setup/index.js",
     "bundle:api": "node api/bundle-openapi.js",
     "prepare": "husky || true"
   },
@@ -22,9 +20,5 @@
     "js-yaml": "^4.1.0",
     "json-schema-ref-parser": "^9.0.9",
     "vite": "^6.4.1"
-  },
-  "dependencies": {
-    "@inquirer/prompts": "^7.5.3",
-    "lodash": "^4.17.21"
   }
 }

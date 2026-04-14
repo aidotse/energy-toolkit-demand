@@ -8,6 +8,19 @@
 		     so the base-map style/tiles arrive ~50-200 ms sooner on cold loads. -->
 		<link rel="preconnect" href="https://api.mapbox.com" crossorigin />
 		<link rel="preconnect" href="https://events.mapbox.com" crossorigin />
+		<!-- Preload the mapbox style JSON so the request starts at HTML parse,
+		     not after mapbox-gl has downloaded and initialised. Saves ~100 ms
+		     on cold loads. The URL must match exactly what mapbox-gl v3 requests:
+		     `?sdk=js-<version>&access_token=<public pk.*>`. If either the style
+		     ID, the mapbox-gl version, or the public token changes, update
+		     this line too — a mismatched preload is silently ignored by the
+		     browser and wastes a fetch. -->
+		<link
+			rel="preload"
+			as="fetch"
+			crossorigin
+			href="https://api.mapbox.com/styles/v1/viktorbengtsson/cm34o762h00a801o09g4q99uq?sdk=js-3.19.0&access_token=pk.eyJ1IjoidmlrdG9yYmVuZ3Rzc29uIiwiYSI6ImNtMzRnZnpkYTFuYXgycXFzZTl6ZDk2dHcifQ.6eeJ-8q9Q_84jA4_K8zFfA"
+		/>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

@@ -1,6 +1,45 @@
 # Finish Line — Completed Items
 
-Items completed on April 12–13, 2026. Moved from FINISH_LINE.md to keep the active document clean.
+Items completed on April 12–14, 2026. Moved from FINISH_LINE.md to keep the active document clean.
+
+---
+
+## § 2e Cross-cutting Code Review — closed out
+
+Initial audit shipped earlier (see § "Console.log gating + cross-cutting audit" below). Three leftovers carried forward; all resolved on 2026-04-14:
+
+- **`infrastructure/Dockerfile` + `entrypoint.sh` review** — superseded by Session B's full deployment rewrite. Dockerfile switched to `COPY api/*.js ./api/` glob after `ERR_MODULE_NOT_FOUND` on `cache.js`/`csv.js`; `entrypoint.sh` gained the `DATA_VERSION` marker re-sync mechanism. Shipped in commit `d15abbf feat(deploy): branch-based staging pipeline, CI gating, data lifecycle` and now running in staging. Nothing left to review.
+- **`generate-api.js` static endpoints** — verified implicitly: `node generate-api.js --defaults` was run twice as part of shipped changes (see § "Console.log gating + cross-cutting audit" and the API test-suite work). Up to date.
+- **Unused explorer deps removed** — `pako`, `cors`, `amplify-adapter` removed from `explorer/package.json`; lockfile regenerated via `npm install` in `explorer/`. Zero import references confirmed before removal (grep across `explorer/`). `npm run check` in `explorer/` clean: 0 errors, same 12 pre-existing state_referenced_locally warnings in `ChartContainer.svelte` and `archive/report-*-layout/+page.svelte`. `@turf/turf`, `layerchart`, `svelte-ux` confirmed false positives and left in place. The `cors` package in `api/package.json` is real (API server middleware) and untouched. Deprecation-warning cleanup for `@inlang/paraglide-*` / `@lix-js/*` remains tracked separately in § 3 Follow-ups.
+
+---
+
+## Retire the `-dev` stack — Phase 5
+
+Full teardown of the dev environment now that staging has superseded it. Done on 2026-04-14.
+
+**AWS:**
+- Deleted App Runner `behovskartan-api-dev` (eu-central-1).
+- Emptied + deleted S3 buckets `behovskartan-explorer-dev`, `behovskartan-data-dev` (eu-central-1), and `behovskartan-explorer-dev-v2` (eu-north-1).
+- Disabled + deleted CloudFront distributions `E1ABUHNME6T78P`, `E111B71VKO8S8H`, **and `E21L0X9B8QHTWX`** (the latter not in the original plan ID list — discovered during teardown as the actual production-facing dev distribution; it was the alias target for `behovskartan.toolkit.energy` and labelled "Behovskartan Explorer - dev"). Removed its `behovskartan.toolkit.energy` alias before disabling.
+- Deleted 6 records from the `toolkit.energy` Route53 zone (`Z07087801SCNUQDQNNWTU`): `behovskartan.toolkit.energy` A + AAAA aliases, the matching `_838e8c349116e29a66f215661aa75fe5.behovskartan` ACM-validation CNAME, the dangling `behovskartan-dev.toolkit.energy` + `behovskartan-staging.toolkit.energy` CNAMEs (both pointed at `d1yqb6zqgn950i.cloudfront.net` which no longer existed), and the matching `_c3fdd129459b5b5cc1fc940bdc21d6ed.behovskartan-dev` ACM-validation CNAME.
+- Verified post-teardown: `dig +short behovskartan.toolkit.energy` → NXDOMAIN. `aws apprunner list-services` shows only `behovskartan-api-staging`. No `behovskartan-*-dev` S3 buckets remain. `https://staging.behovskartan.se` still 200.
+
+**Landing site (`/site` in this repo, served from CloudFront `E3VXQE44IYV1PO` → S3 `energy-toolkit-site`):**
+- Patched the three remaining `https://behovskartan.toolkit.energy` links to `https://staging.behovskartan.se`: `site/src/lib/components/Footer.svelte`, `site/src/routes/projects/+page.svelte`, `site/src/routes/tools/demand/+page.svelte`. (Initial grep only caught the latter two; the footer was the source of the references that surfaced on every built page.)
+- Rebuilt `site/`, `aws s3 sync site/build/ s3://energy-toolkit-site/ --delete`, CloudFront invalidation `/*` (id `I7BGQMKK0C6EIMYTXKBQVX01C3`).
+
+**Code scrub:**
+- Removed the `dev` export from `api/config.js`.
+- Trimmed `api/tests/unit/config.test.js` to staging-only (dropped the `dev configuration` describe block, the dev/staging cross-reference tests, and the env-consistency comparisons). Full unit suite still 134/134 green.
+- Left `infrastructure/README.md` and `docs/DEPLOYMENT.md` untouched per agreement — both stale and slated for the deferred handover-doc rewrite.
+
+**GitHub:**
+- `gh api -X DELETE repos/aidotse/behovskartan/environments/dev` — only `staging` remains.
+
+**Notes for Phase 6 (production):**
+- The plan's CloudFront ID list was incomplete. When auditing prod-ready resources, list distributions by name/comment + alias target rather than relying on a hand-maintained ID list.
+- Three unrelated `demand-toolkit-se-*-dev` S3 buckets exist in the same account but are out of scope for this retirement — left alone.
 
 ---
 

@@ -14,7 +14,7 @@ Everything left to do. Completed items are in FINISH_LINE_DONE.md.
 
 ### Comments / Loose Ends
 
-s- [ ] Go through all comments documents
+- [ ] Go through all comments documents
 
 ---
 
@@ -49,13 +49,6 @@ Current charts (14): AreaChart, TimeLine, SegmentBars, Histogram, GeoBarChart, S
 Ideas:
 > (fill in during review)
 
-### 2e. Cross-cutting Code Review
-
-Initial audit done — see FINISH_LINE_DONE.md § "Console.log gating + cross-cutting audit". Leftovers:
-
-- [ ] Review `infrastructure/Dockerfile` and `entrypoint.sh` *(leave to Session B — deployment territory)*
-- [ ] Verify static endpoint generation (`generate-api.js`) is up to date
-- [ ] **Unused explorer deps:** depcheck flags `pako`, `cors`, `amplify-adapter` as truly unused. `cors` + `amplify-adapter` are leftovers from a previous adapter (we're on `@sveltejs/adapter-static`); `pako` has zero imports. Removing them would shrink the install but would touch `package.json` / `package-lock.json` — holding off while Session B is doing deployment work to avoid conflicts. (`@turf/turf`, `layerchart`, `svelte-ux` are false positives — all actively imported.)
 
 ---
 
@@ -76,18 +69,6 @@ Mirror of the staging work, but the apex DNS cutover waits on the current Vercel
 - [ ] First real deploy: `git checkout production && git merge staging && git push` → review + approve in Actions → verify `https://behovskartan.se`... (on temporary placeholder domain until apex cutover)
 - [ ] **Deferred to post-Vercel-retirement**: Route53 `@` and `www.behovskartan.se` cutover from Vercel to production CloudFront. This is an **EDIT** to existing records, not a CREATE — handle as one planned change with before/after `dig` diffs.
 
-### Retire the `-dev` stack — Phase 5 *(ready now, staging proven)*
-
-The `behovskartan-api-dev` App Runner service still runs on a cached container from before the `cache.js` / `csv.js` Dockerfile bug. Nothing depends on it except `behovskartan.toolkit.energy`, which is in a separate Route53 zone.
-
-- [ ] Delete `behovskartan-api-dev` App Runner service
-- [ ] Empty + delete `behovskartan-explorer-dev`, `behovskartan-data-dev`, and `behovskartan-explorer-dev-v2` (the eu-north-1 mystery bucket)
-- [ ] Delete orphan CloudFront distributions `E1ABUHNME6T78P` and `E111B71VKO8S8H`
-- [ ] Delete `behovskartan.toolkit.energy` A/AAAA records from the `toolkit.energy` Route53 zone (plus stale `behovskartan-dev.toolkit.energy` and `behovskartan-staging.toolkit.energy` CNAMEs)
-- [ ] **Update the `toolkit.energy` landing site** — any link to `behovskartan.toolkit.energy` (or the raw CloudFront/App Runner URLs) needs to be replaced with `staging.behovskartan.se` or removed. The landing site is served from a separate CloudFront distribution `E3VXQE44IYV1PO` (comment: "Energy Toolkit site") — find its source repo / S3 bucket and patch in place. Also check `api.toolkit.energy` references if any are project-specific.
-- [ ] Code scrub: remove `dev` block from `api/config.js`; grep repo for any surviving `behovskartan-*-dev` references
-- [ ] Delete the `dev` GitHub Environment from the repo settings
-
 ### Follow-ups *(deferred, non-blocking)*
 
 - [ ] **CI integration-test job with S3 data sync** — add a third CI job that syncs the non-scenarios data subset (~2 GB) from `behovskartan-data-staging` and runs `npm run test:integration`. Gate on pushes to deploy branches (not PRs). Design in `~/.claude/plans/wild-conjuring-kay.md` Phase 8b. Wait until the first CI-driven staging deploy is proven.
@@ -107,11 +88,7 @@ The `behovskartan-api-dev` App Runner service still runs on a cached container f
 
 ## 5. Performance — Phase 2: loading UX
 
-Phase 1 (compression, param_yearly.parquet, charts-loader dedupe, debounced filter writes) shipped in commit `10c3fd2` on branch `api-data-optimization`. See FINISH_LINE_DONE.md § "Performance Phase 1". Plan file: `~/.claude/plans/dynamic-snuggling-flame.md`.
-
-Still outstanding before Phase 1 is fully live on staging:
-- [ ] Run `./api/scripts/sync-data-to-s3.sh staging` to upload the new `data/aggregated/param_yearly.parquet` (1.2 MB) and `geo_segment_yearly.parquet` (169 KB).
-- [ ] Bump `DATA_VERSION` on the `behovskartan-api-staging` App Runner service so `entrypoint.sh` re-syncs on next container start.
+Phase 1 (compression, param_yearly.parquet, charts-loader dedupe, debounced filter writes) shipped in commit `10c3fd2` on branch `api-data-optimization` and is fully live on staging. See FINISH_LINE_DONE.md § "First CI-driven staging deploy + Phase 1 perf fixes". Plan file: `~/.claude/plans/dynamic-snuggling-flame.md`.
 
 Phase 2 tackles the *appearance* of loading. Even with Phase 1 speedups, the cold-load sequence on `/` still feels jerky: empty layout → content card shell → empty chart frames → skeletons (briefly) → data snaps in → map loads last. Plan detail in `~/.claude/plans/dynamic-snuggling-flame.md` § Phase 2.
 

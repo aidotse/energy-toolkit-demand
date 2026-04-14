@@ -23,18 +23,6 @@
  */
 
 /**
- * Development environment configuration
- * @type {EnvironmentConfig}
- */
-export const dev = {
-    api_name: "behovskartan-api-dev",
-    stage_name: "dev",
-    region: "eu-central-1",
-    bucket_name: "behovskartan-data-dev",
-    service_role: "arn:aws:iam::600627346413:role/behovskartan-api-role"
-};
-
-/**
  * Staging environment configuration
  * @type {EnvironmentConfig}
  */

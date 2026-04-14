@@ -5,6 +5,7 @@
 	import { settings } from 'svelte-ux';
 	import { untrack } from 'svelte';
 	import TopNavigationBar from '$lib/components/navigation/TopNavigationBar.svelte';
+	import PersistentDesktopMap from '$lib/components/map/PersistentDesktopMap.svelte';
 	import { scenarioState } from '$lib/stores/scenario.svelte';
 	import { parameterStore } from '$lib/stores/parameterStore.svelte';
 	import { getStrategy2Config } from '$lib/dataService';
@@ -103,6 +104,14 @@
 <ParaglideJS {i18n}>
 	<!-- Navigation -->
 	<TopNavigationBar />
+
+	<!--
+		Persistent desktop Map: mounted once and kept alive across route
+		changes so nav-back-to-home doesn't rebuild the mapbox WebGL context.
+		Hidden via CSS when the user is on a non-home route. Desktop only;
+		mobile keeps its own local <Map> instance inside +page.svelte.
+	-->
+	<PersistentDesktopMap />
 
 	<!-- Main Content Area -->
 	<div class="pt-0 lg:pt-14">

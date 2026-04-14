@@ -49,6 +49,23 @@
 	// Mobile panel toggle
 	let showMap = $state(false);
 
+	// Skip mounting the mobile <Map> on desktop viewports. Without this gate,
+	// the mobile map (inside `lg:hidden`, so display:none on lg+) still goes
+	// through full mapbox-gl init on every home-page mount — ~7 requests to
+	// api.mapbox.com and seconds of JS parsing, even though nothing is ever
+	// visible. The persistent desktop map already lives in +layout.svelte, so
+	// we just need a flag that says "are we small enough to need the mobile
+	// layout?" and only render <Map> there when true.
+	let isMobileViewport = $state(false);
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const mql = window.matchMedia('(max-width: 1023px)');
+		isMobileViewport = mql.matches;
+		const onChange = (e: MediaQueryListEvent) => { isMobileViewport = e.matches; };
+		mql.addEventListener('change', onChange);
+		return () => mql.removeEventListener('change', onChange);
+	});
+
 	// Tab slide-out animation: tabs start hidden off-screen, then slide in
 	let mapTabVisible = $state(false);
 	let reportTabVisible = $state(false);
@@ -136,23 +153,26 @@
 		</div>
 	</div>
 
-	<!-- Map panel -->
+	<!-- Map panel — only mount the <Map> instance on actual mobile viewports
+	     so desktop users don't pay the mapbox-gl init cost for a hidden panel -->
 	<div
 		class="absolute inset-0 transition-transform duration-300 ease-out {showMap ? 'translate-x-0' : 'translate-x-full'}"
 	>
-		<Map
-			geojsonData={data.geojson}
-			year={year}
-			onYearChange={(newYear: number) => year = newYear}
-			bind:geography
-			bind:segments
-			yearData={data.geoData}
-			parameterData={data.parameters}
-			scenario={data.scenario}
-			lower_bound={data.globals?.lower_bound || 0}
-			upper_bound={data.globals?.upper_bound || 30000000}
-			controlsPosition="left"
-		/>
+		{#if isMobileViewport}
+			<Map
+				geojsonData={data.geojson}
+				year={year}
+				onYearChange={(newYear: number) => year = newYear}
+				bind:geography
+				bind:segments
+				yearData={data.geoData}
+				parameterData={data.parameters}
+				scenario={data.scenario}
+				lower_bound={data.globals?.lower_bound || 0}
+				upper_bound={data.globals?.upper_bound || 30000000}
+				controlsPosition="left"
+			/>
+		{/if}
 	</div>
 
 	<!-- Tab: show map (right edge, on content panel) -->
@@ -190,26 +210,18 @@
 	{/if}
 </div>
 
-<!-- Desktop: original layout (unchanged) -->
-<div class="hidden lg:block relative min-h-screen bg-page-bg">
-	<!-- Map: fixed right-half background -->
-	<div class="fixed top-14 right-0 bottom-0 w-2/3 z-0">
-		<Map
-			fadeLeft={true}
-			geojsonData={data.geojson}
-			year={year}
-			onYearChange={(newYear: number) => year = newYear}
-			bind:geography
-			bind:segments
-			yearData={data.geoData}
-			parameterData={data.parameters}
-			scenario={data.scenario}
-			lower_bound={data.globals?.lower_bound || 0}
-			upper_bound={data.globals?.upper_bound || 30000000}
-			controlsPosition="right"
-		/>
-	</div>
+<!--
+	Desktop layout. The map itself lives in +layout.svelte as
+	<PersistentDesktopMap /> so it survives /charts ↔ / nav without rebuilding
+	its WebGL context. This page owns only the content card that overlays it.
+	The card still uses pointer-events-none so click-through to the map works.
 
+	No bg-page-bg / relative on this wrapper: they would paint an opaque layer
+	on top of the layout-level fixed map (both at effective z-index 0, DOM
+	order puts the page div on top). Let the layout background show through;
+	the card has its own white backdrop.
+-->
+<div class="hidden lg:block min-h-screen">
 	<!-- Card: scrollable overlay, positioned left -->
 	<main class="relative z-10 pointer-events-none">
 		<div class="max-w-5xl lg:w-3/5 ml-0 lg:ml-[6%] p-4 sm:p-6 lg:py-8 pointer-events-auto">

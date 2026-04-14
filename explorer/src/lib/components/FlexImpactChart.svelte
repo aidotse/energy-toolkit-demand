@@ -187,6 +187,11 @@
 			padding={CHART_PADDING.standard}
 			grid={false}
 			props={{
+				xAxis: {
+					format: (v: number) => `${v.toLocaleString('sv-SE')} h`,
+					tickLabelProps: { fontSize: 11 }
+				},
+				yAxis: { tickLabelProps: { fontSize: 11 } },
 				highlight: {
 					lines: { class: 'stroke-black [stroke-width:1.5px] [stroke-dasharray:6_4]' },
 					axis: 'both',
@@ -195,32 +200,28 @@
 				rule: { class: 'stroke-black [stroke-width:1.5px]' }
 			}}
 		>
-			<svelte:fragment slot="tooltip" let:x let:y let:height let:padding let:data>
-				{#if data}
+			<svelte:fragment slot="tooltip" let:x let:height let:padding>
 				<Tooltip.Root
 					x="data"
 					y={height}
 					anchor="top"
 					class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-2 py-0.5 border border-chart-900 rounded whitespace-nowrap"
 					contained={false}
+					let:data
 				>
-					{x(data)}h
+					{x(data).toLocaleString('sv-SE')} h
 				</Tooltip.Root>
-				{/if}
-				{#each ['baseline', 'flex'] as key}
-					{@const value = data?.[key]}
-					{#if value !== undefined}
-						<Tooltip.Root
-							x={padding.left}
-							y={y({ [key]: value })}
-							anchor="right"
-							contained={false}
-							class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-1.5 py-0.5 border border-chart-900 rounded whitespace-nowrap"
-						>
-							{SERIES_LABELS[key]}: {formatNumber(value, getPowerPrefix(), 'W')}
-						</Tooltip.Root>
-					{/if}
-				{/each}
+				<Tooltip.Root
+					x={padding.left}
+					y="pointer"
+					anchor="right"
+					contained={false}
+					class="text-xs font-semibold text-white bg-chart-900 mt-[2px] px-2 py-0.5 border border-chart-900 rounded whitespace-nowrap leading-snug"
+					let:data
+				>
+					<div>{SERIES_LABELS.baseline}: {formatNumber(data?.baseline ?? 0, getPowerPrefix(), 'W')}</div>
+					<div>{SERIES_LABELS.flex}: {formatNumber(data?.flex ?? 0, getPowerPrefix(), 'W')}</div>
+				</Tooltip.Root>
 			</svelte:fragment>
 		</AreaChart>
 	{/if}

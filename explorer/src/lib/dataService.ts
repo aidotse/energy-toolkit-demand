@@ -156,16 +156,20 @@ export const fetchDemandData = async (
 	const resolution = queryParams.get('period[resolution]');
 	const ttl = resolution === '1Y' ? CACHE_TTL.demand_yearly : CACHE_TTL.demand;
 
-	// Check cache first (only for browser requests, not SSR)
-	if (!customFetch) {
-		const cached = getCached(cacheKey, ttl);
-		if (cached) {
-			// Return cached data or wait for in-flight request
-			if (cached.promise) {
-				return cached.promise as Promise<DemandRow[]>;
-			}
-			return cached.data as DemandRow[];
+	// Check the cache regardless of whether a customFetch was supplied. The
+	// customFetch comes from SvelteKit's load() and we're on @sveltejs/adapter-
+	// static, so there is no SSR correctness concern — just skip the round-
+	// trip if the query string matches something we already have in memory.
+	// Previously this branch was guarded by `if (!customFetch)` which meant
+	// every page-loader call bypassed the cache and issued a fresh request on
+	// each navigation.
+	const cached = getCached(cacheKey, ttl);
+	if (cached) {
+		// Return cached data or wait for in-flight request
+		if (cached.promise) {
+			return cached.promise as Promise<DemandRow[]>;
 		}
+		return cached.data as DemandRow[];
 	}
 
 	// Create the fetch promise
@@ -190,26 +194,19 @@ export const fetchDemandData = async (
 						new Date(row.period as string).getFullYear()
 				}));
 
-			// Cache the result (only for browser requests)
-			if (!customFetch) {
-				clearInflight(cacheKey, result);
-			}
+			// Cache the result — see note above, no SSR correctness concern.
+			clearInflight(cacheKey, result);
 
 			return result;
 		} catch (error) {
-			// Clear in-flight on error
-			if (!customFetch) {
-				requestCache.delete(cacheKey);
-			}
+			requestCache.delete(cacheKey);
 			console.warn('Failed to fetch demand data, returning empty array:', error);
 			return [];
 		}
 	})();
 
-	// Set in-flight promise to dedup concurrent requests
-	if (!customFetch) {
-		setInflight(cacheKey, fetchPromise);
-	}
+	// Set in-flight promise so concurrent callers share the same round-trip.
+	setInflight(cacheKey, fetchPromise);
 
 	return fetchPromise;
 };
@@ -701,22 +698,24 @@ export const mergeGeoData = (geojson: any, demandData: DemandRow[], year: number
 			}
 		});
 
+	// Return new feature objects instead of mutating the input in place — the
+	// input may be wrapped in Svelte's $state proxy (e.g. when it flows through
+	// viewStore.pageData), and mutating proxied state inside a $derived
+	// triggers a state_unsafe_mutation error.
 	const updatedFeatures = geojson.features.map((feature: any) => {
 		const geoID = feature.properties?.geo_id;
-		if (geoID) {
-			feature.id = geoID;
+		if (!geoID) return feature;
 
-			if (dataMap.has(geoID)) {
-				feature.properties = {
-					...feature.properties,
-					...dataMap.get(geoID),
-					geography: geoID,
-					year: year
-				};
-			}
+		const base: Record<string, unknown> = { ...feature, id: geoID };
+		if (dataMap.has(geoID)) {
+			base.properties = {
+				...feature.properties,
+				...dataMap.get(geoID),
+				geography: geoID,
+				year: year
+			};
 		}
-
-		return feature;
+		return base;
 	});
 
 	return { ...geojson, features: updatedFeatures };
